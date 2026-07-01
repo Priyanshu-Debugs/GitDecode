@@ -14,6 +14,9 @@ Shutdown:
 """
 
 import logging
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env globally
+
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
@@ -108,6 +111,15 @@ app.add_middleware(
 # ── Router Registration ─────────────────────────────────────────────
 
 app.include_router(repos_router, prefix=settings.API_V1_PREFIX)
+
+# ── Inngest Event Server ────────────────────────────────────────────
+import inngest.fast_api
+from app.workers.inngest_fns import sync_github_repository
+from app.api.routes.repos import inngest_client
+
+inngest.fast_api.serve(app, inngest_client, [sync_github_repository])
+
+
 
 # ── Health Check ─────────────────────────────────────────────────────
 

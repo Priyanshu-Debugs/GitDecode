@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     NEO4J_USERNAME: str
     NEO4J_PASSWORD: str
 
+    # ── Hugging Face ─────────────────────────────────────────────────────
+    HUGGINGFACE_API_KEYS: str = ""
+
+
     # ── Validators ───────────────────────────────────────────────────────
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
