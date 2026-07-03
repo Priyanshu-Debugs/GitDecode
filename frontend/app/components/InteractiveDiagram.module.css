@@ -1,0 +1,171 @@
+/* ═══════════════════════════════════════════════════════════════════
+   InteractiveDiagram — Scoped Styles
+   ═══════════════════════════════════════════════════════════════════ */
+
+.diagramContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.svgWrapper {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.diagramSvg {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  overflow: visible;
+}
+
+/* ── Node Card ────────────────────────────────────────────── */
+.nodeCard {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-base);
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.nodeCard:hover,
+.nodeCard.hovered {
+  border-color: #b01e0a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(176, 30, 10, 0.1);
+}
+
+.nodeCard.highlighted {
+  border-color: rgba(176, 30, 10, 0.6);
+  box-shadow: 0 0 8px rgba(176, 30, 10, 0.08);
+}
+
+.cardIndicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.nodeCard:hover .cardIndicator,
+.nodeCard.hovered .cardIndicator,
+.nodeCard.highlighted .cardIndicator {
+  background: #b01e0a;
+}
+
+.cardLabel {
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nodeCard:hover .cardLabel,
+.nodeCard.hovered .cardLabel,
+.nodeCard.highlighted .cardLabel {
+  color: #ffffff;
+}
+
+/* Badges */
+.file {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-secondary);
+}
+
+.service {
+  background: rgba(217, 119, 6, 0.08);
+  color: var(--color-warning);
+}
+
+.agent {
+  background: rgba(176, 30, 10, 0.08);
+  color: #b01e0a;
+}
+
+.db {
+  background: rgba(22, 163, 74, 0.08);
+  color: var(--color-success);
+}
+
+/* ── Connector Line ────────────────────────────────────────── */
+.path {
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+  transition: stroke var(--transition-base), stroke-width var(--transition-base);
+}
+
+.pathActive {
+  stroke: #b01e0a;
+  stroke-width: 2;
+  animation: strokePulse 1.5s infinite;
+}
+
+@keyframes strokePulse {
+  0%, 100% {
+    stroke-opacity: 0.7;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+
+/* ── Info Detail Card ─────────────────────────────────────── */
+.infoCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  animation: fadeIn 200ms ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infoHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.infoLabel {
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.infoDesc {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
