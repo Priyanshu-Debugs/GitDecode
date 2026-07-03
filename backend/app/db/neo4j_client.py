@@ -400,11 +400,12 @@ class Neo4jClient:
         """
         total_deleted = 0
         while True:
+            async def work(tx):
+                res = await tx.run(cypher, repo_id=repo_id)
+                return await res.single()
+                
             async with self._driver.session() as session:
-                result = await session.execute_write(
-                    lambda tx: tx.run(cypher, repo_id=repo_id)
-                )
-                record = await result.single()
+                record = await session.execute_write(work)
                 batch_deleted = record["deleted"] if record else 0
                 total_deleted += batch_deleted
 
@@ -432,11 +433,12 @@ class Neo4jClient:
         RETURN f.path AS path, f.language AS language, f.size_bytes AS size_bytes
         ORDER BY f.path
         """
+        async def work(tx):
+            res = await tx.run(cypher, repo_id=repo_id)
+            return [record.data() async for record in res]
+            
         async with self._driver.session() as session:
-            result = await session.execute_read(
-                lambda tx: tx.run(cypher, repo_id=repo_id)
-            )
-            return [record.data() async for record in result]
+            return await session.execute_read(work)
 
     async def get_function_callees(
         self,
@@ -461,31 +463,34 @@ class Neo4jClient:
         RETURN callee.name AS name, callee.file_path AS file_path,
                callee.signature AS signature
         """
-        async with self._driver.session() as session:
-            result = await session.execute_read(
-                lambda tx: tx.run(
-                    cypher,
-                    repo_id=repo_id,
-                    function_name=function_name,
-                    file_path=file_path,
-                )
+        async def work(tx):
+            res = await tx.run(
+                cypher,
+                repo_id=repo_id,
+                function_name=function_name,
+                file_path=file_path,
             )
-            return [record.data() async for record in result]
+            return [record.data() async for record in res]
+            
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
 
     # ── Internal Helpers ─────────────────────────────────────────────────
 
     async def _execute_write_single(self, cypher: str, **params: Any) -> str:
         """Execute a write query and return the ``eid`` from the first record."""
+        async def work(tx):
+            res = await tx.run(cypher, **params)
+            return await res.single()
+            
         async with self._driver.session() as session:
-            result = await session.execute_write(
-                lambda tx: tx.run(cypher, **params)
-            )
-            record = await result.single()
+            record = await session.execute_write(work)
             return record["eid"] if record else ""
 
     async def _execute_write(self, cypher: str, **params: Any) -> None:
         """Execute a write query with no return value."""
+        async def work(tx):
+            await tx.run(cypher, **params)
+            
         async with self._driver.session() as session:
-            await session.execute_write(
-                lambda tx: tx.run(cypher, **params)
-            )
+            await session.execute_write(work)
