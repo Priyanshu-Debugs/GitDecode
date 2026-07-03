@@ -101,20 +101,7 @@ const steps = [
   },
 ];
 
-/* ── Mermaid Diagram (Static) ────────────────────────────────────── */
-const MERMAID_SOURCE = `graph TD
-    A[main.py] --> B[routes/repos.py]
-    A --> C[routes/chat.py]
-    B --> D[services/ingestion.py]
-    B --> E[services/github.py]
-    C --> F[agents/graph.py]
-    F --> G[nodes/visualizer.py]
-    F --> H[nodes/code_qa.py]
-    F --> I[nodes/blast_radius.py]
-    D --> J[db/neo4j_client.py]
-    D --> K[db/pg_client.py]
-    H --> K
-    G --> J`;
+
 
 /* ═══════════════════════════════════════════════════════════════════
    Landing Page

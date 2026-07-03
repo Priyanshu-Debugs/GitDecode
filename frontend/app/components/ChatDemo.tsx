@@ -45,11 +45,6 @@ export default function ChatDemo() {
   const [isComplete, setIsComplete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Auto-scroll inside container
   useEffect(() => {
@@ -61,7 +56,7 @@ export default function ChatDemo() {
 
   // Main animation driver
   useEffect(() => {
-    if (!mounted || isComplete) return;
+    if (isComplete) return;
 
     let active = true;
     let timerId: NodeJS.Timeout;
@@ -119,7 +114,7 @@ export default function ChatDemo() {
       clearTimeout(timerId);
       clearInterval(intervalId);
     };
-  }, [mounted, currentIndex, isComplete]);
+  }, [currentIndex, isComplete]);
 
   // Video looping effect: restart after a short delay once complete
   useEffect(() => {
@@ -145,10 +140,6 @@ export default function ChatDemo() {
     setCurrentIndex(0);
     setIsComplete(false);
   };
-
-  if (!mounted) {
-    return <div className={styles.chatWindow} style={{ height: "480px" }} />;
-  }
 
   return (
     <div ref={containerRef} className={styles.chatWindow}>

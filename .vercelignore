@@ -1,0 +1,2 @@
+# Ignore the backend folder completely on Vercel
+backend/

@@ -193,7 +193,6 @@ export default function InteractiveDiagram() {
 interface NodeCardProps {
   id: string;
   label: string;
-  type: string;
   hoveredNode: string | null;
   setHoveredNode: (id: string | null) => void;
   isHighlighted: (id: string) => boolean;
@@ -202,7 +201,6 @@ interface NodeCardProps {
 function NodeCard({
   id,
   label,
-  type,
   hoveredNode,
   setHoveredNode,
   isHighlighted,
