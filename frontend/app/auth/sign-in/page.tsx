@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getSupabase } from "@/app/lib/supabase";
 import Button from "@/app/components/Button";
 import styles from "./page.module.css";
@@ -20,10 +21,11 @@ export default function SignInPage() {
     setError("");
     setLoading(true);
     try {
-      const { error: authError } = await getSupabase().auth.signInWithOAuth({
+      const supabase = getSupabase();
+      const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -95,8 +97,7 @@ export default function SignInPage() {
 
         <div className={styles.loginCenter}>
           <div className={styles.logo}>
-            <span className={styles.logoGit}>Git</span>
-            <span className={styles.logoMesh}>Mesh</span>
+            <Image src="/logo.svg" alt="GitMesh Logo" width={128} height={32} priority className={styles.logoImage} />
           </div>
 
           <div className={styles.intro}>

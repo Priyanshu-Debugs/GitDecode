@@ -1,225 +1,300 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./InteractiveDiagram.module.css";
+
+// Reusable text scramble hook
+function useScramble(text: string, trigger: number) {
+  const [display, setDisplay] = useState(text);
+
+  useEffect(() => {
+    let iterations = 0;
+    const chars = "01XYZ_@#%&*+=-▒▓░█";
+    const duration = 20; // ms per step
+
+    const interval = setInterval(() => {
+      setDisplay(
+        text
+          .split("")
+          .map((char, index) => {
+            if (char === " ") return " ";
+            if (index < iterations) {
+              return text[index];
+            }
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join("")
+      );
+
+      if (iterations >= text.length) {
+        clearInterval(interval);
+      }
+      iterations += 0.5; // Scramble speeds
+    }, duration);
+
+    return () => clearInterval(interval);
+  }, [text, trigger]);
+
+  return display;
+}
 
 interface Node {
   id: string;
   label: string;
-  type: "file" | "service" | "agent" | "db";
+  type: "input" | "output";
   desc: string;
-  connections: string[]; // downstream connections
 }
 
-const NODES: Node[] = [
-  {
-    id: "main",
-    label: "main.py",
-    type: "file",
-    desc: "App entry point. Configures lifespan, loads configuration, and runs initial service handshakes.",
-    connections: ["repos", "chat"],
-  },
-  {
-    id: "repos",
-    label: "routes/repos.py",
-    type: "file",
-    desc: "FastAPI router endpoints. Validates ingestion payload schemas and schedules repository syncing.",
-    connections: ["ingestion", "github"],
-  },
-  {
-    id: "chat",
-    label: "routes/chat.py",
-    type: "file",
-    desc: "Exposes socket/REST channels connecting the user frontend to the code reasoning graph.",
-    connections: ["graph"],
-  },
-  {
-    id: "ingestion",
-    label: "services/ingestion.py",
-    type: "service",
-    desc: "Parses Python/JS codebases via AST tree-sitter, mapping modules and logic to Neo4j nodes.",
-    connections: ["neo4j", "postgres"],
-  },
+const INPUT_NODES: Node[] = [
   {
     id: "github",
-    label: "services/github.py",
-    type: "service",
-    desc: "Performs remote clones and repository extraction workflows using standard Git handles.",
-    connections: [],
+    label: "GitHub Connector",
+    type: "input",
+    desc: "Clones and pulls changes from remote Git repositories asynchronously.",
   },
   {
-    id: "graph",
-    label: "agents/graph.py",
-    type: "agent",
-    desc: "LangGraph engine routing codebase queries to specialized research nodes.",
-    connections: ["visualizer", "code_qa"],
+    id: "parser",
+    label: "AST Syntax Parser",
+    type: "input",
+    desc: "Uses tree-sitter to inspect and map codebase import/class syntax structures.",
   },
   {
     id: "neo4j",
-    label: "db/neo4j_client.py",
-    type: "db",
-    desc: "Neo4j AuraDB client mapping dependencies, module calls, and structural imports.",
-    connections: [],
+    label: "Neo4j Graph Database",
+    type: "input",
+    desc: "Stores and structures code relationships (imports, definitions, mappings).",
   },
   {
     id: "postgres",
-    label: "db/pg_client.py",
-    type: "db",
-    desc: "Postgres driver containing local embeddings, user indices, and indexing results.",
-    connections: [],
+    label: "Supabase DB & Vectors",
+    type: "input",
+    desc: "Hosts text embeddings, indices, and project configuration states.",
   },
+];
+
+const OUTPUT_NODES: Node[] = [
   {
-    id: "visualizer",
-    label: "nodes/visualizer.py",
-    type: "agent",
-    desc: "Supervisor node converting Neo4j relations into high-contrast structural diagrams.",
-    connections: [],
+    id: "dep_map",
+    label: "Visual Dependency Map",
+    type: "output",
+    desc: "Interactive visualizer converting codebase structures into readable layouts.",
   },
   {
     id: "code_qa",
-    label: "nodes/code_qa.py",
-    type: "agent",
-    desc: "RAG solver fetching vector context to deliver factual lines citations and files summaries.",
-    connections: [],
+    label: "Factual Code Q&A",
+    type: "output",
+    desc: "Uses vector lookups and LLMs to answer questions with exact line citations.",
+  },
+  {
+    id: "blast_radius",
+    label: "Blast Radius Traversals",
+    type: "output",
+    desc: "Traces downstream consequences of codebase modifications before they are committed.",
   },
 ];
 
 export default function InteractiveDiagram() {
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [pulseTrigger, setPulseTrigger] = useState(0);
 
-  const isHighlighted = (nodeId: string) => {
-    if (!hoveredNode) return false;
-    if (hoveredNode === nodeId) return true;
-    const hovered = NODES.find((n) => n.id === hoveredNode);
-    if (hovered?.connections.includes(nodeId)) return true;
+  // Trigger a central pulse and scrambler refresh every 8 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulseTrigger((prev) => prev + 1);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
-    // Check upstream highlighting
-    if (NODES.find((n) => n.id === hoveredNode)?.connections.some(conn => {
-      const cNode = NODES.find(cn => cn.id === conn);
-      return cNode?.connections.includes(nodeId);
-    })) {
-      return true;
-    }
-    return false;
+  const handleNodeClick = (id: string) => {
+    setSelectedNode((prev) => (prev === id ? null : id));
   };
 
   const getActiveDesc = () => {
-    const node = NODES.find((n) => n.id === (hoveredNode || "main"));
+    const all = [...INPUT_NODES, ...OUTPUT_NODES];
+    const node = all.find((n) => n.id === selectedNode);
     return node ? { label: node.label, type: node.type, desc: node.desc } : null;
   };
 
   const active = getActiveDesc();
 
-  // Helper to check connection path active states
-  const isPathActive = (fromNode: string, toNode: string) => {
-    if (!hoveredNode) return false;
-    if (hoveredNode === fromNode && isHighlighted(toNode)) return true;
-    if (isHighlighted(fromNode) && isHighlighted(toNode) && hoveredNode !== toNode) return true;
-    return false;
+  // Scrambled names for right outputs
+  const titleMap = useScramble("Visual Dependency Map", pulseTrigger);
+  const titleQa = useScramble("Factual Code Q&A", pulseTrigger);
+  const titleBlast = useScramble("Blast Radius Traversals", pulseTrigger);
+
+  const getScrambledLabel = (id: string, original: string) => {
+    if (id === "dep_map") return titleMap;
+    if (id === "code_qa") return titleQa;
+    if (id === "blast_radius") return titleBlast;
+    return original;
   };
 
   return (
     <div className={styles.diagramContainer}>
-      <div className={styles.svgWrapper}>
-        <svg className={styles.diagramSvg} viewBox="0 0 800 420" fill="none">
-          {/* Connection Lines (Background Paths) */}
-          <path d="M 400 40 L 250 140" className={`${styles.path} ${isPathActive("main", "repos") ? styles.pathActive : ""}`} />
-          <path d="M 400 40 L 550 140" className={`${styles.path} ${isPathActive("main", "chat") ? styles.pathActive : ""}`} />
-          
-          <path d="M 250 140 L 150 240" className={`${styles.path} ${isPathActive("repos", "ingestion") ? styles.pathActive : ""}`} />
-          <path d="M 250 140 L 350 240" className={`${styles.path} ${isPathActive("repos", "github") ? styles.pathActive : ""}`} />
-          <path d="M 550 140 L 550 240" className={`${styles.path} ${isPathActive("chat", "graph") ? styles.pathActive : ""}`} />
-          
-          <path d="M 150 240 L 110 340" className={`${styles.path} ${isPathActive("ingestion", "neo4j") ? styles.pathActive : ""}`} />
-          <path d="M 150 240 L 300 340" className={`${styles.path} ${isPathActive("ingestion", "postgres") ? styles.pathActive : ""}`} />
-          <path d="M 550 240 L 490 340" className={`${styles.path} ${isPathActive("graph", "visualizer") ? styles.pathActive : ""}`} />
-          <path d="M 550 240 L 680 340" className={`${styles.path} ${isPathActive("graph", "code_qa") ? styles.pathActive : ""}`} />
+      {/* Click empty space to deselect */}
+      <div className={styles.svgWrapper} onClick={() => setSelectedNode(null)}>
+        <svg className={styles.diagramSvg} viewBox="0 0 860 400" fill="none">
+          {/* Defined glow and arrow marker elements */}
+          <defs>
+            <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="6" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
 
-          {/* HTML foreignObject Nodes (Foreground Cards) */}
-          {/* Row 1 */}
-          <foreignObject x="325" y="21" width="150" height="38">
-            <NodeCard id="main" label="main.py" type="file" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
+          {/* BACKGROUND CONNECTION LINES */}
+          {/* Left Inputs -> Center Core Paths (Cubic Bezier Curves) */}
+          <path id="path-github" d="M 180 80 C 280 80, 280 200, 380 200" className={styles.lineLeft} />
+          <path id="path-parser" d="M 180 160 C 280 160, 280 200, 380 200" className={styles.lineLeft} />
+          <path id="path-neo4j" d="M 180 240 C 280 240, 280 200, 380 200" className={styles.lineLeft} />
+          <path id="path-postgres" d="M 180 320 C 280 320, 280 200, 380 200" className={styles.lineLeft} />
 
-          {/* Row 2 */}
-          <foreignObject x="175" y="121" width="150" height="38">
-            <NodeCard id="repos" label="routes/repos.py" type="file" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
-          <foreignObject x="475" y="121" width="150" height="38">
-            <NodeCard id="chat" label="routes/chat.py" type="file" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
+          {/* Center Core -> Right Outputs Paths */}
+          <path id="path-dep" d="M 440 200 C 540 200, 540 100, 670 100" className={styles.lineRight} />
+          <path id="path-qa" d="M 440 200 C 540 200, 540 200, 670 200" className={styles.lineRight} />
+          <path id="path-blast" d="M 440 200 C 540 200, 540 300, 670 300" className={styles.lineRight} />
 
-          {/* Row 3 */}
-          <foreignObject x="75" y="221" width="150" height="38">
-            <NodeCard id="ingestion" label="services/ingestion.py" type="service" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
-          <foreignObject x="275" y="221" width="150" height="38">
-            <NodeCard id="github" label="services/github.py" type="service" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
-          <foreignObject x="475" y="221" width="150" height="38">
-            <NodeCard id="graph" label="agents/graph.py" type="agent" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
+          {/* ACTIVE GLOWING PULSE LINES (dash offset animation) */}
+          <path d="M 440 200 C 540 200, 540 100, 670 100" className={styles.linePulse} />
+          <path d="M 440 200 C 540 200, 540 200, 670 200" className={styles.linePulse} />
+          <path d="M 440 200 C 540 200, 540 300, 670 300" className={styles.linePulse} />
 
-          {/* Row 4 */}
-          <foreignObject x="35" y="321" width="150" height="38">
-            <NodeCard id="neo4j" label="db/neo4j_client.py" type="db" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
-          <foreignObject x="225" y="321" width="150" height="38">
-            <NodeCard id="postgres" label="db/pg_client.py" type="db" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
-          <foreignObject x="415" y="321" width="150" height="38">
-            <NodeCard id="visualizer" label="nodes/visualizer.py" type="agent" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
-          <foreignObject x="605" y="321" width="150" height="38">
-            <NodeCard id="code_qa" label="nodes/code_qa.py" type="agent" hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} isHighlighted={isHighlighted} />
-          </foreignObject>
+          {/* FLOATING BINARY DATA ANIMATION (flowing along Left paths) */}
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            0
+            <animateMotion dur="3.5s" repeatCount="indefinite" path="M 180 80 C 280 80, 280 200, 380 200" />
+          </text>
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            1
+            <animateMotion dur="3.2s" begin="1.2s" repeatCount="indefinite" path="M 180 80 C 280 80, 280 200, 380 200" />
+          </text>
+
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            1
+            <animateMotion dur="2.8s" repeatCount="indefinite" path="M 180 160 C 280 160, 280 200, 380 200" />
+          </text>
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            0
+            <animateMotion dur="2.5s" begin="0.8s" repeatCount="indefinite" path="M 180 160 C 280 160, 280 200, 380 200" />
+          </text>
+
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            0
+            <animateMotion dur="3s" repeatCount="indefinite" path="M 180 240 C 280 240, 280 200, 380 200" />
+          </text>
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            1
+            <animateMotion dur="3.3s" begin="1.5s" repeatCount="indefinite" path="M 180 240 C 280 240, 280 200, 380 200" />
+          </text>
+
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            1
+            <animateMotion dur="2.6s" repeatCount="indefinite" path="M 180 320 C 280 320, 280 200, 380 200" />
+          </text>
+          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+            0
+            <animateMotion dur="3s" begin="0.6s" repeatCount="indefinite" path="M 180 320 C 280 320, 280 200, 380 200" />
+          </text>
+
+          {/* CENTRAL CORE PROCESSING NODE (Glowing hexagon brand icon) */}
+          <g className={styles.coreGroup} transform="translate(380, 170)">
+            <circle cx="30" cy="30" r="38" className={styles.coreGlow} filter="url(#glow-red)" />
+            <path
+              d="M 30 10 L 47 20 L 47 40 L 30 50 L 13 40 L 13 20 Z"
+              className={styles.pulsingCore}
+            />
+            {/* Asterisk style inner star */}
+            <path
+              d="M 30 18 L 30 42 M 18 30 L 42 30 M 21 21 L 39 39 M 21 39 L 39 21"
+              stroke="#000000"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+            <circle
+              cx="30"
+              cy="30"
+              r="34"
+              className={styles.rotatingOrbit}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.25)"
+              strokeWidth="1.5"
+              strokeDasharray="8, 12"
+            />
+          </g>
+
+          {/* LEFT INPUT NODES (foreignObjects) */}
+          {INPUT_NODES.map((node, index) => (
+            <foreignObject
+              key={node.id}
+              x="5"
+              y={60 + index * 80}
+              width="175"
+              height="40"
+              className={styles.nodeWrapper}
+            >
+              <div
+                className={`${styles.nodeCard} ${styles.inputCard} ${
+                  selectedNode === node.id ? styles.cardActive : ""
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNodeClick(node.id);
+                }}
+              >
+                <div className={styles.bulletIndicator} />
+                <span className={styles.cardLabel}>{node.label}</span>
+              </div>
+            </foreignObject>
+          ))}
+
+          {/* RIGHT OUTPUT NODES (foreignObjects) */}
+          {OUTPUT_NODES.map((node, index) => (
+            <foreignObject
+              key={node.id}
+              x="670"
+              y={80 + index * 100}
+              width="185"
+              height="40"
+              className={styles.nodeWrapper}
+            >
+              <div
+                className={`${styles.nodeCard} ${styles.outputCard} ${
+                  selectedNode === node.id ? styles.cardActive : ""
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNodeClick(node.id);
+                }}
+              >
+                <div className={styles.bulletIndicatorRed} />
+                <span className={styles.cardLabel}>
+                  {getScrambledLabel(node.id, node.label)}
+                </span>
+              </div>
+            </foreignObject>
+          ))}
         </svg>
-      </div>
 
-      {/* Info Tooltip Card */}
-      {active && (
-        <div className={styles.infoCard}>
-          <div className={styles.infoHead}>
-            <span className={styles.infoLabel}>{active.label}</span>
-            <span className={`${styles.badge} ${styles[active.type]}`}>{active.type}</span>
+        {/* Info Overlay — inside svgWrapper for absolute positioning */}
+        {active && (
+          <div className={styles.infoCard} key={active.label}>
+            <div className={styles.infoHead}>
+              <span className={styles.infoLabel}>{active.label}</span>
+              <span
+                className={`${styles.badge} ${
+                  active.type === "input" ? styles.badgeInput : styles.badgeOutput
+                }`}
+              >
+                {active.type}
+              </span>
+            </div>
+            <p className={styles.infoDesc}>{active.desc}</p>
           </div>
-          <p className={styles.infoDesc}>{active.desc}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface NodeCardProps {
-  id: string;
-  label: string;
-  type?: string;
-  hoveredNode: string | null;
-  setHoveredNode: (id: string | null) => void;
-  isHighlighted: (id: string) => boolean;
-}
-
-function NodeCard({
-  id,
-  label,
-  type,
-  hoveredNode,
-  setHoveredNode,
-  isHighlighted,
-}: NodeCardProps) {
-  const isSelfHovered = hoveredNode === id;
-  const isLit = isSelfHovered || isHighlighted(id);
-
-  return (
-    <div
-      className={`${styles.nodeCard} ${isSelfHovered ? styles.hovered : ""} ${
-        isLit ? styles.highlighted : ""
-      }`}
-      onMouseEnter={() => setHoveredNode(id)}
-      onMouseLeave={() => setHoveredNode(null)}
-    >
-      <div className={styles.cardIndicator} />
-      <span className={styles.cardLabel}>{label}</span>
+        )}
+      </div>
     </div>
   );
 }

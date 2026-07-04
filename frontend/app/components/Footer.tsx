@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./Footer.module.css";
 
 const footerColumns = [
@@ -38,8 +39,7 @@ export default function Footer() {
           {/* Brand Column */}
           <div className={styles.brandCol}>
             <Link href="/" className={styles.logo}>
-              <span className={styles.logoGit}>Git</span>
-              <span className={styles.logoMesh}>Mesh</span>
+              <Image src="/logo.svg" alt="GitMesh Logo" width={112} height={28} className={styles.logoImage} />
             </Link>
             <p className={styles.tagline}>
               Understand any codebase through AI-powered diagrams and conversation.

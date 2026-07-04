@@ -1,145 +1,231 @@
 /* ═══════════════════════════════════════════════════════════════════
-   InteractiveDiagram — Scoped Styles
+   Premium InteractiveDiagram — Scoped Styles
    ═══════════════════════════════════════════════════════════════════ */
 
 .diagramContainer {
   display: flex;
   flex-direction: column;
-  gap: 24px;
   width: 100%;
 }
 
 .svgWrapper {
   width: 100%;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 16px 0;
   position: relative;
   overflow: hidden;
   display: flex;
   justify-content: center;
+  box-shadow: none;
+  min-height: 350px;
 }
 
 .diagramSvg {
   width: 100%;
-  max-width: 600px;
+  max-width: 860px;
   height: auto;
   overflow: visible;
 }
 
-/* ── Node Card ────────────────────────────────────────────── */
+/* ── Node Labels (Minimal Floating Style) ─────────────────── */
+.nodeWrapper {
+  overflow: visible;
+}
+
 .nodeCard {
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 4px 0;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   user-select: none;
   transition: all var(--transition-base);
-  height: 38px;
+  height: auto;
   box-sizing: border-box;
+  backdrop-filter: none;
 }
 
-.nodeCard:hover,
-.nodeCard.hovered {
-  border-color: #b01e0a;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(176, 30, 10, 0.1);
+.inputCard {}
+.outputCard {}
+
+.nodeCard:hover .cardLabel {
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(176, 30, 10, 0.4);
 }
 
-.nodeCard.highlighted {
-  border-color: rgba(176, 30, 10, 0.6);
-  box-shadow: 0 0 8px rgba(176, 30, 10, 0.08);
+.nodeCard:hover .bulletIndicator {
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
-.cardIndicator {
+.nodeCard:hover .bulletIndicatorRed {
+  box-shadow: 0 0 10px #b01e0a;
+  transform: scale(1.2);
+}
+
+/* Active (selected) state */
+.cardActive .cardLabel {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(176, 30, 10, 0.6);
+}
+
+.cardActive .bulletIndicator {
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  transform: scale(1.3);
+}
+
+.cardActive .bulletIndicatorRed {
+  box-shadow: 0 0 12px #b01e0a;
+  transform: scale(1.3);
+}
+
+.bulletIndicator {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--color-text-tertiary);
-  transition: background var(--transition-fast);
+  transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
-.nodeCard:hover .cardIndicator,
-.nodeCard.hovered .cardIndicator,
-.nodeCard.highlighted .cardIndicator {
+.bulletIndicatorRed {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: #b01e0a;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px #b01e0a;
 }
 
 .cardLabel {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-family: var(--font-mono);
   color: var(--color-text-secondary);
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.nodeCard:hover .cardLabel,
-.nodeCard.hovered .cardLabel,
-.nodeCard.highlighted .cardLabel {
-  color: #ffffff;
+/* ── Central Processing Core ───────────────────────────────── */
+.coreGroup {
+  cursor: pointer;
 }
 
-/* Badges */
-.file {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text-secondary);
+.coreGlow {
+  fill: rgba(176, 30, 10, 0.25);
+  transition: fill var(--transition-base);
 }
 
-.service {
-  background: rgba(217, 119, 6, 0.08);
-  color: var(--color-warning);
+.coreGroup:hover .coreGlow {
+  fill: rgba(176, 30, 10, 0.4);
 }
 
-.agent {
-  background: rgba(176, 30, 10, 0.08);
-  color: #b01e0a;
-}
-
-.db {
-  background: rgba(22, 163, 74, 0.08);
-  color: var(--color-success);
-}
-
-/* ── Connector Line ────────────────────────────────────────── */
-.path {
-  stroke: var(--color-border);
-  stroke-width: 1.5;
-  transition: stroke var(--transition-base), stroke-width var(--transition-base);
-}
-
-.pathActive {
+.pulsingCore {
+  fill: #b01e0a;
   stroke: #b01e0a;
-  stroke-width: 2;
-  animation: strokePulse 1.5s infinite;
+  stroke-width: 2.5;
+  transform-origin: 30px 30px;
+  animation: corePulse 3s infinite ease-in-out;
 }
 
-@keyframes strokePulse {
+.rotatingOrbit {
+  transform-origin: 30px 30px;
+  animation: orbitRotate 15s infinite linear;
+}
+
+@keyframes corePulse {
   0%, 100% {
-    stroke-opacity: 0.7;
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px #b01e0a);
   }
   50% {
-    stroke-opacity: 1;
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 10px #b01e0a);
   }
 }
 
-/* ── Info Detail Card ─────────────────────────────────────── */
+@keyframes orbitRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Connector Paths & Laser Light Pulses ──────────────────── */
+.lineLeft {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.lineRight {
+  stroke: rgba(176, 30, 10, 0.18);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+/* Glowing laser pulse beam (shoots towards right) */
+.linePulse {
+  stroke: #b01e0a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+  stroke-dasharray: 40, 200;
+  animation: shootLaser 2s infinite linear;
+  filter: drop-shadow(0 0 4px #b01e0a);
+}
+
+@keyframes shootLaser {
+  from {
+    stroke-dashoffset: 240;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Binary digits flowing from inputs to core */
+.binaryFlow {
+  font-weight: bold;
+  opacity: 0.7;
+  filter: drop-shadow(0 0 2px #b01e0a);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ── Info Overlay Card (absolute, no layout shift) ────────── */
 .infoCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  background: rgba(10, 10, 10, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(176, 30, 10, 0.2);
   border-radius: var(--radius-md);
-  padding: 16px;
-  animation: fadeIn 200ms ease-out;
+  padding: 14px 18px;
+  animation: fadeSlideUp 250ms ease-out;
+  z-index: 10;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .infoHead {
@@ -162,6 +248,16 @@
   letter-spacing: 0.03em;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
+}
+
+.badgeInput {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-secondary);
+}
+
+.badgeOutput {
+  background: rgba(176, 30, 10, 0.08);
+  color: #b01e0a;
 }
 
 .infoDesc {

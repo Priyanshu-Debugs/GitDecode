@@ -29,12 +29,10 @@
   text-decoration: none;
 }
 
-.logoGit {
-  color: #ffffff;
-}
-
-.logoMesh {
-  color: #b01e0a;
+.logoImage {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 
 /* ── Desktop Nav ──────────────────────────────────────────── */

@@ -153,12 +153,10 @@
   align-items: center;
 }
 
-.logoGit {
-  color: #ffffff;
-}
-
-.logoMesh {
-  color: #b01e0a;
+.logoImage {
+  height: 32px;
+  width: auto;
+  display: block;
 }
 
 /* Intro Text */

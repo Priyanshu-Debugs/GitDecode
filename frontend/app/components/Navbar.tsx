@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Button from "./Button";
 import styles from "./Navbar.module.css";
 
@@ -18,8 +19,7 @@ export default function Navbar() {
       <div className={styles.inner}>
         {/* Logo */}
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoGit}>Git</span>
-          <span className={styles.logoMesh}>Mesh</span>
+          <Image src="/logo.svg" alt="GitMesh Logo" width={112} height={28} priority className={styles.logoImage} />
         </Link>
 
         {/* Desktop Nav */}
