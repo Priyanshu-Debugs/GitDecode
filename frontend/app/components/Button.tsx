@@ -38,17 +38,34 @@ export default function Button({
 }: ButtonProps) {
   const baseStyles = [
     "btn",
+    "group",
     variantStyles[variant],
     sizeStyles[size],
     fullWidth ? "btn-full" : "",
     className,
   ].join(" ");
 
+  const childrenArray = React.Children.toArray(children);
+  const processedChildren = childrenArray.map((child, idx) => {
+    // If the child is an object (element) and is not a string, let's treat it as a potential icon if it's rendered at the end
+    if (React.isValidElement(child) && idx === childrenArray.length - 1 && typeof child.type !== "string") {
+      return (
+        <span
+          key={`icon-wrap-${idx}`}
+          className="ml-2 w-5 h-5 rounded-full bg-white/10 dark:bg-white/10 flex items-center justify-center transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-[1px] group-hover:bg-white/15"
+        >
+          {child}
+        </span>
+      );
+    }
+    return child;
+  });
+
   if (href) {
     return (
       <Link href={href} className={baseStyles}>
         {loading && <Spinner />}
-        {children}
+        {processedChildren}
       </Link>
     );
   }
@@ -56,7 +73,7 @@ export default function Button({
   return (
     <button className={baseStyles} disabled={disabled || loading} {...props}>
       {loading && <Spinner />}
-      {children}
+      {processedChildren}
     </button>
   );
 }

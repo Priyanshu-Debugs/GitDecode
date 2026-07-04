@@ -15,7 +15,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className={styles.navbar}>
+    <nav className={`${styles.navbar} ${mobileOpen ? styles.isOpen : ""}`}>
       <div className={styles.inner}>
         {/* Logo */}
         <Link href="/" className={styles.logo}>

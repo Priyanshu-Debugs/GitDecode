@@ -12,17 +12,20 @@ export default function SectionHeading({
   centered = false,
 }: SectionHeadingProps) {
   return (
-    <div className={`flex flex-col gap-3 ${centered ? "items-center text-center" : ""}`}>
+    <div className={`flex flex-col gap-4 ${centered ? "items-center text-center" : ""}`}>
       {tag && (
-        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[#b01e0a]">
-          {tag}
-        </span>
+        <div className="flex items-center gap-2 mb-1 select-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#b01e0a] shadow-[0_0_8px_#b01e0a] animate-pulse" />
+          <span className="text-[10px] font-semibold font-mono uppercase tracking-[0.25em] text-[#b01e0a]">
+            {tag}
+          </span>
+        </div>
       )}
-      <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white leading-tight">
+      <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white leading-tight font-display">
         {title}
       </h2>
       {subtitle && (
-        <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl leading-relaxed">
+        <p className="text-[15px] md:text-base text-[var(--color-text-secondary)] max-w-2xl leading-relaxed font-sans font-light">
           {subtitle}
         </p>
       )}

@@ -1,15 +1,12 @@
-/* ═══════════════════════════════════════════════════════════════════
-   ChatDemo — Scoped Styles
-   ═══════════════════════════════════════════════════════════════════ */
-
 .chatWindow {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: #040404;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 480px;
+  box-shadow: 0 20px 48px -16px rgba(0, 0, 0, 0.8);
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -17,9 +14,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
+  padding: 14px 18px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+  background: rgba(8, 8, 8, 0.5);
+  backdrop-filter: blur(12px);
 }
 
 .headerLeft {
@@ -34,16 +32,18 @@
 }
 
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--color-text-tertiary);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .headerTitle {
+  font-family: var(--font-display);
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text);
+  letter-spacing: 0.02em;
 }
 
 .headerRight {
@@ -53,14 +53,15 @@
 }
 
 .connectedDot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--color-success);
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
 }
 
 .connectedText {
-  font-size: 0.75rem;
+  font-size: 0.71875rem;
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
 }
@@ -69,15 +70,15 @@
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .message {
   display: flex;
-  animation: fadeIn 300ms ease-out;
+  animation: fadeInUp 400ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .userMessage {
@@ -90,23 +91,28 @@
 
 .messageBubble {
   max-width: 85%;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
   font-size: 0.8125rem;
   line-height: 1.6;
+  font-weight: 300;
 }
 
 .userMessage .messageBubble {
   background: #b01e0a;
   color: #ffffff;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 3px;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .assistantMessage .messageBubble {
-  background: var(--color-surface-elevated);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-bottom-left-radius: 4px;
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  border-bottom-left-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.01);
 }
 
 .messageText {
@@ -118,15 +124,21 @@
 .sourceTag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 3px 8px;
-  font-size: 0.6875rem;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 4px 10px;
+  font-size: 0.625rem;
   font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+}
+
+.sourceTag svg {
   color: #b01e0a;
-  background: rgba(176, 30, 10, 0.1);
-  border: 1px solid rgba(176, 30, 10, 0.2);
-  border-radius: var(--radius-sm);
+  stroke-width: 1.8px;
 }
 
 /* ── Typing Indicator ─────────────────────────────────────── */
@@ -134,16 +146,16 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 12px 16px;
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  border-bottom-left-radius: 4px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  border-bottom-left-radius: 3px;
 }
 
 .typingDot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--color-text-secondary);
   animation: bounce-dot 1.2s infinite ease-in-out;
@@ -161,21 +173,26 @@
 .inputBar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-surface);
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+  background: rgba(8, 8, 8, 0.3);
 }
 
 .input {
   flex: 1;
-  padding: 8px 12px;
+  padding: 8px 14px;
   font-size: 0.8125rem;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
   color: var(--color-text);
   outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.input:focus {
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .input:disabled {
@@ -191,22 +208,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   background: #b01e0a;
   color: #ffffff;
-  border: none;
-  border-radius: var(--radius-md);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: all var(--transition-fast);
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(176, 30, 10, 0.2);
 }
 
 .sendBtn:hover {
-  background: #8a1808;
+  background: #cb220b;
+  box-shadow: 0 6px 16px rgba(176, 30, 10, 0.35);
 }
 
 .sendBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  box-shadow: none;
 }

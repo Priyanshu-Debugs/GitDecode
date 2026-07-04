@@ -36,6 +36,27 @@ const TYPING_SPEED = 18;
 const MESSAGE_DELAY = 800;
 const TYPING_INDICATOR_DURATION = 1200;
 
+const renderFormattedText = (text: string) => {
+  const parts = text.split(/(`[^`]+`|\b[a-zA-Z0-9_]+\.[a-z]{2,3}\b|\b[a-zA-Z0-9_]+\(\))/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={index} className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-[#cb220b]">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (/\b[a-zA-Z0-9_]+\.[a-z]{2,3}\b/.test(part) || /\b[a-zA-Z0-9_]+\(\)/.test(part)) {
+      return (
+        <code key={index} className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-[#cb220b]">
+          {part}
+        </code>
+      );
+    }
+    return part;
+  });
+};
+
 export default function ChatDemo() {
   const [visibleMessages, setVisibleMessages] = useState<ChatMessage[]>([]);
   const [typingText, setTypingText] = useState("");
@@ -169,7 +190,7 @@ export default function ChatDemo() {
             }`}
           >
             <div className={styles.messageBubble}>
-              <p className={styles.messageText}>{msg.content}</p>
+              <p className={styles.messageText}>{renderFormattedText(msg.content)}</p>
               {msg.source && (
                 <span className={styles.sourceTag}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -187,7 +208,7 @@ export default function ChatDemo() {
         {isTyping && typingText && (
           <div className={`${styles.message} ${styles.assistantMessage}`}>
             <div className={styles.messageBubble}>
-              <p className={styles.messageText}>{typingText}</p>
+              <p className={styles.messageText}>{renderFormattedText(typingText)}</p>
             </div>
           </div>
         )}

@@ -5,6 +5,7 @@ import AnimatedSection from "./components/AnimatedSection";
 import ChatDemo from "./components/ChatDemo";
 import Button from "./components/Button";
 import InteractiveDiagram from "./components/InteractiveDiagram";
+import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
 import styles from "./page.module.css";
 
 /* ── Icons (inline SVGs) ─────────────────────────────────────────── */
@@ -162,7 +163,7 @@ export default function Home() {
 
         {/* ── FEATURES ──────────────────────────────────────────── */}
         <section id="features" className={`section-padding ${styles.section}`}>
-          <div className="container">
+          <div className="container mx-auto px-4">
             <AnimatedSection>
               <SectionHeading
                 tag="Features"
@@ -172,23 +173,15 @@ export default function Home() {
               />
             </AnimatedSection>
 
-            <div className={styles.featuresGrid}>
-              {features.map((feature, i) => (
-                <AnimatedSection key={feature.title} delay={i * 100} className="h-full">
-                  <div className={`${styles.featureCard} h-full`}>
-                    <div className={styles.featureIcon}>{feature.icon}</div>
-                    <h3 className={styles.featureTitle}>{feature.title}</h3>
-                    <p className={styles.featureDesc}>{feature.description}</p>
-                  </div>
-                </AnimatedSection>
-              ))}
+            <div className="mt-14">
+              <AgentBentoGrid />
             </div>
           </div>
         </section>
 
         {/* ── DIAGRAM DEMO ──────────────────────────────────────── */}
         <section id="demo-diagram" className={`section-padding ${styles.section}`}>
-          <div className="container">
+          <div className="container mx-auto px-4">
             <div className={styles.demoSplit}>
               <AnimatedSection className={styles.demoText}>
                 <SectionHeading
@@ -220,7 +213,7 @@ export default function Home() {
 
         {/* ── CHAT DEMO ─────────────────────────────────────────── */}
         <section id="demo-chat" className={`section-padding ${styles.section}`}>
-          <div className="container">
+          <div className="container mx-auto px-4">
             <div className={styles.demoSplit}>
               <AnimatedSection className={styles.demoText}>
                 <SectionHeading
@@ -239,7 +232,7 @@ export default function Home() {
 
         {/* ── HOW IT WORKS ──────────────────────────────────────── */}
         <section id="how-it-works" className={`section-padding ${styles.section}`}>
-          <div className="container">
+          <div className="container mx-auto px-4">
             <AnimatedSection>
               <SectionHeading
                 tag="How It Works"
@@ -249,17 +242,24 @@ export default function Home() {
               />
             </AnimatedSection>
 
-            <div className={styles.stepsRow}>
+            <div className={styles.stepsPipeline}>
               {steps.map((step, i) => (
-                <AnimatedSection key={step.number} delay={i * 150}>
-                  <div className={styles.step}>
-                    <div className={styles.stepNumber}>{step.number}</div>
-                    <h3 className={styles.stepTitle}>{step.title}</h3>
-                    <p className={styles.stepDesc}>{step.description}</p>
+                <AnimatedSection key={step.number} delay={i * 150} className={styles.pipelineCol}>
+                  {/* Giant elegant step number */}
+                  <div className="font-display text-5xl font-extralight select-none bg-gradient-to-b from-[#b01e0a] to-[#400802] bg-clip-text text-transparent leading-none">
+                    {step.number}
                   </div>
-                  {i < steps.length - 1 && (
-                    <div className={styles.stepConnector} />
-                  )}
+                  {/* Fine divider line */}
+                  <div className="h-[0.5px] w-full bg-gradient-to-r from-zinc-800 to-transparent my-1" />
+                  
+                  <div className="flex flex-col gap-3">
+                    <h3 className="font-display text-[1.125rem] font-semibold text-white leading-tight">
+                      {step.title}
+                    </h3>
+                    <p className="font-sans text-[14px] leading-relaxed text-zinc-400 font-light">
+                      {step.description}
+                    </p>
+                  </div>
                 </AnimatedSection>
               ))}
             </div>
@@ -268,7 +268,7 @@ export default function Home() {
 
         {/* ── CTA BANNER ────────────────────────────────────────── */}
         <section className={styles.ctaSection}>
-          <div className="container">
+          <div className="container mx-auto px-4">
             <AnimatedSection className={styles.ctaInner}>
               <h2 className={styles.ctaTitle}>
                 Ready to understand your codebase?

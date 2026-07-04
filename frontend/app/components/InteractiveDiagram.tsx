@@ -96,6 +96,7 @@ const OUTPUT_NODES: Node[] = [
 export default function InteractiveDiagram() {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [pulseTrigger, setPulseTrigger] = useState(0);
+  const [coreAnimating, setCoreAnimating] = useState(false);
 
   // Trigger a central pulse and scrambler refresh every 8 seconds
   useEffect(() => {
@@ -200,7 +201,15 @@ export default function InteractiveDiagram() {
           </text>
 
           {/* CENTRAL CORE PROCESSING NODE (Glowing hexagon brand icon) */}
-          <g className={styles.coreGroup} transform="translate(380, 170)">
+          <g
+            className={`${styles.coreGroup} ${coreAnimating ? styles.coreClickAnimate : ""}`}
+            transform="translate(380, 170)"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCoreAnimating(true);
+            }}
+            onAnimationEnd={() => setCoreAnimating(false)}
+          >
             <circle cx="30" cy="30" r="38" className={styles.coreGlow} filter="url(#glow-red)" />
             <path
               d="M 30 10 L 47 20 L 47 40 L 30 50 L 13 40 L 13 20 Z"

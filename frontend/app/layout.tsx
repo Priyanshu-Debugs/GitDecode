@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
 
@@ -43,9 +47,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${geistMono.variable} dark`}
+      className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} dark`}
     >
-      <body>{children}</body>
+      <body>
+        <div className="noise-overlay" />
+        {children}
+      </body>
     </html>
   );
 }
