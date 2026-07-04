@@ -2,6 +2,71 @@
    Landing Page — Scoped Styles
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Local Premium Easing & Scoped Animation Helpers */
+.hero, .featureCard, .step, .stepNumber {
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes titleReveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes ambientGlowPulse {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.6;
+  }
+  33% {
+    transform: translate(30px, -40px) scale(1.1);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+@keyframes lightSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes arrowPulse {
+  0%, 100% {
+    transform: translateY(-50%) translateX(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-50%) translateX(4px);
+    opacity: 1;
+  }
+}
+
+@keyframes arrowPulseVertical {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateX(-50%) translateY(4px);
+    opacity: 1;
+  }
+}
+
 /* ── Section Base ─────────────────────────────────────────── */
 .section {
   border-bottom: 1px solid var(--color-border);
@@ -15,6 +80,37 @@
   justify-content: center;
   position: relative;
   border-bottom: 1px solid var(--color-border);
+  background-image: 
+    radial-gradient(at 50% 0%, rgba(176, 30, 10, 0.15) 0px, transparent 50%),
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+  background-size: 100% 100%, 32px 32px;
+  overflow: hidden;
+}
+
+.glowBlob1 {
+  position: absolute;
+  top: 15%;
+  left: 5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(176, 30, 10, 0.07) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  animation: ambientGlowPulse 15s infinite ease-in-out;
+  z-index: 1;
+}
+
+.glowBlob2 {
+  position: absolute;
+  bottom: 10%;
+  right: 5%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(176, 30, 10, 0.05) 0%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  animation: ambientGlowPulse 20s infinite ease-in-out reverse;
+  z-index: 1;
 }
 
 .heroInner {
@@ -25,6 +121,8 @@
   gap: 24px;
   padding: 48px 24px;
   max-width: 800px;
+  position: relative;
+  z-index: 2;
 }
 
 .heroBadge {
@@ -37,7 +135,10 @@
   border: 1px solid rgba(176, 30, 10, 0.3);
   border-radius: var(--radius-full);
   letter-spacing: 0.03em;
-  animation: fadeInUp 600ms ease-out;
+  background: rgba(176, 30, 10, 0.03);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  animation: titleReveal 800ms var(--ease-premium) forwards;
 }
 
 .heroTitle {
@@ -46,7 +147,8 @@
   line-height: 1.1;
   letter-spacing: -0.03em;
   color: var(--color-white);
-  animation: fadeInUp 600ms ease-out 100ms both;
+  opacity: 0;
+  animation: titleReveal 1000ms var(--ease-premium) 150ms forwards;
 }
 
 .heroAccent {
@@ -67,7 +169,7 @@
 .heroUnderline path {
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  animation: drawScribble 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+  animation: drawScribble 1.5s cubic-bezier(0.16, 1, 0.3, 1) 900ms forwards;
 }
 
 @keyframes drawScribble {
@@ -81,20 +183,23 @@
   line-height: 1.7;
   color: var(--color-text-secondary);
   max-width: 600px;
-  animation: fadeInUp 600ms ease-out 200ms both;
+  opacity: 0;
+  animation: titleReveal 1000ms var(--ease-premium) 300ms forwards;
 }
 
 .heroCtas {
   display: flex;
   gap: 12px;
   margin-top: 8px;
-  animation: fadeInUp 600ms ease-out 300ms both;
+  opacity: 0;
+  animation: titleReveal 1000ms var(--ease-premium) 450ms forwards;
 }
 
 .heroTrust {
   font-size: 0.8125rem;
   color: var(--color-text-tertiary);
-  animation: fadeInUp 600ms ease-out 400ms both;
+  opacity: 0;
+  animation: titleReveal 1000ms var(--ease-premium) 600ms forwards;
 }
 
 .scrollHint {
@@ -122,11 +227,39 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: border-color var(--transition-base);
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .featureCard:hover {
-  border-color: #b01e0a;
+  border-color: rgba(176, 30, 10, 0.4);
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(176, 30, 10, 0.08);
+}
+
+.featureCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  background-size: 200% 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.featureCard:hover::before {
+  opacity: 1;
+  animation: lightSweep 1.5s var(--ease-premium);
 }
 
 .featureIcon {
@@ -298,7 +431,7 @@
 .stepsRow {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0;
+  gap: 40px;
   margin-top: 48px;
   position: relative;
 }
@@ -309,7 +442,16 @@
   align-items: center;
   text-align: center;
   gap: 12px;
-  padding: 0 24px;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  transition: all var(--transition-base);
+}
+
+.step:hover {
+  transform: translateY(-2px);
 }
 
 .stepNumber {
@@ -324,6 +466,12 @@
   background: #b01e0a;
   border-radius: 50%;
   font-family: var(--font-mono);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.step:hover .stepNumber {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(176, 30, 10, 0.6);
 }
 
 .stepTitle {
@@ -337,6 +485,52 @@
   line-height: 1.6;
   color: var(--color-text-secondary);
   max-width: 280px;
+}
+
+/* Process Arrow Indicators via Pseudoelements */
+@media (min-width: 769px) {
+  .step:not(:last-child) {
+    position: relative;
+  }
+  
+  .step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 40px; /* Aligned vertically with center of the 48px stepNumber (including padding) */
+    right: -32px;
+    width: 24px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b01e0a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5l7 7-7 7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+    transform: translateY(-50%);
+    animation: arrowPulse 2s infinite ease-in-out;
+  }
+}
+
+@media (max-width: 768px) {
+  .stepsRow {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+
+  .step:not(:last-child) {
+    position: relative;
+  }
+  
+  .step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    width: 16px;
+    height: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b01e0a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M5 12l7 7 7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+    transform: translateX(-50%);
+    animation: arrowPulseVertical 2s infinite ease-in-out;
+  }
 }
 
 .stepConnector {

@@ -114,6 +114,8 @@ export default function Home() {
       <main>
         {/* ── HERO ──────────────────────────────────────────────── */}
         <section className={styles.hero}>
+          <div className={styles.glowBlob1} />
+          <div className={styles.glowBlob2} />
           <div className={styles.heroInner}>
 
             <h1 className={styles.heroTitle}>

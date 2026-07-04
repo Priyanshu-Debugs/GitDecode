@@ -42,8 +42,8 @@ export default function AnimatedSection({
       className={`${className}`}
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(16px)",
-        transition: `opacity 500ms ease-out ${delay}ms, transform 500ms ease-out ${delay}ms`,
+        transform: isVisible ? "translateY(0)" : "translateY(12px)",
+        transition: `opacity 800ms var(--ease-premium) ${delay}ms, transform 800ms var(--ease-premium) ${delay}ms`,
       }}
     >
       {children}
