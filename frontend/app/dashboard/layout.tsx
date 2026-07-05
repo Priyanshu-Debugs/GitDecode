@@ -144,9 +144,12 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     setSyncError("");
     setSyncLoading(true);
     try {
-      await syncRepo(url.trim(), branch.trim() || "main");
+      const res = await syncRepo(url.trim(), branch.trim() || "main");
       setRepoUrlInput("");
       fetchLayoutRepos();
+      if (res && res.repo_id) {
+        router.push(`/dashboard?repo_id=${res.repo_id}`);
+      }
     } catch (err) {
       setSyncError(err instanceof Error ? err.message : "Sync requested failed.");
     } finally {
@@ -369,83 +372,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Sync Pipeline Queuing Progress */}
-          {!collapsed && activeSyncs.length > 0 && (
-            <div className={styles.sidebarQueueSection} style={{ border: "none", padding: 0, background: "transparent" }}>
-              <div className={styles.sidebarQueueHeader}>Pipelines Queue</div>
-              <div className={styles.sidebarQueueList}>
-                {activeSyncs.map((repo) => {
-                  const name = repo.github_url.split("/").pop() || "repo";
-                  const detailed = repo.detailed_status || "queued";
 
-                  const steps = [
-                    { key: "cloning", label: "Cloning" },
-                    { key: "parsing", label: "Parsing" },
-                    { key: "embedding", label: "Vectorizing" },
-                    { key: "saving", label: "Graphing" },
-                    { key: "diagrams", label: "Diagrams" },
-                  ];
-
-                  return (
-                    <div key={repo.id} className={styles.sidebarQueueCard}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span className={styles.sidebarQueueName} title={repo.github_url}>{name}</span>
-                        <button
-                          className={styles.sidebarQueueCancel}
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (confirm(`Cancel/Delete sync for ${name}?`)) {
-                              await deleteRepo(repo.id);
-                              fetchLayoutRepos();
-                            }
-                          }}
-                          title="Cancel Ingestion"
-                        >
-                          ✕
-                        </button>
-                      </div>
-
-                      {repo.status === "failed" ? (
-                        <div className={styles.sidebarQueueError} title={repo.error_message}>
-                          Failed: {repo.error_message || "Unknown error."}
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                          {steps.map((step) => {
-                            const stepOrder = ["cloning", "parsing", "embedding", "saving", "diagrams", "completed"];
-                            const currentIdx = stepOrder.indexOf(detailed);
-                            const stepIdx = stepOrder.indexOf(step.key);
-
-                            let state = "pending";
-                            if (stepIdx < currentIdx) state = "done";
-                            else if (stepIdx === currentIdx) state = "active";
-
-                            return (
-                              <div
-                                key={step.key}
-                                className={`${styles.sidebarQueueStep} ${
-                                  state === "active" ? styles.sidebarQueueStepActive : state === "done" ? styles.sidebarQueueStepDone : ""
-                                }`}
-                              >
-                                {state === "done" ? (
-                                  <span style={{ color: "var(--color-success)", marginRight: 4 }}>✓</span>
-                                ) : state === "active" ? (
-                                  <div className={styles.loadingSpinner} style={{ width: 6, height: 6, borderWidth: 1, marginRight: 4 }} />
-                                ) : (
-                                  <span style={{ width: 6, height: 6, borderRadius: "50%", border: "1px solid var(--color-border)", marginRight: 4, display: "inline-block" }} />
-                                )}
-                                <span>{step.label}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </nav>
 
         {/* Sidebar Footer User profile */}

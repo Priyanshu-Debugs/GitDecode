@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { MermaidDiagram } from "@/components/ui/MermaidDiagram";
 import { ChatMarkdown } from "@/components/ui/ChatMarkdown";
 import { useAuth } from "@/app/lib/useAuth";
@@ -158,6 +158,7 @@ function computeSpringLayout(nodes: any[], edges: any[]): LayoutNode[] {
    ═════════════════════════════════════════════════════════════════════ */
 function DashboardContent() {
   const { user } = useAuth(true);
+  const router = useRouter();
 
   // Read Selection from URL params
   const searchParams = useSearchParams();
@@ -513,11 +514,36 @@ function DashboardContent() {
               }
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span className={`${styles.statusBadge} ${activeRepo.status === "failed" ? styles.statusFailed : styles.statusProcessing}`}>
               <span className={`${styles.statusDot} ${activeRepo.status === "failed" ? styles.statusDotFailed : styles.statusDotProcessing}`} />
               {activeRepo.status === "failed" ? "Failed" : activeRepo.detailed_status || "Processing"}
             </span>
+            <button
+              onClick={async () => {
+                if (confirm(`Cancel and delete ingestion for ${activeRepo.github_url.split("/").pop()}?`)) {
+                  try {
+                    await deleteRepo(activeRepo.id);
+                    router.push("/dashboard");
+                  } catch (err) {
+                    console.error("Failed to cancel sync", err);
+                  }
+                }
+              }}
+              style={{
+                fontSize: "0.75rem",
+                height: 28,
+                padding: "0 12px",
+                color: "#ef4444",
+                background: "rgba(239, 68, 68, 0.05)",
+                border: "0.5px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "var(--radius-sm)",
+                cursor: "pointer",
+                transition: "all var(--transition-fast)",
+              }}
+            >
+              Cancel Ingestion
+            </button>
           </div>
         </div>
 
@@ -1122,19 +1148,18 @@ function DashboardContent() {
             </div>
           </>
         ) : (
-          /* Empty Workspace Welcome Panel */
-          <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center", alignItems: "center", textAlign: "center", padding: 40, background: "radial-gradient(circle at center, rgba(176,30,10,0.03) 0%, transparent 70%)" }}>
-            <div style={{ marginBottom: 24, padding: 24, border: "0.5px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)", borderRadius: "50%" }}>
-              <div className={styles.statusDotProcessing} style={{ width: 16, height: 16 }} />
+          /* Empty Workspace Welcome Panel with AgentBentoGrid */
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", padding: "40px", gap: "24px", width: "100%" }}>
+            <div style={{ textAlign: "center", maxWidth: "600px", margin: "0 auto 12px" }}>
+              <h1 style={{ fontFamily: "var(--font-display)", color: "var(--color-white)", fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 8 }}>
+                GitMesh Workspace
+              </h1>
+              <p style={{ fontSize: "0.875rem", color: "var(--color-text-secondary)", lineHeight: 1.6, fontWeight: 300 }}>
+                Construct codebase dependency graphs, traverse function calls, analyze blast radiuses, and ask context-grounded questions about your repositories. Select a repository from the sidebar to begin.
+              </p>
             </div>
-            <h1 style={{ fontFamily: "var(--font-display)", color: "var(--color-white)", fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 12 }}>
-              GitMesh Workspace
-            </h1>
-            <p style={{ fontSize: "0.875rem", color: "var(--color-text-secondary)", maxWidth: 380, lineHeight: 1.6, fontWeight: 300 }}>
-              Construct codebase dependency graphs, traverse function calls, analyze blast radiuses, and ask context-grounded questions about your repositories.
-            </p>
-            <div style={{ marginTop: 24, padding: "8px 16px", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-full)", fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--color-text-tertiary)" }}>
-              SELECT OR IMPORT A REPOSITORY TO BEGIN
+            <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+              <AgentBentoGrid />
             </div>
           </div>
         )}

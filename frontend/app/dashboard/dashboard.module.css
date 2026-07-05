@@ -1227,6 +1227,16 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.sidebarQueueCard:hover {
+  border-color: var(--color-border-hover);
+  background: rgba(255, 255, 255, 0.02);
+}
+.sidebarQueueCardActive {
+  border-color: rgba(176, 30, 10, 0.5) !important;
+  background: rgba(176, 30, 10, 0.02) !important;
 }
 .sidebarQueueName {
   font-size: 0.75rem;
