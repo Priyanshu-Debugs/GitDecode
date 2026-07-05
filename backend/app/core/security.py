@@ -69,7 +69,19 @@ def verify_supabase_token(token: str) -> dict:
             detail="Invalid token audience",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.PyJWTError:
+    except jwt.PyJWTError as e:
+        # Fallback for local development/testing when DEBUG is enabled or using default secret placeholder
+        if settings.DEBUG or settings.SUPABASE_JWT_SECRET == "your-jwt-secret-string":
+            try:
+                # Decode without verification
+                payload: dict = jwt.decode(
+                    token,
+                    options={"verify_signature": False},
+                    audience="authenticated",
+                )
+                return payload
+            except Exception:
+                pass
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

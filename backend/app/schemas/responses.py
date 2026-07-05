@@ -98,3 +98,98 @@ class ErrorResponse(BaseModel):
 
     detail: str
     error_code: str | None = None
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  Dashboard Response Schemas
+# ══════════════════════════════════════════════════════════════════════
+
+
+class RepoListItem(BaseModel):
+    """A single repository in a list response.
+
+    Attributes:
+        id: The repository UUID.
+        github_url: The GitHub repository URL.
+        branch: The synced branch.
+        status: Current pipeline status.
+        created_at: When the repo was first synced.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    github_url: str
+    branch: str
+    status: Literal["queued", "processing", "completed", "failed"]
+    created_at: datetime
+
+
+class GraphStatsResponse(BaseModel):
+    """Aggregate node and edge counts for a repository's knowledge graph.
+
+    Attributes:
+        files: Number of File nodes.
+        classes: Number of Class nodes.
+        functions: Number of Function nodes.
+        routes: Number of Route nodes.
+        edges: Total number of relationships.
+    """
+
+    files: int = 0
+    classes: int = 0
+    functions: int = 0
+    routes: int = 0
+    edges: int = 0
+
+
+class GraphNode(BaseModel):
+    """A node in the dependency graph visualization."""
+
+    id: str
+    label: str
+    language: str | None = None
+    size_bytes: int | None = None
+
+
+class GraphEdge(BaseModel):
+    """An edge in the dependency graph visualization."""
+
+    source: str
+    target: str
+
+
+class DependencyGraphResponse(BaseModel):
+    """Full dependency graph for visualization.
+
+    Attributes:
+        nodes: List of file nodes.
+        edges: List of import edges.
+    """
+
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class BlastRadiusNode(BaseModel):
+    """A node affected by a code change."""
+
+    type: str
+    name: str | None = None
+    file_path: str | None = None
+
+
+class BlastRadiusResponse(BaseModel):
+    """Blast radius analysis result.
+
+    Attributes:
+        target: The file being changed.
+        affected_files: List of downstream file paths.
+        affected_nodes: Detailed list of affected nodes.
+        depth: Traversal depth used.
+    """
+
+    target: str
+    affected_files: list[str]
+    affected_nodes: list[BlastRadiusNode]
+    depth: int = 3

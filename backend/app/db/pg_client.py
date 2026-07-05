@@ -127,6 +127,47 @@ class SupabasePGClient:
         )
         return response.data
 
+    async def get_user_repos(
+        self,
+        user_id: str,
+    ) -> list[dict[str, Any]]:
+        """Fetch all repositories for a user, ordered by most recent first.
+
+        Args:
+            user_id: The owner's user UUID.
+
+        Returns:
+            List of repo row dicts.
+        """
+        response = (
+            self._client.table("repos")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return response.data
+
+    async def delete_repo(
+        self,
+        repo_id: str,
+        user_id: str,
+    ) -> None:
+        """Delete a repository record.
+
+        Args:
+            repo_id: The repository UUID.
+            user_id: The owner's user UUID (for RLS filtering).
+        """
+        (
+            self._client.table("repos")
+            .delete()
+            .eq("id", repo_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        logger.info("Deleted repo %s for user %s", repo_id, user_id)
+
     # ══════════════════════════════════════════════════════════════════════
     #  Vector Chunks (pgvector)
     # ══════════════════════════════════════════════════════════════════════

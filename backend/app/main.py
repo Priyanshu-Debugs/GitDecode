@@ -28,6 +28,7 @@ from app.db.neo4j_client import Neo4jClient
 from app.db.pg_client import SupabasePGClient
 from app.api.dependencies import set_neo4j_client, set_pg_client
 from app.api.routes.repos import router as repos_router
+from app.api.routes.chat import router as chat_router
 
 # ── Logging ──────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -111,6 +112,7 @@ app.add_middleware(
 # ── Router Registration ─────────────────────────────────────────────
 
 app.include_router(repos_router, prefix=settings.API_V1_PREFIX)
+app.include_router(chat_router, prefix=settings.API_V1_PREFIX)
 
 # ── Inngest Event Server ────────────────────────────────────────────
 import inngest.fast_api

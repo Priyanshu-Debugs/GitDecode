@@ -5,19 +5,32 @@ Endpoints for repository sync/ingestion management.
 
 Endpoints:
     POST /api/v1/repos/sync       — Initiate a repo ingestion pipeline
+    GET  /api/v1/repos             — List all repos for the authenticated user
     GET  /api/v1/repos/{id}/status — Check ingestion status
+    GET  /api/v1/repos/{id}/graph-stats — Get graph statistics
+    GET  /api/v1/repos/{id}/dependency-graph — Get dependency graph data
+    GET  /api/v1/repos/{id}/blast-radius — Get blast radius analysis
+    DELETE /api/v1/repos/{id}      — Delete a repo and its data
 """
 
 from datetime import datetime, timezone
 from uuid import UUID
 
 import inngest
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
+from app.api.dependencies import require_auth, get_pg, get_neo4j, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
+from app.db.neo4j_client import Neo4jClient
 from app.schemas.requests import RepoSyncRequest
-from app.schemas.responses import RepoSyncResponse, ErrorResponse
+from app.schemas.responses import (
+    RepoSyncResponse,
+    RepoListItem,
+    GraphStatsResponse,
+    DependencyGraphResponse,
+    BlastRadiusResponse,
+    ErrorResponse,
+)
 
 router = APIRouter(
     prefix="/repos",
@@ -86,6 +99,21 @@ async def sync_repo(
 
 
 @router.get(
+    "",
+    response_model=list[RepoListItem],
+    summary="List all repositories",
+    description="Returns all repositories for the authenticated user, ordered by most recent first.",
+)
+async def list_repos(
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> list[RepoListItem]:
+    """List all repositories for the authenticated user."""
+    repos = await pg.get_user_repos(user_id=user.id)
+    return [RepoListItem(**row) for row in repos]
+
+
+@router.get(
     "/{repo_id}/status",
     response_model=RepoSyncResponse,
     summary="Get repository sync status",
@@ -117,3 +145,119 @@ async def get_repo_status(
         message=f"Repository sync status: {repo_row['status']}",
         queued_at=repo_row["created_at"],
     )
+
+
+@router.get(
+    "/{repo_id}/graph-stats",
+    response_model=GraphStatsResponse,
+    summary="Get graph statistics",
+    description="Returns aggregate node/edge counts from the knowledge graph.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_graph_stats(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> GraphStatsResponse:
+    """Get knowledge graph statistics for a repository."""
+    # Verify ownership
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+
+    stats = await neo4j.get_graph_stats(repo_id=str(repo_id))
+    return GraphStatsResponse(**stats)
+
+
+@router.get(
+    "/{repo_id}/dependency-graph",
+    response_model=DependencyGraphResponse,
+    summary="Get dependency graph",
+    description="Returns file nodes and import edges for visualization.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_dependency_graph(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> DependencyGraphResponse:
+    """Get the dependency graph for visualization."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+
+    graph_data = await neo4j.get_dependency_graph(repo_id=str(repo_id))
+    return DependencyGraphResponse(**graph_data)
+
+
+@router.get(
+    "/{repo_id}/blast-radius",
+    response_model=BlastRadiusResponse,
+    summary="Get blast radius analysis",
+    description="Analyzes the downstream impact of changing a specific file.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_blast_radius(
+    repo_id: UUID,
+    file_path: str = Query(..., description="Path of the file to analyze"),
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> BlastRadiusResponse:
+    """Get the blast radius for a specific file."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+
+    result = await neo4j.get_blast_radius(
+        repo_id=str(repo_id),
+        file_path=file_path,
+    )
+    return BlastRadiusResponse(**result)
+
+
+@router.delete(
+    "/{repo_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a repository",
+    description="Deletes a repository and all associated graph data and vector chunks.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def delete_repo(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> None:
+    """Delete a repository and all its associated data."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+
+    # Delete vector chunks, graph data, then the repo record
+    await pg.delete_repo_chunks(repo_id=str(repo_id), user_id=user.id)
+    await neo4j.delete_repo_graph(repo_id=str(repo_id))
+    await pg.delete_repo(repo_id=str(repo_id), user_id=user.id)
+

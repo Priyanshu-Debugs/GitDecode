@@ -477,6 +477,165 @@ class Neo4jClient:
 
     # ── Internal Helpers ─────────────────────────────────────────────────
 
+    # ── Dashboard Query Operations ───────────────────────────────────────
+
+    async def get_graph_stats(self, repo_id: str) -> dict[str, Any]:
+        """Get aggregate counts of all node types and edges for a repository.
+
+        Args:
+            repo_id: The repository identifier.
+
+        Returns:
+            Dict with keys: files, classes, functions, routes, edges.
+        """
+        cypher = """
+        MATCH (n {repo_id: $repo_id})
+        WITH
+          count(CASE WHEN 'File' IN labels(n) THEN 1 END) AS files,
+          count(CASE WHEN 'Class' IN labels(n) THEN 1 END) AS classes,
+          count(CASE WHEN 'Function' IN labels(n) THEN 1 END) AS functions,
+          count(CASE WHEN 'Route' IN labels(n) THEN 1 END) AS routes
+        OPTIONAL MATCH ()-[r]->() WHERE exists { MATCH (s {repo_id: $repo_id})-[r]->() }
+        RETURN files, classes, functions, routes, count(r) AS edges
+        """
+        # Simpler approach with two queries for reliability
+        node_cypher = """
+        MATCH (n {repo_id: $repo_id})
+        RETURN
+          count(CASE WHEN 'File' IN labels(n) THEN 1 END) AS files,
+          count(CASE WHEN 'Class' IN labels(n) THEN 1 END) AS classes,
+          count(CASE WHEN 'Function' IN labels(n) THEN 1 END) AS functions,
+          count(CASE WHEN 'Route' IN labels(n) THEN 1 END) AS routes
+        """
+        edge_cypher = """
+        MATCH (a {repo_id: $repo_id})-[r]->(b {repo_id: $repo_id})
+        RETURN count(r) AS edges
+        """
+
+        async def work(tx):
+            res = await tx.run(node_cypher, repo_id=repo_id)
+            record = await res.single()
+            node_stats = record.data() if record else {"files": 0, "classes": 0, "functions": 0, "routes": 0}
+
+            res2 = await tx.run(edge_cypher, repo_id=repo_id)
+            record2 = await res2.single()
+            edge_count = record2["edges"] if record2 else 0
+
+            return {**node_stats, "edges": edge_count}
+
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
+
+    async def get_dependency_graph(
+        self, repo_id: str
+    ) -> dict[str, Any]:
+        """Get File nodes and IMPORTS edges for the dependency graph visualization.
+
+        Args:
+            repo_id: The repository identifier.
+
+        Returns:
+            Dict with ``nodes`` (list of file dicts) and ``edges``
+            (list of {source, target} dicts).
+        """
+        nodes_cypher = """
+        MATCH (f:File {repo_id: $repo_id})
+        RETURN f.path AS id, f.path AS label, f.language AS language,
+               f.size_bytes AS size_bytes
+        ORDER BY f.path
+        """
+        edges_cypher = """
+        MATCH (a:File {repo_id: $repo_id})-[:IMPORTS]->(b:File {repo_id: $repo_id})
+        RETURN a.path AS source, b.path AS target
+        """
+
+        async def work(tx):
+            res = await tx.run(nodes_cypher, repo_id=repo_id)
+            nodes = [record.data() async for record in res]
+
+            res2 = await tx.run(edges_cypher, repo_id=repo_id)
+            edges = [record.data() async for record in res2]
+
+            return {"nodes": nodes, "edges": edges}
+
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
+
+    async def get_blast_radius(
+        self,
+        repo_id: str,
+        file_path: str,
+        max_depth: int = 3,
+    ) -> dict[str, Any]:
+        """Traverse the graph to find all downstream-affected nodes when a file changes.
+
+        Uses multi-hop traversal across IMPORTS, CONTAINS, CALLS, and HAS_METHOD edges.
+
+        Args:
+            repo_id: The repository identifier.
+            file_path: Path of the file being changed.
+            max_depth: Maximum traversal depth (default 3).
+
+        Returns:
+            Dict with ``target`` (the source file), ``affected_files``
+            (list of file paths), and ``affected_nodes`` (list of
+            {type, name, file_path} dicts).
+        """
+        cypher = """
+        MATCH (source:File {repo_id: $repo_id, path: $file_path})
+        CALL apoc.path.subgraphNodes(source, {
+            relationshipFilter: "IMPORTS>|CONTAINS>|CALLS>|HAS_METHOD>",
+            minLevel: 1,
+            maxLevel: $max_depth,
+            labelFilter: "+File|+Class|+Function|+Route"
+        }) YIELD node
+        RETURN labels(node) AS labels, node.path AS path,
+               node.name AS name, node.file_path AS file_path
+        """
+        # Fallback: simpler multi-hop query if APOC is not available
+        fallback_cypher = """
+        MATCH (source:File {repo_id: $repo_id, path: $file_path})
+              <-[:IMPORTS*1..3]-(dependent:File {repo_id: $repo_id})
+        RETURN DISTINCT dependent.path AS path, 'File' AS type, null AS name,
+               dependent.path AS file_path
+        """
+
+        async def work(tx):
+            try:
+                res = await tx.run(cypher, repo_id=repo_id,
+                                   file_path=file_path, max_depth=max_depth)
+                records = [record.data() async for record in res]
+            except Exception:
+                # Fallback if APOC not installed
+                res = await tx.run(fallback_cypher, repo_id=repo_id,
+                                   file_path=file_path)
+                records = [record.data() async for record in res]
+
+            affected_files = set()
+            affected_nodes = []
+            for r in records:
+                fp = r.get("path") or r.get("file_path")
+                if fp:
+                    affected_files.add(fp)
+                node_type = r.get("type") or (r["labels"][0] if r.get("labels") else "unknown")
+                affected_nodes.append({
+                    "type": node_type,
+                    "name": r.get("name"),
+                    "file_path": fp,
+                })
+
+            return {
+                "target": file_path,
+                "affected_files": sorted(affected_files),
+                "affected_nodes": affected_nodes,
+                "depth": max_depth,
+            }
+
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
+
+    # ── Internal Helpers ─────────────────────────────────────────────────
+
     async def _execute_write_single(self, cypher: str, **params: Any) -> str:
         """Execute a write query and return the ``eid`` from the first record."""
         async def work(tx):
