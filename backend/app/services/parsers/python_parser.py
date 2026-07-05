@@ -345,7 +345,8 @@ def parse_python_file(
                 "callee_name": c["callee"],
                 "callee_file": file_path,  # Local file calls, external calls resolved during post-processing
                 "line": c["line"]
-            }
+            },
+            {}
         ))
 
     graph_data = {

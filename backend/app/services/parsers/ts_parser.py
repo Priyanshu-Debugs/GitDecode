@@ -426,7 +426,8 @@ def parse_ts_file(
                 "callee_name": c["callee"],
                 "callee_file": file_path,
                 "line": c["line"]
-            }
+            },
+            {}
         ))
 
     graph_data = {

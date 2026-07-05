@@ -244,7 +244,7 @@ class Neo4jClient:
                 node (must match the MERGE keys of the child's label).
         """
         # Build the child MATCH clause dynamically based on the identifier keys
-        match_props = ", ".join(
+        match_props = " AND ".join(
             f"child.{k} = ${k}" for k in child_identifier.keys()
         )
         cypher = f"""

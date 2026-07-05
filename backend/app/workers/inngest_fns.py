@@ -180,18 +180,37 @@ async def sync_github_repository(
                 temp_dir,
             ]
             
-            def run_git_clone():
+            def run_git_clone(git_cmd):
                 return subprocess.run(
-                    cmd,
+                    git_cmd,
                     capture_output=True,
                 )
 
-            result = await asyncio.to_thread(run_git_clone)
+            result = await asyncio.to_thread(run_git_clone, cmd)
             if result.returncode != 0:
-                stderr_text = result.stderr.decode("utf-8", errors="ignore")
-                raise RuntimeError(
-                    f"Git clone failed: {stderr_text}"
+                # If it failed to clone the specified branch, try falling back to the default branch
+                logger.warning(
+                    "Failed to clone branch '%s'. Falling back to repository's default branch...",
+                    branch
                 )
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                os.makedirs(temp_dir, exist_ok=True)
+
+                fallback_cmd = [
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    repo_url,
+                    temp_dir,
+                ]
+                result = await asyncio.to_thread(run_git_clone, fallback_cmd)
+                if result.returncode != 0:
+                    stderr_text = result.stderr.decode("utf-8", errors="ignore")
+                    raise RuntimeError(
+                        f"Git clone failed: {stderr_text}"
+                    )
             return temp_dir
 
         temp_dir = await step.run("clone_repo", clone_repo_step)

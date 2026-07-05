@@ -75,7 +75,7 @@ class HuggingFaceEmbeddingsClient:
         if not texts:
             return []
 
-        url = "https://api-inference.huggingface.co/pipeline/feature-extraction/nomic-ai/nomic-embed-text-v1.5"
+        url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-mpnet-base-v2/pipeline/feature-extraction"
         
         # Limit attempts to avoid infinite loops, but ensure all keys are tried
         max_attempts = max(5, len(self.keys) * 2)
