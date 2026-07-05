@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 import {
   getRepoStatus,
   getGraphStats,
@@ -368,7 +369,11 @@ export default function RepoDetailPage() {
                     : styles.chatMessageAssistant
                 }`}
               >
-                {msg.content}
+                {msg.role === "user" ? (
+                  msg.content
+                ) : (
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                )}
               </div>
             ))}
             {chatLoading && (

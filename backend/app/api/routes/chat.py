@@ -91,6 +91,16 @@ async def send_message(
         ai_response = result["messages"][-1].content
         if hasattr(ai_response, "content"):
             ai_response = ai_response.content
+            
+        # Parse list into string if Gemini returned structured blocks
+        if isinstance(ai_response, list):
+            extracted_text = ""
+            for block in ai_response:
+                if isinstance(block, dict) and "text" in block:
+                    extracted_text += block["text"]
+                elif isinstance(block, str):
+                    extracted_text += block
+            ai_response = extracted_text
     except Exception as e:
         logger.exception("Agent pipeline failed: %s", str(e))
         ai_response = (

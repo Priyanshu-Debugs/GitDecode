@@ -10,4 +10,4 @@ class AgentState(TypedDict):
     user_query: str
     repo_id: str
     user_id: str
-    routing_decision: Optional[Literal["VISUALIZE", "QA", "IMPACT", "GUARDRAIL"]]
+    routing_decision: Optional[Literal["VISUALIZE", "QA", "IMPACT", "GUARDRAIL", "REPO_SUMMARY"]]

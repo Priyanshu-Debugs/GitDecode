@@ -211,6 +211,7 @@
   font-size: 0.8125rem;
   line-height: 1.6;
   color: var(--color-text);
+  white-space: pre-wrap;
 }
 
 .chatMessageUser {
@@ -223,6 +224,46 @@
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.04);
   border: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+
+.chatMessageAssistant p {
+  margin-bottom: 0.75rem;
+}
+
+.chatMessageAssistant p:last-child {
+  margin-bottom: 0;
+}
+
+.chatMessageAssistant h2,
+.chatMessageAssistant h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-white);
+}
+
+.chatMessageAssistant h2 {
+  font-size: 1.125rem;
+}
+
+.chatMessageAssistant h3 {
+  font-size: 1rem;
+}
+
+.chatMessageAssistant ul,
+.chatMessageAssistant ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.chatMessageAssistant li {
+  margin-bottom: 0.25rem;
+}
+
+.chatMessageAssistant strong {
+  font-weight: 600;
+  color: var(--color-white);
 }
 
 .chatInputArea {

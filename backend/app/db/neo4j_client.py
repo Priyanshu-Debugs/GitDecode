@@ -634,6 +634,38 @@ class Neo4jClient:
         async with self._driver.session() as session:
             return await session.execute_read(work)
 
+    async def get_repo_summary(self, repo_id: str) -> dict[str, Any]:
+        """Fetch a high-level summary of the repository structure from Neo4j."""
+        cypher = """
+        MATCH (f:File {repo_id: $repo_id})
+        WITH f, f.language AS language
+        ORDER BY f.path ASC
+        
+        WITH language, count(f) AS file_count, collect(f.path)[0..25] AS sample_files
+        WITH collect({language: language, count: file_count, sample_files: sample_files}) AS languages
+        
+        OPTIONAL MATCH (c:Class {repo_id: $repo_id})
+        WITH languages, count(c) AS total_classes
+        
+        OPTIONAL MATCH (fn:Function {repo_id: $repo_id})
+        WITH languages, total_classes, count(fn) AS total_functions
+        
+        RETURN {
+            languages: languages,
+            total_classes: total_classes,
+            total_functions: total_functions
+        } AS summary
+        """
+        async def work(tx):
+            res = await tx.run(cypher, repo_id=repo_id)
+            record = await res.single()
+            if record:
+                return record["summary"]
+            return {"languages": [], "total_classes": 0, "total_functions": 0}
+
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
+
     # ── Internal Helpers ─────────────────────────────────────────────────
 
     async def _execute_write_single(self, cypher: str, **params: Any) -> str:

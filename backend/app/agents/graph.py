@@ -10,6 +10,7 @@ from .nodes.visualizer import visualizer_node
 from .nodes.code_qa import code_qa_node
 from .nodes.blast_radius import blast_radius_node
 from .nodes.guardrail import guardrail_node
+from .nodes.repo_summary import repo_summary_node
 from .prompts import SUPERVISOR_PROMPT
 
 llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
@@ -19,6 +20,7 @@ class RouteEnum(str, enum.Enum):
     QA = "QA"
     IMPACT = "IMPACT"
     GUARDRAIL = "GUARDRAIL"
+    REPO_SUMMARY = "REPO_SUMMARY"
 
 class RouteDecision(BaseModel):
     decision: RouteEnum = Field(description="The routing decision for the user's query.")
@@ -48,7 +50,7 @@ async def supervisor_node(state: AgentState) -> dict:
         
     return {"routing_decision": decision}
 
-def route_decision(state: AgentState) -> Literal["VISUALIZE", "QA", "IMPACT", "GUARDRAIL"]:
+def route_decision(state: AgentState) -> Literal["VISUALIZE", "QA", "IMPACT", "GUARDRAIL", "REPO_SUMMARY"]:
     decision = state.get("routing_decision")
     if decision == "VISUALIZE":
         return "VISUALIZE"
@@ -56,6 +58,8 @@ def route_decision(state: AgentState) -> Literal["VISUALIZE", "QA", "IMPACT", "G
         return "QA"
     elif decision == "IMPACT":
         return "IMPACT"
+    elif decision == "REPO_SUMMARY":
+        return "REPO_SUMMARY"
     else:
         return "GUARDRAIL"
 
@@ -68,6 +72,7 @@ workflow.add_node("VISUALIZE", visualizer_node)
 workflow.add_node("QA", code_qa_node)
 workflow.add_node("IMPACT", blast_radius_node)
 workflow.add_node("GUARDRAIL", guardrail_node)
+workflow.add_node("REPO_SUMMARY", repo_summary_node)
 
 # Add edges
 workflow.add_edge(START, "supervisor")
@@ -80,6 +85,7 @@ workflow.add_edge("VISUALIZE", END)
 workflow.add_edge("QA", END)
 workflow.add_edge("IMPACT", END)
 workflow.add_edge("GUARDRAIL", END)
+workflow.add_edge("REPO_SUMMARY", END)
 
 # Compile graph
 graph = workflow.compile()
