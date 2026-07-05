@@ -30,6 +30,8 @@ from app.schemas.responses import (
     DependencyGraphResponse,
     BlastRadiusResponse,
     ErrorResponse,
+    CallGraphResponse,
+    ClassGraphResponse,
 )
 
 router = APIRouter(
@@ -142,7 +144,9 @@ async def get_repo_status(
     return RepoSyncResponse(
         repo_id=repo_row["id"],
         status=repo_row["status"],
-        message=f"Repository sync status: {repo_row['status']}",
+        message=repo_row.get("error_message") or f"Repository sync status: {repo_row['status']}",
+        detailed_status=repo_row.get("detailed_status") or repo_row["status"],
+        error_message=repo_row.get("error_message"),
         queued_at=repo_row["created_at"],
     )
 
@@ -260,4 +264,118 @@ async def delete_repo(
     await pg.delete_repo_chunks(repo_id=str(repo_id), user_id=user.id)
     await neo4j.delete_repo_graph(repo_id=str(repo_id))
     await pg.delete_repo(repo_id=str(repo_id), user_id=user.id)
+
+
+@router.get(
+    "/{repo_id}/call-graph",
+    response_model=CallGraphResponse,
+    summary="Get function call graph",
+    description="Returns functions and CALLS relationships for visualization.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_call_graph(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> CallGraphResponse:
+    """Get call graph for visualizer."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+    data = await neo4j.get_call_graph(repo_id=str(repo_id))
+    return CallGraphResponse(**data)
+
+
+@router.get(
+    "/{repo_id}/class-graph",
+    response_model=ClassGraphResponse,
+    summary="Get class methods graph",
+    description="Returns classes and their methods for visualization.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_class_graph(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> ClassGraphResponse:
+    """Get class/methods graph for visualizer."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+    data = await neo4j.get_class_graph(repo_id=str(repo_id))
+    return ClassGraphResponse(**data)
+
+
+@router.get(
+    "/{repo_id}/summary",
+    summary="Get repository structural summary",
+    description="Returns high-level statistics like language breakdown and counts.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_repo_summary(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> dict:
+    """Get repository structural summary statistics."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+    return await neo4j.get_repo_summary(repo_id=str(repo_id))
+
+
+@router.get(
+    "/{repo_id}/diagrams",
+    summary="Get repository diagrams",
+    description="Returns pre-generated or on-the-fly generated architecture, user flow, and data flow diagrams.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_diagrams(
+    repo_id: UUID,
+    force_refresh: bool = Query(False, description="Force regeneration of diagrams"),
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> dict:
+    """Get Mermaid diagrams (Architecture, User Flow, Data Flow) for a repository."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+
+    # Check if diagrams already generated/cached in Postgres row
+    if not force_refresh:
+        diagrams = repo_row.get("diagrams")
+        if diagrams:
+            return diagrams
+
+    # Generate on-the-fly if not present or forced refresh
+    repo_name = repo_row.get("github_url", "repo").split("/")[-1]
+    from app.services.diagram_generator import DiagramGenerator
+    generator = DiagramGenerator(neo4j)
+    generated = await generator.generate_all_diagrams(str(repo_id), repo_name)
+    await pg.update_repo_diagrams(str(repo_id), user.id, generated)
+    return generated
 

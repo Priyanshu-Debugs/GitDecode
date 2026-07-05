@@ -666,6 +666,74 @@ class Neo4jClient:
         async with self._driver.session() as session:
             return await session.execute_read(work)
 
+    async def get_call_graph(self, repo_id: str) -> dict[str, Any]:
+        """Get Function nodes and CALLS relationships for call graph visualization."""
+        nodes_cypher = """
+        MATCH (fn:Function {repo_id: $repo_id})
+        RETURN elementId(fn) AS id, fn.name AS label, fn.file_path AS file_path, fn.signature AS signature
+        ORDER BY fn.name
+        """
+        edges_cypher = """
+        MATCH (caller:Function {repo_id: $repo_id})-[r:CALLS]->(callee:Function {repo_id: $repo_id})
+        RETURN elementId(caller) AS source, elementId(callee) AS target
+        """
+
+        async def work(tx):
+            res = await tx.run(nodes_cypher, repo_id=repo_id)
+            nodes = [record.data() async for record in res]
+            for n in nodes:
+                n["type"] = "function"
+
+            res2 = await tx.run(edges_cypher, repo_id=repo_id)
+            edges = [record.data() async for record in res2]
+
+            return {"nodes": nodes, "edges": edges}
+
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
+
+    async def get_class_graph(self, repo_id: str) -> dict[str, Any]:
+        """Get Class nodes, Method nodes, and HAS_METHOD relationships for visualization."""
+        class_cypher = """
+        MATCH (c:Class {repo_id: $repo_id})
+        RETURN elementId(c) AS id, c.name AS label, 'class' AS type, c.file_path AS file_path
+        ORDER BY c.name
+        """
+        method_cypher = """
+        MATCH (c:Class {repo_id: $repo_id})-[:HAS_METHOD]->(m:Function {repo_id: $repo_id})
+        RETURN elementId(m) AS id, m.name AS label, 'method' AS type, m.file_path AS file_path
+        """
+        edges_cypher = """
+        MATCH (c:Class {repo_id: $repo_id})-[:HAS_METHOD]->(m:Function {repo_id: $repo_id})
+        RETURN elementId(c) AS source, elementId(m) AS target
+        """
+
+        async def work(tx):
+            res = await tx.run(class_cypher, repo_id=repo_id)
+            classes = [record.data() async for record in res]
+
+            res2 = await tx.run(method_cypher, repo_id=repo_id)
+            methods = [record.data() async for record in res2]
+
+            seen_nodes = set()
+            nodes = []
+            for node in classes:
+                if node["id"] not in seen_nodes:
+                    seen_nodes.add(node["id"])
+                    nodes.append(node)
+            for node in methods:
+                if node["id"] not in seen_nodes:
+                    seen_nodes.add(node["id"])
+                    nodes.append(node)
+
+            res3 = await tx.run(edges_cypher, repo_id=repo_id)
+            edges = [record.data() async for record in res3]
+
+            return {"nodes": nodes, "edges": edges}
+
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
+
     # ── Internal Helpers ─────────────────────────────────────────────────
 
     async def _execute_write_single(self, cypher: str, **params: Any) -> str:

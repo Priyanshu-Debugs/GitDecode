@@ -39,6 +39,8 @@ class RepoSyncResponse(BaseModel):
         repo_id: The unique identifier for this repository sync job.
         status: Current pipeline status.
         message: Human-readable status message.
+        detailed_status: Detailed status step.
+        error_message: Error log if failed.
         queued_at: Timestamp when the sync was queued.
     """
 
@@ -47,6 +49,8 @@ class RepoSyncResponse(BaseModel):
     repo_id: UUID
     status: Literal["queued", "processing", "completed", "failed"]
     message: str
+    detailed_status: str | None = None
+    error_message: str | None = None
     queued_at: datetime
 
 
@@ -113,6 +117,8 @@ class RepoListItem(BaseModel):
         github_url: The GitHub repository URL.
         branch: The synced branch.
         status: Current pipeline status.
+        detailed_status: Detailed status step.
+        error_message: Error log if failed.
         created_at: When the repo was first synced.
     """
 
@@ -122,6 +128,8 @@ class RepoListItem(BaseModel):
     github_url: str
     branch: str
     status: Literal["queued", "processing", "completed", "failed"]
+    detailed_status: str | None = None
+    error_message: str | None = None
     created_at: datetime
 
 
@@ -150,6 +158,9 @@ class GraphNode(BaseModel):
     label: str
     language: str | None = None
     size_bytes: int | None = None
+    type: str | None = None
+    file_path: str | None = None
+    signature: str | None = None
 
 
 class GraphEdge(BaseModel):
@@ -193,3 +204,27 @@ class BlastRadiusResponse(BaseModel):
     affected_files: list[str]
     affected_nodes: list[BlastRadiusNode]
     depth: int = 3
+
+
+class CallGraphResponse(BaseModel):
+    """Function call graph response.
+
+    Attributes:
+        nodes: List of function nodes.
+        edges: List of call edges.
+    """
+
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class ClassGraphResponse(BaseModel):
+    """Class hierarchy/structure graph response.
+
+    Attributes:
+        nodes: List of class/method nodes.
+        edges: List of containment/has-method edges.
+    """
+
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]

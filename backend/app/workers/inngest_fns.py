@@ -147,10 +147,10 @@ async def sync_github_repository(
         password=settings.NEO4J_PASSWORD,
     )
 
-    # Step 1: Update repository sync status to 'processing'
+    # Step 1: Update repository sync status to 'processing' (cloning)
     async def update_to_processing() -> dict[str, Any]:
         return await pg_client.update_repo_status(
-            repo_id, user_id, "processing"
+            repo_id, user_id, "processing", detailed_status="cloning"
         )
 
     await step.run("update_status_processing", update_to_processing)
@@ -214,6 +214,13 @@ async def sync_github_repository(
             return temp_dir
 
         temp_dir = await step.run("clone_repo", clone_repo_step)
+
+        # Update detailed_status to 'parsing'
+        async def update_to_parsing() -> dict[str, Any]:
+            return await pg_client.update_repo_status(
+                repo_id, user_id, "processing", detailed_status="parsing"
+            )
+        await step.run("update_status_parsing", update_to_parsing)
 
         # Step B: Walk directory and parse file ASTs
         async def parse_ast_step() -> dict[str, Any]:
@@ -287,6 +294,13 @@ async def sync_github_repository(
 
         await step.run("parse_ast", parse_ast_step)
 
+        # Update detailed_status to 'embedding'
+        async def update_to_embedding() -> dict[str, Any]:
+            return await pg_client.update_repo_status(
+                repo_id, user_id, "processing", detailed_status="embedding"
+            )
+        await step.run("update_status_embedding", update_to_embedding)
+
         # Step C: Batch generate embeddings
         async def generate_embeddings_step() -> int:
             chunks_path = os.path.join(temp_dir, "chunks.json")
@@ -324,6 +338,13 @@ async def sync_github_repository(
             return len(all_chunks)
 
         await step.run("generate_embeddings", generate_embeddings_step)
+
+        # Update detailed_status to 'saving'
+        async def update_to_saving() -> dict[str, Any]:
+            return await pg_client.update_repo_status(
+                repo_id, user_id, "processing", detailed_status="saving"
+            )
+        await step.run("update_status_saving", update_to_saving)
 
         # Step D: Save chunks and graph structure to DBs
         async def save_to_dbs_step() -> dict[str, Any]:
@@ -455,10 +476,32 @@ async def sync_github_repository(
 
         await step.run("save_to_dbs", save_to_dbs_step)
 
+        # Update detailed_status to 'diagrams'
+        async def update_to_diagrams() -> dict[str, Any]:
+            return await pg_client.update_repo_status(
+                repo_id, user_id, "processing", detailed_status="diagrams"
+            )
+        await step.run("update_status_diagrams", update_to_diagrams)
+
+        # Step E: Generate repository diagrams using the visualizer agent
+        async def generate_diagrams_step() -> dict[str, Any]:
+            repo_row = await pg_client.get_repo(repo_id, user_id)
+            repo_name = "repo"
+            if repo_row and repo_row.get("github_url"):
+                repo_name = repo_row["github_url"].split("/")[-1]
+
+            from app.services.diagram_generator import DiagramGenerator
+            generator = DiagramGenerator(neo4j_client)
+            diagrams = await generator.generate_all_diagrams(repo_id, repo_name)
+            await pg_client.update_repo_diagrams(repo_id, user_id, diagrams)
+            return {"diagrams_count": len(diagrams)}
+
+        await step.run("generate_diagrams", generate_diagrams_step)
+
         # Update status to 'completed'
         async def update_to_completed() -> dict[str, Any]:
             return await pg_client.update_repo_status(
-                repo_id, user_id, "completed"
+                repo_id, user_id, "completed", detailed_status="completed"
             )
 
         await step.run("update_status_completed", update_to_completed)
@@ -473,7 +516,7 @@ async def sync_github_repository(
         # Update status to 'failed'
         async def update_to_failed() -> dict[str, Any]:
             return await pg_client.update_repo_status(
-                repo_id, user_id, "failed"
+                repo_id, user_id, "failed", detailed_status="failed", error_message=str(e)
             )
 
         await step.run("update_status_failed", update_to_failed)

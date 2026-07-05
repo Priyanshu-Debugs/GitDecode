@@ -83,13 +83,17 @@ export interface RepoItem {
   github_url: string;
   branch: string;
   status: "queued" | "processing" | "completed" | "failed";
+  detailed_status?: string;
+  error_message?: string;
   created_at: string;
 }
 
 export interface RepoSyncResponse {
   repo_id: string;
-  status: string;
+  status: "queued" | "processing" | "completed" | "failed";
   message: string;
+  detailed_status?: string;
+  error_message?: string;
   queued_at: string;
 }
 
@@ -240,4 +244,30 @@ export async function listChatSessions(
 /** Delete a repo and all its data */
 export async function deleteRepo(repoId: string): Promise<void> {
   return apiFetch<void>(`/repos/${repoId}`, { method: "DELETE" });
+}
+
+/** Get call graph for visualization */
+export async function getCallGraph(repoId: string): Promise<DependencyGraph> {
+  return apiFetch<DependencyGraph>(`/repos/${repoId}/call-graph`);
+}
+
+/** Get class graph for visualization */
+export async function getClassGraph(repoId: string): Promise<DependencyGraph> {
+  return apiFetch<DependencyGraph>(`/repos/${repoId}/class-graph`);
+}
+
+/** Get repository structural summary */
+export async function getRepoSummary(repoId: string): Promise<any> {
+  return apiFetch<any>(`/repos/${repoId}/summary`);
+}
+
+export interface RepoDiagrams {
+  architecture: string;
+  userFlow: string;
+  dataFlow: string;
+}
+
+/** Get generated Mermaid diagrams for a repository */
+export async function getRepoDiagrams(repoId: string, forceRefresh = false): Promise<RepoDiagrams> {
+  return apiFetch<RepoDiagrams>(`/repos/${repoId}/diagrams?force_refresh=${forceRefresh}`);
 }

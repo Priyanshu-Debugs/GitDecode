@@ -68,6 +68,7 @@ class SupabasePGClient:
                     "github_url": github_url,
                     "branch": branch,
                     "status": "queued",
+                    "detailed_status": "queued",
                 }
             )
             .execute()
@@ -81,6 +82,8 @@ class SupabasePGClient:
         repo_id: str,
         user_id: str,
         status: str,
+        detailed_status: str | None = None,
+        error_message: str | None = None,
     ) -> dict[str, Any]:
         """Update the sync status of a repository.
 
@@ -88,13 +91,21 @@ class SupabasePGClient:
             repo_id: The repository UUID.
             user_id: The owner's user UUID (for RLS filtering).
             status: New status (``"queued"``, ``"processing"``, ``"completed"``, ``"failed"``).
+            detailed_status: Detailed status step (e.g. ``"cloning"``, ``"parsing"``, etc.).
+            error_message: Optional error logs if failed.
 
         Returns:
             The updated row as a dictionary.
         """
+        update_data: dict[str, Any] = {"status": status}
+        if detailed_status is not None:
+            update_data["detailed_status"] = detailed_status
+        if error_message is not None:
+            update_data["error_message"] = error_message
+
         response = (
             self._client.table("repos")
-            .update({"status": status})
+            .update(update_data)
             .eq("id", repo_id)
             .eq("user_id", user_id)
             .execute()
@@ -379,3 +390,34 @@ class SupabasePGClient:
                 )
 
         return sessions
+
+    async def update_repo_diagrams(
+        self,
+        repo_id: str,
+        user_id: str,
+        diagrams: dict[str, str],
+    ) -> dict[str, Any]:
+        """Save the generated Mermaid.js code blocks in the database.
+
+        Args:
+            repo_id: The repository UUID.
+            user_id: The owner's user UUID.
+            diagrams: A dictionary mapping diagram types to their Mermaid.js syntax.
+
+        Returns:
+            The updated repository row.
+        """
+        response = (
+            self._client.table("repos")
+            .update({"diagrams": diagrams})
+            .eq("id", repo_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if not response.data:
+            logger.error("Failed to update repo diagrams: repository %s not found for user %s", repo_id, user_id)
+            return {}
+        row = response.data[0]
+        logger.info("Updated repo %s diagrams", repo_id)
+        return row
+
