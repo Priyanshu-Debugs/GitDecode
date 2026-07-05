@@ -180,15 +180,17 @@ async def sync_github_repository(
                 temp_dir,
             ]
             
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            stdout, stderr = await process.communicate()
-            if process.returncode != 0:
+            def run_git_clone():
+                return subprocess.run(
+                    cmd,
+                    capture_output=True,
+                )
+
+            result = await asyncio.to_thread(run_git_clone)
+            if result.returncode != 0:
+                stderr_text = result.stderr.decode("utf-8", errors="ignore")
                 raise RuntimeError(
-                    f"Git clone failed: {stderr.decode('utf-8')}"
+                    f"Git clone failed: {stderr_text}"
                 )
             return temp_dir
 

@@ -99,6 +99,9 @@ class SupabasePGClient:
             .eq("user_id", user_id)
             .execute()
         )
+        if not response.data:
+            logger.error("Failed to update repo status: repository %s not found for user %s", repo_id, user_id)
+            return {}
         row = response.data[0]
         logger.info("Updated repo %s status to '%s'", repo_id, status)
         return row
