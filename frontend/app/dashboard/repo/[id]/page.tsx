@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   getRepoStatus,
   getGraphStats,
@@ -372,7 +373,10 @@ export default function RepoDetailPage() {
                 {msg.role === "user" ? (
                   msg.content
                 ) : (
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <div>
+                    <span style={{color: 'red', fontSize: '10px'}}>MARKDOWN DEBUG:</span>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  </div>
                 )}
               </div>
             ))}

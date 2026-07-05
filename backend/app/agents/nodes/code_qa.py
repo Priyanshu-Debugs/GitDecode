@@ -32,7 +32,7 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
         repo_id=state["repo_id"],
         user_id=state["user_id"],
         embedding=query_embedding,
-        match_count=5
+        match_count=10
     )
 
     # 3. Build context

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useAuth } from "@/app/lib/useAuth";
 import {
   listRepos,
@@ -1083,7 +1085,11 @@ function DashboardContent() {
                   key={msg.message_id}
                   className={msg.role === "user" ? styles.chatBubbleUser : styles.chatBubbleAssistant}
                 >
-                  <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+                  {msg.role === "user" ? (
+                    <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+                  ) : (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  )}
                   
                   {/* Inline Source Citations */}
                   {msg.sources && msg.sources.length > 0 && (

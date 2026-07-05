@@ -6,7 +6,8 @@
 /* ── Dashboard Layout ──────────────────────────────────────────────── */
 .dashboardLayout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--color-bg);
 }
 
@@ -24,6 +25,14 @@
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+}
+
+.contentWorkspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ── Sidebar ────────────────────────────────────────────────────────── */
@@ -433,6 +442,57 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.chatBubbleAssistant {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-white);
+}
+
+.chatBubbleAssistant p {
+  margin-bottom: 0.75rem;
+}
+
+.chatBubbleAssistant p:last-child {
+  margin-bottom: 0;
+}
+
+.chatBubbleAssistant h2,
+.chatBubbleAssistant h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-white);
+}
+
+.chatBubbleAssistant h2 {
+  font-size: 1.125rem;
+}
+
+.chatBubbleAssistant h3 {
+  font-size: 1rem;
+}
+
+.chatBubbleAssistant ul,
+.chatBubbleAssistant ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.chatBubbleAssistant li {
+  margin-bottom: 0.25rem;
+}
+
+.chatBubbleAssistant strong {
+  font-weight: 600;
+  color: var(--color-white);
 }
 
 .repoCardFooter {
