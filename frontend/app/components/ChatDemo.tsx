@@ -232,6 +232,7 @@ export default function ChatDemo() {
           placeholder="Ask about your codebase..."
           className={styles.input}
           disabled
+          suppressHydrationWarning
         />
         <button className={styles.sendBtn} disabled={!isComplete} onClick={handleReplay}>
           {isComplete ? (

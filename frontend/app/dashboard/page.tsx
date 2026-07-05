@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MermaidDiagram } from "@/components/ui/MermaidDiagram";
+import { ChatMarkdown } from "@/components/ui/ChatMarkdown";
 import { useAuth } from "@/app/lib/useAuth";
 import {
   listRepos,
@@ -25,6 +25,7 @@ import {
   type RepoDiagrams,
 } from "@/app/lib/api";
 import styles from "./dashboard.module.css";
+import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
 
 /* ── Inline SVG Icons ────────────────────────────────────────────────── */
 function SearchIcon() {
@@ -42,126 +43,7 @@ function SendIcon() {
   );
 }
 
-/* ── Client Dynamic Mermaid Renderer with Pan & Zoom ─────────────────── */
-function MermaidDiagram({ chart }: { chart: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [svg, setSvg] = useState<string>("");
-  const [error, setError] = useState<string>("");
 
-  // Zoom & Pan state
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    if (!chart || typeof window === "undefined") return;
-
-    let isMounted = true;
-    setError("");
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-
-    async function renderChart() {
-      try {
-        const mermaid = (await import("mermaid")).default;
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: "dark",
-          securityLevel: "loose",
-        });
-
-        const id = `mermaid-${Math.floor(Math.random() * 100000)}`;
-        const { svg: renderedSvg } = await mermaid.render(id, chart);
-        
-        if (isMounted) {
-          setSvg(renderedSvg);
-        }
-      } catch (err) {
-        console.error("Mermaid render error:", err);
-        if (isMounted) {
-          setError("Failed to parse visual model format.");
-        }
-      }
-    }
-
-    renderChart();
-    return () => {
-      isMounted = false;
-    };
-  }, [chart]);
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const factor = 1.1;
-    if (e.deltaY < 0) {
-      setZoom(prev => Math.min(3, prev * factor));
-    } else {
-      setZoom(prev => Math.max(0.3, prev / factor));
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsPanning(true);
-    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isPanning) return;
-    setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
-  };
-
-  const handleMouseUp = () => {
-    setIsPanning(false);
-  };
-
-  if (error) {
-    return (
-      <div style={{ color: "var(--color-danger)", fontSize: "0.75rem", fontFamily: "var(--font-mono)", whiteSpace: "pre-wrap", width: "100%", height: "100%", padding: 24, overflow: "auto" }}>
-        {error}
-        <pre style={{ marginTop: 8, fontSize: "0.6875rem", opacity: 0.7 }}>{chart}</pre>
-      </div>
-    );
-  }
-
-  if (!svg) {
-    return <div className={styles.loadingSpinner} style={{ width: 16, height: 16 }} />;
-  }
-
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "550px", // Larger size!
-        position: "relative",
-        overflow: "hidden",
-        border: "0.5px solid var(--color-border)",
-        borderRadius: "var(--radius-md)",
-        background: "rgba(0,0,0,0.2)",
-        cursor: isPanning ? "grabbing" : "grab"
-      }}
-      onWheel={handleWheel}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      <div
-        ref={ref}
-        dangerouslySetInnerHTML={{ __html: svg }}
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: "center center",
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center"
-        }}
-      />
-    </div>
-  );
-}
 
 /* ── Force Layout Math Engine ────────────────────────────────────────── */
 interface LayoutNode {
@@ -177,68 +59,94 @@ interface LayoutNode {
 
 function computeSpringLayout(nodes: any[], edges: any[]): LayoutNode[] {
   if (!nodes || nodes.length === 0) return [];
+
+  const width = 700;
+  const height = 500;
+
+  // 1. Initialize nodes in a neat grid pattern to start well-distributed
+  const cols = Math.ceil(Math.sqrt(nodes.length));
+  const rows = Math.ceil(nodes.length / cols);
   
   let layoutNodes: LayoutNode[] = nodes.map((n, i) => {
-    const angle = (i / nodes.length) * Math.PI * 2;
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = 120 + (col / Math.max(1, cols - 1)) * (width - 240) + (Math.random() - 0.5) * 15;
+    const y = 80 + (row / Math.max(1, rows - 1)) * (height - 160) + (Math.random() - 0.5) * 15;
     return {
       ...n,
-      x: Math.cos(angle) * 150 + 350,
-      y: Math.sin(angle) * 150 + 250,
+      x,
+      y,
     };
   });
 
-  const k = 100; // Optimal node spacing
-  const repulsion = 10000;
+  const k = 100; // Target spacing between connected nodes
+  const repulsion = 18000;
   const attraction = 0.08;
+  const centerForce = 0.03;
 
-  for (let step = 0; step < 50; step++) {
-    // 1. Nodes repelling each other
+  // 2. Perform 100 iterations of force relaxation in 2D
+  for (let step = 0; step < 100; step++) {
+    const fx = new Array(layoutNodes.length).fill(0);
+    const fy = new Array(layoutNodes.length).fill(0);
+
+    // Node-to-node repulsion (pushes all nodes apart)
     for (let i = 0; i < layoutNodes.length; i++) {
-      let fx = 0;
-      let fy = 0;
-      for (let j = 0; j < layoutNodes.length; j++) {
-        if (i === j) continue;
-        const dx = layoutNodes[i].x - layoutNodes[j].x;
-        const dy = layoutNodes[i].y - layoutNodes[j].y;
+      const u = layoutNodes[i];
+      for (let j = i + 1; j < layoutNodes.length; j++) {
+        const v = layoutNodes[j];
+        const dx = u.x - v.x;
+        const dy = u.y - v.y;
         const distSq = dx * dx + dy * dy || 1;
         const dist = Math.sqrt(distSq);
-        if (dist < 150) {
+        
+        if (dist < 180) {
           const force = repulsion / distSq;
-          fx += (dx / dist) * force;
-          fy += (dy / dist) * force;
+          const xForce = (dx / dist) * force;
+          const yForce = (dy / dist) * force;
+          
+          fx[i] += xForce;
+          fy[i] += yForce;
+          fx[j] -= xForce;
+          fy[j] -= yForce;
         }
       }
-      layoutNodes[i].x += fx * 0.1;
-      layoutNodes[i].y += fy * 0.1;
     }
 
-    // 2. Nodes attracted along relationships
-    for (let edge of edges) {
-      const s = layoutNodes.find((n) => n.id === edge.source);
-      const t = layoutNodes.find((n) => n.id === edge.target);
-      if (s && t) {
+    // Edge-based attraction (pulls connected nodes closer)
+    edges.forEach(edge => {
+      const sIdx = layoutNodes.findIndex(n => n.id === edge.source);
+      const tIdx = layoutNodes.findIndex(n => n.id === edge.target);
+      if (sIdx !== -1 && tIdx !== -1) {
+        const s = layoutNodes[sIdx];
+        const t = layoutNodes[tIdx];
         const dx = t.x - s.x;
         const dy = t.y - s.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         const force = attraction * (dist - k);
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        s.x += fx;
-        s.y += fy;
-        t.x -= fx;
-        t.y -= fy;
+        
+        const xForce = (dx / dist) * force;
+        const yForce = (dy / dist) * force;
+
+        fx[sIdx] += xForce;
+        fy[sIdx] += yForce;
+        fx[tIdx] -= xForce;
+        fy[tIdx] -= yForce;
       }
-    }
+    });
 
-    // 3. Keep layout bounded and pull towards center (gravity)
+    // Apply accumulated forces and pull gently towards screen center (gravity)
     for (let i = 0; i < layoutNodes.length; i++) {
-      const dx = 350 - layoutNodes[i].x;
-      const dy = 250 - layoutNodes[i].y;
-      layoutNodes[i].x += dx * 0.03;
-      layoutNodes[i].y += dy * 0.03;
+      const node = layoutNodes[i];
+      
+      const dcx = width / 2 - node.x;
+      const dcy = height / 2 - node.y;
+      
+      node.x += fx[i] + dcx * centerForce;
+      node.y += fy[i] + dcy * centerForce;
 
-      layoutNodes[i].x = Math.max(40, Math.min(660, layoutNodes[i].x));
-      layoutNodes[i].y = Math.max(40, Math.min(460, layoutNodes[i].y));
+      // Bound containment padding
+      node.x = Math.max(50, Math.min(width - 50, node.x));
+      node.y = Math.max(50, Math.min(height - 50, node.y));
     }
   }
 
@@ -588,6 +496,42 @@ function DashboardContent() {
     );
   }
 
+  const isSyncing = activeRepo && (activeRepo.status === "queued" || activeRepo.status === "processing" || activeRepo.status === "failed");
+
+  if (isSyncing) {
+    return (
+      <div className={styles.workspace} style={{ padding: "40px", flexDirection: "column", overflowY: "auto", gap: "32px", width: "100%", height: "100%" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "0.5px solid var(--color-border)", paddingBottom: "24px", width: "100%" }}>
+          <div>
+            <h1 className={styles.pageTitle} style={{ fontSize: "1.5rem", display: "flex", alignItems: "center", gap: "10px", color: "var(--color-white)", fontWeight: 600 }}>
+              Ingesting Codebase: <code style={{ color: "#ef4444", fontSize: "1.25rem", fontFamily: "var(--font-mono)", background: "rgba(255,255,255,0.03)", padding: "2px 8px", borderRadius: "var(--radius-sm)" }}>{activeRepo.github_url.split("/").pop()}</code>
+            </h1>
+            <p className={styles.pageSubtitle} style={{ marginTop: "6px", color: "var(--color-text-secondary)", fontSize: "0.875rem" }}>
+              {activeRepo.status === "failed" 
+                ? `Ingestion failed. Error: ${activeRepo.error_message || "Unknown error."}`
+                : "GitMesh AI agents are parsing files, tokenizing Abstract Syntax Trees, mapping dependencies, and generating embeddings in real-time."
+              }
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span className={`${styles.statusBadge} ${activeRepo.status === "failed" ? styles.statusFailed : styles.statusProcessing}`}>
+              <span className={`${styles.statusDot} ${activeRepo.status === "failed" ? styles.statusDotFailed : styles.statusDotProcessing}`} />
+              {activeRepo.status === "failed" ? "Failed" : activeRepo.detailed_status || "Processing"}
+            </span>
+          </div>
+        </div>
+
+        {/* Bento Grid Visualizer */}
+        <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+          <AgentBentoGrid
+            detailedStatus={activeRepo.detailed_status || activeRepo.status}
+            repoName={activeRepo.github_url.split("/").pop() || "Repository"}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.workspace} style={{ cursor: isDraggingLeft && !leftCollapsed && !rightCollapsed ? "col-resize" : "default", position: "relative" }}>
       
@@ -621,7 +565,7 @@ function DashboardContent() {
         className={styles.leftPanel}
         style={{
           width: leftCollapsed ? "0%" : rightCollapsed ? "100%" : `${leftWidth}%`,
-          display: leftCollapsed ? "none" : "flex",
+          display: leftCollapsed || (activeRepo && activeRepo.status !== "completed") ? "none" : "flex",
           flex: "none",
         }}
       >
@@ -799,7 +743,7 @@ function DashboardContent() {
                           <line
                             key={`edge-${i}`}
                             x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                            stroke={isHighlighted ? "rgba(176, 30, 10, 0.8)" : isInBlastEdge ? "rgba(239, 68, 68, 0.6)" : "rgba(255, 255, 255, 0.04)"}
+                            stroke={isHighlighted ? "rgba(176, 30, 10, 0.9)" : isInBlastEdge ? "rgba(239, 68, 68, 0.7)" : "rgba(255, 255, 255, 0.25)"}
                             strokeWidth={isHighlighted || isInBlastEdge ? 1.5 : 1}
                           />
                         );
@@ -1088,7 +1032,7 @@ function DashboardContent() {
                   {msg.role === "user" ? (
                     <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
                   ) : (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <ChatMarkdown content={msg.content} />
                   )}
                   
                   {/* Inline Source Citations */}

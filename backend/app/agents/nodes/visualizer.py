@@ -36,6 +36,6 @@ async def visualizer_node(state: AgentState) -> Dict[str, Any]:
     content = response.content
     if isinstance(content, str):
         content = content.replace("```mermaid", "").replace("```", "").strip()
-        response.content = content
+        response.content = f"```mermaid\n{content}\n```"
     
     return {"messages": [response]}

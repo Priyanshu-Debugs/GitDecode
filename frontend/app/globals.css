@@ -38,7 +38,8 @@
   --color-warning: #f59e0b;
 
   /* Typography */
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-gt-walsheim), var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-gt-walsheim), var(--font-outfit), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), "Fira Code", monospace;
 
   /* Spacing */
@@ -97,10 +98,10 @@
 @theme inline {
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-outfit);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-gt-walsheim), var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "Fira Code", monospace;
+  --font-display: var(--font-gt-walsheim), var(--font-outfit), system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-gt-walsheim), var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

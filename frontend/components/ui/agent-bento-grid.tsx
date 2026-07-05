@@ -173,10 +173,35 @@ const NODE_COLORS: Record<string, { bg: string; border: string; text: string; bu
   },
 };
 
-export function Card1() {
+export function Card1({ detailedStatus }: { detailedStatus?: string }) {
   const [step, setStep] = useState<ActiveStep>("request");
 
   useEffect(() => {
+    if (detailedStatus) {
+      switch (detailedStatus) {
+        case "queued":
+        case "cloning":
+          setStep("request");
+          break;
+        case "parsing":
+          setStep("agent");
+          break;
+        case "embedding":
+          setStep("memory");
+          break;
+        case "saving":
+          setStep("tools");
+          break;
+        case "diagrams":
+        case "completed":
+          setStep("response");
+          break;
+        default:
+          setStep("request");
+      }
+      return;
+    }
+
     const steps: ActiveStep[] = ["request", "router", "agent", "memory", "tools", "response"];
     let idx = 0;
     const interval = setInterval(() => {
@@ -184,7 +209,7 @@ export function Card1() {
       setStep(steps[idx]);
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [detailedStatus]);
 
   const isNodeActive = (nodeId: string) => {
     switch (step) {
@@ -478,25 +503,114 @@ const STATUS_ICONS: Record<string, { icon: any; color: string; bg: string; gradi
   running: { icon: CircleNotch, color: "text-blue-400", bg: "bg-blue-400/15", gradient: "bg-gradient-to-b from-blue-400 to-blue-600", border: "border-blue-600" },
   waiting: { icon: Clock, color: "text-amber-400", bg: "bg-amber-400/15", gradient: "bg-gradient-to-b from-amber-400 to-amber-600", border: "border-amber-600" },
   idle: { icon: Minus, color: "text-muted-foreground/60", bg: "bg-muted/40", gradient: "bg-gradient-to-b from-zinc-400 to-zinc-600", border: "border-zinc-600" },
+  failed: { icon: Minus, color: "text-rose-500", bg: "bg-rose-500/15", gradient: "bg-gradient-to-b from-rose-400 to-rose-600", border: "border-rose-600" },
 };
 
-export function Card3() {
-  const logs = [
-    { agent: "Cloner", action: "Cloning github.com/supabase/supabase-js…", status: "done", t: "0.8s" },
-    { agent: "Lexer", action: "Parsing syntax trees across 142 source files", status: "done", t: "1.2s" },
-    { agent: "Linker", action: "Resolving reference imports & reference bindings", status: "running", t: "2.5s" },
-    { agent: "Embedder", action: "Generating chunk embeddings via vector model", status: "waiting", t: "—" },
-    { agent: "Indexer", action: "Idle — queuing postgres graph database commit", status: "idle", t: "—" },
-  ];
+export function Card3({ detailedStatus, repoName }: { detailedStatus?: string; repoName?: string }) {
+  const name = repoName || "repository";
+
+  const getStatusForStep = (stepName: string) => {
+    if (!detailedStatus) return "idle";
+    
+    const order = ["queued", "cloning", "parsing", "embedding", "saving", "diagrams", "completed"];
+    const currentIdx = order.indexOf(detailedStatus);
+    const stepIdx = ["cloning", "parsing", "embedding", "saving", "diagrams"].indexOf(stepName);
+
+    if (currentIdx === -1) return "waiting";
+
+    if (currentIdx > stepIdx + 1) {
+      return "done";
+    } else if (currentIdx === stepIdx + 1) {
+      return "running";
+    } else {
+      return "waiting";
+    }
+  };
+
+  const getActionForStep = (stepName: string, status: string) => {
+    switch (stepName) {
+      case "cloning":
+        return status === "running" ? `Cloning ${name} from GitHub...` : status === "done" ? `Cloned ${name} successfully.` : `Waiting to clone ${name}...`;
+      case "parsing":
+        return status === "running" ? "Parsing files and extracting AST token representations..." : status === "done" ? "Abstract Syntax Tree parsing complete." : "Queued for AST parsing.";
+      case "embedding":
+        return status === "running" ? "Generating code chunk semantic embeddings via Gemini..." : status === "done" ? "Gemini code chunk embeddings generated." : "Queued for vector embedding.";
+      case "saving":
+        return status === "running" ? "Linking imports and saving to Neo4j graph db..." : status === "done" ? "Graph database sync complete." : "Queued for graph database linking.";
+      case "diagrams":
+        return status === "running" ? "Generating repository architecture and flow diagrams..." : status === "done" ? "Pre-generated Mermaid diagrams complete." : "Queued for diagram generation.";
+      default:
+        return "";
+    }
+  };
+
+  const steps = ["cloning", "parsing", "embedding", "saving", "diagrams"];
+  const logs = detailedStatus
+    ? steps.map((s, idx) => {
+        let status = getStatusForStep(s);
+        if (detailedStatus === "failed") {
+          const prevSteps = steps.slice(0, idx);
+          const allPrevDone = prevSteps.every((ps) => getStatusForStep(ps) === "done");
+          if (allPrevDone && getStatusForStep(s) !== "done") {
+            status = "failed";
+          } else if (!allPrevDone) {
+            status = "idle";
+          } else {
+            status = "done";
+          }
+        }
+
+        let action = getActionForStep(s, status);
+        if (status === "failed") {
+          action = `Failed during ${s} stage.`;
+        }
+
+        const labelMap: Record<string, string> = {
+          cloning: "Cloner",
+          parsing: "Lexer",
+          embedding: "Embedder",
+          saving: "Linker",
+          diagrams: "Visuals",
+        };
+
+        return {
+          agent: labelMap[s],
+          action,
+          status,
+          t: status === "done" ? "Done" : status === "running" ? "Active" : "—",
+        };
+      })
+    : [
+        { agent: "Cloner", action: "Cloning github.com/supabase/supabase-js…", status: "done", t: "0.8s" },
+        { agent: "Lexer", action: "Parsing syntax trees across 142 source files", status: "done", t: "1.2s" },
+        { agent: "Linker", action: "Resolving reference imports & reference bindings", status: "running", t: "2.5s" },
+        { agent: "Embedder", action: "Generating chunk embeddings via vector model", status: "waiting", t: "—" },
+        { agent: "Indexer", action: "Idle — queuing postgres graph database commit", status: "idle", t: "—" },
+      ];
 
   const [activeIdx, setActiveIdx] = useState(0);
 
   useEffect(() => {
+    if (detailedStatus) {
+      const runIdx = logs.findIndex((l) => l.status === "running" || l.status === "failed");
+      if (runIdx !== -1) {
+        setActiveIdx(runIdx);
+      } else {
+        const allDone = logs.every((l) => l.status === "done");
+        if (allDone) {
+          setActiveIdx(logs.length - 1);
+        } else {
+          setActiveIdx(0);
+        }
+      }
+      return;
+    }
+
     const interval = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % logs.length);
     }, 2400);
     return () => clearInterval(interval);
-  }, [logs.length]);
+  }, [detailedStatus, logs.length]);
 
   // Signed slot: 0 = active front, negative = above (upcoming), positive = below (past)
   const getSlot = (i: number) => {
@@ -820,49 +934,51 @@ export function Card5() {
 /* ─────────────────────────────────────────────
    Main Grid Component
 ───────────────────────────────────────────── */
-const CARDS = [
-  {
-    title: "AST Parser & Linker",
-    description: "Generate Abstract Syntax Trees and link reference chains into a unified codebase graph.",
-    visual: <Card1 />,
-    colSpan: "md:col-span-1 lg:col-span-1",
-    height: "h-[330px]",
-  },
-  {
-    title: "Blast Radius Analyzer",
-    description: "Evaluate commit changes downstream. View affected files and call reference risks.",
-    visual: <Card2 />,
-    colSpan: "md:col-span-1 lg:col-span-1",
-    height: "h-[330px]",
-  },
-  {
-    title: "Repository Sync Log",
-    description: "Real-time telemetry showing code cloner, AST tokenizer, and vector database indexing progress.",
-    visual: <Card3 />,
-    colSpan: "md:col-span-1 lg:col-span-1",
-    height: "h-[330px]",
-  },
-  {
-    title: "Unified Repository Index",
-    description: "Instant semantic context retrieval mapping across files, imports, git history, and markdown docs.",
-    visual: <Card4 />,
-    colSpan: "md:col-span-2 lg:col-span-2",
-    height: "h-[330px]",
-  },
-  {
-    title: "Codebase Indexing Queries",
-    description: "Track semantic queries, syntactic matches, reference maps, and git diff latency indicators.",
-    visual: <Card5 />,
-    colSpan: "md:col-span-1 lg:col-span-1",
-    height: "h-[330px]",
-  }
-];
-
 export interface AgentBentoGridProps {
   className?: string;
+  detailedStatus?: string;
+  repoName?: string;
 }
 
-export function AgentBentoGrid({ className }: AgentBentoGridProps) {
+export function AgentBentoGrid({ className, detailedStatus, repoName }: AgentBentoGridProps) {
+  const CARDS = [
+    {
+      title: "AST Parser & Linker",
+      description: "Generate Abstract Syntax Trees and link reference chains into a unified codebase graph.",
+      visual: <Card1 detailedStatus={detailedStatus} />,
+      colSpan: "md:col-span-1 lg:col-span-1",
+      height: "h-[330px]",
+    },
+    {
+      title: "Blast Radius Analyzer",
+      description: "Evaluate commit changes downstream. View affected files and call reference risks.",
+      visual: <Card2 />,
+      colSpan: "md:col-span-1 lg:col-span-1",
+      height: "h-[330px]",
+    },
+    {
+      title: "Repository Sync Log",
+      description: "Real-time telemetry showing code cloner, AST tokenizer, and vector database indexing progress.",
+      visual: <Card3 detailedStatus={detailedStatus} repoName={repoName} />,
+      colSpan: "md:col-span-1 lg:col-span-1",
+      height: "h-[330px]",
+    },
+    {
+      title: "Unified Repository Index",
+      description: "Instant semantic context retrieval mapping across files, imports, git history, and markdown docs.",
+      visual: <Card4 />,
+      colSpan: "md:col-span-2 lg:col-span-2",
+      height: "h-[330px]",
+    },
+    {
+      title: "Codebase Indexing Queries",
+      description: "Track semantic queries, syntactic matches, reference maps, and git diff latency indicators.",
+      visual: <Card5 />,
+      colSpan: "md:col-span-1 lg:col-span-1",
+      height: "h-[330px]",
+    }
+  ];
+
   return (
     <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl mx-auto", className)}>
       {CARDS.map((card, idx) => (

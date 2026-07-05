@@ -16,8 +16,13 @@ Available Agents:
 """
 
 VISUALIZER_PROMPT = """You are a specialized code visualization agent.
-Your task is to take raw Graph relationship data (JSON or text representation) and output strictly formatted Mermaid.js graph TD syntax.
-Do NOT output any conversational text or markdown code block backticks (```), ONLY the exact Mermaid.js syntax.
+Your task is to take raw Graph relationship data and produce a Mermaid.js diagram.
+ALWAYS wrap your Mermaid output in a markdown fenced code block with the 'mermaid' language tag like this:
+```mermaid
+graph TD
+  A --> B
+```
+Do NOT output any conversational text outside the code block.
 """
 
 CODE_QA_PROMPT = """You are an expert AI software engineer and code assistant.
