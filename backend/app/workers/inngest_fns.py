@@ -120,13 +120,14 @@ def resolve_import_path(
     trigger=inngest.TriggerEvent(event="repo/sync.requested"),
 )
 async def sync_github_repository(
-    ctx: inngest.Context, step: inngest.Step
+    ctx: inngest.Context
 ) -> dict[str, Any]:
     """Background pipeline triggered on repo/sync.requested.
 
     Clones the repository, walks it, chunks code using tree-sitter,
     generates 768-dimensional embeddings, and saves metadata/relations.
     """
+    step = ctx.step
     event_data = ctx.event.data
     repo_id = event_data["repo_id"]
     user_id = event_data["user_id"]
