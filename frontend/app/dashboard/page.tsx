@@ -175,7 +175,7 @@ function DashboardContent() {
   const [isDraggingLeft, setIsDraggingLeft] = useState(false);
 
   // Graphs states
-  const [activeGraphTab, setActiveGraphTab] = useState<"dep" | "call" | "class" | "diagrams" | "metrics">("dep");
+  const [activeGraphTab, setActiveGraphTab] = useState<"overview" | "dep" | "call" | "class" | "diagrams" | "metrics">("overview");
   const [graphData, setGraphData] = useState<DependencyGraph | null>(null);
   const [layoutNodes, setLayoutNodes] = useState<LayoutNode[]>([]);
   const [hoveredNode, setHoveredNode] = useState<LayoutNode | null>(null);
@@ -630,6 +630,12 @@ function DashboardContent() {
             {/* Graph Category Toggles */}
             <div className={styles.graphTabs}>
               <button
+                className={`${styles.graphTabButton} ${activeGraphTab === "overview" ? styles.graphTabButtonActive : ""}`}
+                onClick={() => setActiveGraphTab("overview")}
+              >
+                Overview
+              </button>
+              <button
                 className={`${styles.graphTabButton} ${activeGraphTab === "dep" ? styles.graphTabButtonActive : ""}`}
                 onClick={() => setActiveGraphTab("dep")}
               >
@@ -661,7 +667,16 @@ function DashboardContent() {
               </button>
             </div>
 
-            {activeGraphTab !== "metrics" && activeGraphTab !== "diagrams" ? (
+            {activeGraphTab === "overview" ? (
+              <div className={styles.panelBody} style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", height: "100%" }}>
+                <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                  <AgentBentoGrid
+                    detailedStatus="completed"
+                    repoName={activeRepo.github_url.split("/").pop() || "Repository"}
+                  />
+                </div>
+              </div>
+            ) : activeGraphTab !== "metrics" && activeGraphTab !== "diagrams" ? (
               <>
                 {/* Search Bar & Active Blast info */}
                 <div className={styles.graphSearchWrap} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
