@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/lib/useAuth";
-import { listRepos, deleteRepo, syncRepo, type RepoItem } from "@/app/lib/api";
+import { listRepos, deleteRepo, syncRepo, listChatSessions, type RepoItem } from "@/app/lib/api";
 import styles from "./dashboard.module.css";
 
 /* ── Icons ─────────────────────────────────────────────────────────── */
@@ -78,6 +78,31 @@ function GithubIcon() {
   );
 }
 
+function UserIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
 /* ── Sidebar Layout Inner ───────────────────────────────────────────── */
 function SidebarContent({ children }: { children: React.ReactNode }) {
   const { user, session, loading, signOut } = useAuth(true);
@@ -93,10 +118,67 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const [githubLoading, setGithubLoading] = useState(false);
   const [showGithubRepos, setShowGithubRepos] = useState(false);
 
+  // Recent chats states
+  const [recentChats, setRecentChats] = useState<any[]>([]);
+  const [chatsLoading, setChatsLoading] = useState(false);
+
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeRepoId = searchParams.get("repo_id");
+
+  const completedRepos = repos.filter((r) => r.status === "completed");
+
+  // Load recent chat sessions across all completed repos (max 5)
+  useEffect(() => {
+    if (completedRepos.length === 0) {
+      setRecentChats([]);
+      return;
+    }
+
+    let active = true;
+    async function loadAllSessions() {
+      setChatsLoading(true);
+      try {
+        const allSessions: any[] = [];
+        const promises = completedRepos.map(async (repo) => {
+          try {
+            const sessions = await listChatSessions(repo.id);
+            return sessions.map((s) => ({
+              ...s,
+              repoId: repo.id,
+              repoName: repo.github_url.split("/").pop() || "repository",
+            }));
+          } catch {
+            return [];
+          }
+        });
+
+        const results = await Promise.all(promises);
+        results.forEach((res) => {
+          allSessions.push(...res);
+        });
+
+        // Sort by latest_at descending, slice to top 5
+        const sorted = allSessions
+          .sort((a, b) => new Date(b.latest_at).getTime() - new Date(a.latest_at).getTime())
+          .slice(0, 5);
+
+        if (active) {
+          setRecentChats(sorted);
+        }
+      } catch (err) {
+        console.error("Failed to load chat sessions", err);
+      } finally {
+        if (active) setChatsLoading(false);
+      }
+    }
+
+    loadAllSessions();
+    return () => {
+      active = false;
+    };
+  }, [repos]);
 
   const fetchLayoutRepos = useCallback(async () => {
     try {
@@ -199,8 +281,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const activeSyncs = repos.filter(
     (r) => r.status === "queued" || r.status === "processing" || r.status === "failed"
   );
-  
-  const completedRepos = repos.filter((r) => r.status === "completed");
 
   return (
     <div className={styles.dashboardLayout}>
@@ -240,162 +320,122 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             onClick={() => router.push("/dashboard")}
           >
             <HomeIcon />
-            {!collapsed && <span>Overview</span>}
+            {!collapsed && <span>Workspace Home</span>}
           </Link>
 
-          {/* Sync Ingestion Inputs (Left Sidebar Connection Hub) */}
-          {!collapsed && (
-            <div className={styles.sidebarQueueSection} style={{ border: "none", padding: 0, background: "transparent" }}>
-              <div className={styles.sidebarQueueHeader} onClick={() => setShowGithubRepos(!showGithubRepos)} style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>Connect Source</span>
-                <span>{showGithubRepos ? "▼" : "▲"}</span>
+          <Link
+            href="/dashboard/profile"
+            className={`${styles.navItem} ${pathname === "/dashboard/profile" ? styles.navItemActive : ""}`}
+            onClick={() => router.push("/dashboard/profile")}
+          >
+            <UserIcon />
+            {!collapsed && <span>Developer Profile</span>}
+          </Link>
+
+          {/* Active Repo Shortcut */}
+          {!collapsed && activeRepoId && (
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6, borderBottom: "0.5px solid var(--color-border)", paddingBottom: 12, marginBottom: 12 }}>
+              <div className={styles.sidebarQueueHeader} style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--color-text-secondary)" }}>
+                Active Codebase
               </div>
-
-              {showGithubRepos ? (
-                /* GitHub repo listing */
-                githubLoading ? (
-                  <div style={{ display: "flex", justifyContent: "center", padding: 12 }}>
-                    <div className={styles.loadingSpinner} style={{ width: 12, height: 12 }} />
-                  </div>
-                ) : githubRepos.length > 0 ? (
-                  <div style={{ maxHeight: 150, overflowY: "auto", borderBottom: "0.5px solid var(--color-border)", marginBottom: 12 }}>
-                    {githubRepos.map((gr) => {
-                      const isSynced = repos.some(r => r.github_url === gr.html_url);
-                      return (
-                        <div
-                          key={gr.id}
-                          className={styles.userRepoRow}
-                          onClick={() => !isSynced && handleSync(gr.html_url, gr.default_branch || "main")}
-                          style={{ padding: "6px 8px", opacity: isSynced ? 0.4 : 1, cursor: isSynced ? "default" : "pointer" }}
-                        >
-                          <div className={styles.userRepoInfo}>
-                            <span className={styles.userRepoName} style={{ fontSize: "0.75rem" }}>{gr.name}</span>
-                            <span className={styles.userRepoOwner} style={{ fontSize: "0.625rem" }}>{gr.owner?.login}</span>
-                          </div>
-                          {!isSynced && <PlusIcon />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ padding: "8px", fontSize: "0.6875rem", color: "var(--color-text-tertiary)", textAlign: "center" }}>
-                    Authorize GitHub to import repos.
-                  </div>
-                )
-              ) : null}
-
-              {/* Custom Repo URL input */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 0" }}>
-                <input
-                  type="url"
-                  className={styles.formInput}
-                  placeholder="GitHub Repo URL..."
-                  value={repoUrlInput}
-                  onChange={(e) => setRepoUrlInput(e.target.value)}
-                  style={{ fontSize: "0.6875rem", height: 26 }}
-                />
-                <div style={{ display: "flex", gap: 4 }}>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    placeholder="branch (main)"
-                    value={branchInput}
-                    onChange={(e) => setBranchInput(e.target.value)}
-                    style={{ fontSize: "0.6875rem", flex: 1, height: 26 }}
-                  />
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => handleSync(repoUrlInput, branchInput)}
-                    disabled={syncLoading || !repoUrlInput.trim()}
-                    style={{ fontSize: "0.6875rem", height: 26, padding: "0 8px" }}
-                  >
-                    {syncLoading ? "..." : "Sync"}
-                  </button>
-                </div>
-                {syncError && <p className={styles.formError} style={{ fontSize: "0.625rem", color: "var(--color-danger)" }}>{syncError}</p>}
+              <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--color-white)", padding: "0 8px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                {repos.find(r => r.id === activeRepoId)?.github_url.split("/").pop() || "Repository"}
+              </div>
+              <div style={{ padding: "0 8px" }}>
+                <span className={`${styles.statusBadge} ${styles.statusProcessing}`} style={{ fontSize: "0.65rem", padding: "2px 8px" }}>
+                  <span className={`${styles.statusDot} ${styles.statusDotProcessing}`} />
+                  Active Workspace
+                </span>
               </div>
             </div>
           )}
 
-          {/* Synced repos selector lists (Left Sidebar selection) */}
+          {/* Recent chats section */}
           {!collapsed && (
-            <div className={styles.sidebarQueueSection} style={{ border: "none", padding: 0, background: "transparent" }}>
-              <div className={styles.sidebarQueueHeader}>Synced Codebases</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflowY: "auto" }}>
-                {completedRepos.map((repo) => {
-                  const parts = repo.github_url.split("/");
-                  const name = parts[parts.length - 1] || "repo";
-                  const owner = parts[parts.length - 2] || "";
-                  const isActive = repo.id === activeRepoId;
-
-                  return (
-                    <div
-                      key={repo.id}
-                      onClick={() => router.push(`/dashboard?repo_id=${repo.id}`)}
-                      className={styles.repoCard}
-                      style={{
-                        padding: 8,
-                        gap: 4,
-                        borderColor: isActive ? "rgba(176,30,10,0.5)" : "rgba(255,255,255,0.05)",
-                        background: isActive ? "rgba(176,30,10,0.02)" : "var(--color-surface)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--color-white)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {name}
-                          </div>
-                          <div style={{ fontSize: "0.625rem", fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)" }}>
-                            {owner}
-                          </div>
+            <div className={styles.sidebarQueueSection} style={{ border: "none", padding: 0, background: "transparent", marginTop: 8 }}>
+              <div className={styles.sidebarQueueHeader} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.6875rem", letterSpacing: "0.05em" }}>
+                <ChatIcon />
+                <span>Recent Conversations</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: "300px", overflowY: "auto" }}>
+                {chatsLoading ? (
+                  <div style={{ display: "flex", justifyContent: "center", padding: 12 }}>
+                    <div className={styles.loadingSpinner} style={{ width: 12, height: 12 }} />
+                  </div>
+                ) : recentChats.length > 0 ? (
+                  recentChats.map((chat) => {
+                    const formattedDate = new Date(chat.latest_at).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    });
+                    return (
+                      <div
+                        key={chat.session_id}
+                        onClick={() => router.push(`/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}`)}
+                        className={styles.repoCard}
+                        style={{
+                          padding: 8,
+                          cursor: "pointer",
+                          background: "rgba(255, 255, 255, 0.01)",
+                          border: "0.5px solid rgba(255, 255, 255, 0.03)"
+                        }}
+                      >
+                        <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--color-white)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                          {chat.repoName}
                         </div>
-                        <div style={{ display: "flex", gap: 4, marginLeft: 6 }}>
-                          <button className={styles.repoAction} onClick={(e) => handleResync(repo, e)} title="Re-sync" style={{ padding: 2 }}>
-                            <RefreshIcon />
-                          </button>
-                          <button className={`${styles.repoAction} ${styles.repoActionDanger}`} onClick={(e) => handleDelete(repo.id, e)} title="Delete" style={{ padding: 2 }}>
-                            <TrashIcon />
-                          </button>
+                        <div style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)", marginTop: 2, display: "flex", justifyContent: "space-between" }}>
+                          <span>id: {chat.session_id.slice(0, 8)}...</span>
+                          <span>{formattedDate}</span>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-
-                {completedRepos.length === 0 && (
+                    );
+                  })
+                ) : (
                   <div style={{ padding: "16px 8px", textAlign: "center", color: "var(--color-text-tertiary)", fontSize: "0.6875rem", border: "0.5px dashed var(--color-border)", borderRadius: "var(--radius-sm)" }}>
-                    No repositories synced.
+                    No recent conversations.
                   </div>
                 )}
               </div>
             </div>
           )}
 
-
         </nav>
 
         {/* Sidebar Footer User profile */}
         <div className={styles.sidebarFooter}>
           {!collapsed ? (
-            <div className={styles.userSection} onClick={signOut}>
-              <div className={styles.userAvatar}>{initials}</div>
+            <div className={styles.userSection} onClick={() => router.push("/dashboard/profile")} style={{ cursor: "pointer" }}>
+              {user.user_metadata?.avatar_url ? (
+                <div className={styles.userAvatar} style={{ overflow: "hidden", padding: 0 }}>
+                  <img src={user.user_metadata.avatar_url} alt={user.email || "Profile"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ) : (
+                <div className={styles.userAvatar}>{initials}</div>
+              )}
               <div className={styles.userInfo}>
                 <span className={styles.userName}>
                   {user.email?.split("@")[0]}
                 </span>
                 <span className={styles.userEmail}>{user.email}</span>
               </div>
-              <SignOutIcon />
+              <SettingsIcon />
             </div>
           ) : (
             <button
               className={styles.collapseBtn}
-              onClick={signOut}
-              aria-label="Sign out"
+              onClick={() => router.push("/dashboard/profile")}
+              aria-label="View Profile"
               style={{ margin: "0 auto" }}
             >
-              <SignOutIcon />
+              {user.user_metadata?.avatar_url ? (
+                <div className={styles.userAvatar} style={{ overflow: "hidden", padding: 0, width: 24, height: 24 }}>
+                  <img src={user.user_metadata.avatar_url} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ) : (
+                <SettingsIcon />
+              )}
             </button>
           )}
         </div>

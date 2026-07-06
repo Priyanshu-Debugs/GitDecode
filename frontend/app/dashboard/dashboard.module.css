@@ -1358,3 +1358,780 @@
   background: rgba(255, 255, 255, 0.06);
   color: var(--color-white);
 }
+
+/* ── Premium Repository Selector Dashboard ── */
+.dashboardHero {
+  margin-bottom: 32px;
+  animation: titleReveal var(--transition-slow);
+}
+
+.dashboardHeroTitle {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--color-white);
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.dashboardHeroSubtitle {
+  font-size: 0.9375rem;
+  font-weight: 300;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+  animation: fadeInUp var(--transition-slow) 100ms both;
+}
+
+@media (max-width: 1024px) {
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboardStatCard {
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
+  transition: all var(--transition-base);
+}
+
+.dashboardStatCard:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.statVal {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-white);
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.controlsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 20px;
+  animation: fadeInUp var(--transition-slow) 200ms both;
+}
+
+@media (max-width: 768px) {
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.searchInput {
+  width: 100%;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  padding: 0 16px 0 38px;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.searchInput:focus {
+  border-color: rgba(176, 30, 10, 0.5);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 12px rgba(176, 30, 10, 0.1);
+}
+
+.searchIconWrapper {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.filterTabBtn {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.filterTabBtn:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-white);
+}
+
+.filterTabBtnActive {
+  background: rgba(176, 30, 10, 0.08);
+  border-color: rgba(176, 30, 10, 0.4);
+  color: var(--color-white);
+}
+
+.repoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  animation: fadeInUp var(--transition-slow) 300ms both;
+}
+
+@media (max-width: 640px) {
+  .repoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.repoCardOuter {
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  padding: 6px;
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
+  transition: border-color var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.repoCardOuter:hover {
+  border-color: rgba(176, 30, 10, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5), 0 0 32px rgba(176, 30, 10, 0.05);
+}
+
+.repoCardInner {
+  background: #050505;
+  border: 0.5px solid rgba(255, 255, 255, 0.03);
+  border-radius: calc(20px - 6px);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.01);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.repoCardCover {
+  height: 80px;
+  position: relative;
+  background: linear-gradient(135deg, rgba(176, 30, 10, 0.15) 0%, rgba(5, 5, 5, 1) 100%);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+
+.repoCardCoverGrid {
+  position: absolute;
+  inset: 0;
+  background-size: 16px 16px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  opacity: 0.7;
+}
+
+.repoCardCoverOctocat {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: rgba(255, 255, 255, 0.1);
+  transition: color var(--transition-fast);
+}
+
+.repoCardOuter:hover .repoCardCoverOctocat {
+  color: rgba(176, 30, 10, 0.3);
+}
+
+.repoCardAvatarContainer {
+  position: absolute;
+  left: 16px;
+  top: 50px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.repoCardAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.repoCardAvatarPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(176, 30, 10, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #b01e0a;
+}
+
+.repoCardContent {
+  padding: 24px 16px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.repoCardHeaderInfo {
+  margin-bottom: 12px;
+}
+
+.repoCardTitle {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-white);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repoCardOwner {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+}
+
+.repoCardDescription {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 36px;
+}
+
+.repoCardMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.04);
+  padding-top: 12px;
+  margin-bottom: 16px;
+}
+
+.repoCardMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+.repoCardLanguage {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--color-white);
+}
+
+.repoCardLanguageDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.repoCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.repoCardBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badgeNotConnected {
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+}
+
+.badgeCompleted {
+  background: rgba(34, 197, 94, 0.05);
+  border: 0.5px solid rgba(34, 197, 94, 0.2);
+  color: var(--color-success);
+}
+
+.badgeProcessing {
+  background: rgba(245, 158, 11, 0.05);
+  border: 0.5px solid rgba(245, 158, 11, 0.25);
+  color: var(--color-warning);
+}
+
+.badgeFailed {
+  background: rgba(239, 68, 68, 0.05);
+  border: 0.5px solid rgba(239, 68, 68, 0.25);
+  color: var(--color-danger);
+}
+
+.pulseLightDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.pulseDotGreen {
+  background: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
+}
+
+.pulseDotOrange {
+  background: var(--color-warning);
+  box-shadow: 0 0 6px var(--color-warning);
+  animation: pulse 1.2s infinite;
+}
+
+.pulseDotRed {
+  background: var(--color-danger);
+  box-shadow: 0 0 6px var(--color-danger);
+}
+
+.pulseDotGray {
+  background: var(--color-text-tertiary);
+}
+
+/* Custom Connection Area */
+.customConnectCardOuter {
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px dashed rgba(255, 255, 255, 0.1);
+  padding: 6px;
+  border-radius: 20px;
+  height: 100%;
+}
+
+.customConnectCardInner {
+  background: transparent;
+  border-radius: calc(20px - 6px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.customConnectCardOuter:hover {
+  border-color: rgba(176, 30, 10, 0.3);
+}
+
+.customConnectCardOuter:hover .customConnectCardInner {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.customConnectIconWrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+  transition: all var(--transition-fast);
+}
+
+.customConnectCardOuter:hover .customConnectIconWrapper {
+  color: #b01e0a;
+  background: rgba(176, 30, 10, 0.05);
+  border-color: rgba(176, 30, 10, 0.25);
+  transform: scale(1.05);
+}
+
+.customConnectTitle {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-white);
+  margin-bottom: 4px;
+}
+
+.customConnectDesc {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* branch confirm modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn var(--transition-fast);
+}
+
+.confirmModalOuter {
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
+  max-width: 420px;
+  width: 90%;
+  animation: fadeInUp var(--transition-base);
+}
+
+.confirmModalInner {
+  background: #050505;
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  border-radius: calc(24px - 8px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.confirmModalHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.confirmModalTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-white);
+  letter-spacing: -0.015em;
+}
+
+.confirmModalDesc {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.confirmModalRepoName {
+  font-family: var(--font-mono);
+  color: #b01e0a;
+  background: rgba(176, 30, 10, 0.05);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  border: 0.5px solid rgba(176, 30, 10, 0.2);
+}
+
+.confirmModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.confirmModalLabel {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.confirmModalInput {
+  height: 36px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  outline: none;
+  font-family: var(--font-mono);
+  transition: all var(--transition-fast);
+}
+
+.confirmModalInput:focus {
+  border-color: rgba(176, 30, 10, 0.5);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.confirmModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* profile page */
+.profileContainer {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 0.5px solid var(--color-border);
+  padding-bottom: 24px;
+}
+
+.profileUserInfo {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.profileAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(176, 30, 10, 0.4);
+  overflow: hidden;
+  box-shadow: 0 0 16px rgba(176, 30, 10, 0.15);
+}
+
+.profileAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profileAvatarInitials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  background: var(--gradient-primary);
+  color: var(--color-white);
+  font-weight: 600;
+}
+
+.profileDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileEmail {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.profileMeta {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.profileStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.profileStatCard {
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.profileStatCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(176, 30, 10, 0.3), transparent);
+}
+
+.profileStatLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.profileStatValue {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-white);
+  font-family: var(--font-display);
+}
+
+.profileStatDesc {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.profileBentoRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .profileBentoRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profileBentoCard {
+  background: rgba(0, 0, 0, 0.2);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profileCardTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-white);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profileRecentChatList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.profileRecentChatItem {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profileRecentChatItem:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(176, 30, 10, 0.3);
+  transform: translateX(4px);
+}
+
+.profileChatRepo {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-white);
+}
+
+.profileChatTime {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.profileChatId {
+  font-size: 0.6875rem;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  margin-top: 4px;
+}

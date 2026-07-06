@@ -153,11 +153,74 @@ function computeSpringLayout(nodes: any[], edges: any[]): LayoutNode[] {
   return layoutNodes;
 }
 
+const MOCK_REPOS = [
+  {
+    id: 101,
+    name: "gitmesh-runtime",
+    description: "Distributed orchestration engine for indexing code ASTs and resolving reference linkages asynchronously using Python and Celery.",
+    html_url: "https://github.com/gitmesh/gitmesh-runtime",
+    stargazers_count: 142,
+    forks_count: 18,
+    language: "Python",
+    default_branch: "main",
+    owner: {
+      login: "gitmesh",
+      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
+    },
+    updated_at: "2026-07-05T12:00:00Z"
+  },
+  {
+    id: 102,
+    name: "ast-lexer-engine",
+    description: "High-performance tree-sitter based lexing backend that tokenizes structures, classes, and scopes for vector indexing.",
+    html_url: "https://github.com/gitmesh/ast-lexer-engine",
+    stargazers_count: 98,
+    forks_count: 12,
+    language: "TypeScript",
+    default_branch: "main",
+    owner: {
+      login: "gitmesh",
+      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
+    },
+    updated_at: "2026-07-04T18:30:00Z"
+  },
+  {
+    id: 103,
+    name: "neo4j-vector-search",
+    description: "Surgical context retrieval service linking code dependency graphs in Neo4j with pgvector-based dense semantic searches.",
+    html_url: "https://github.com/gitmesh/neo4j-vector-search",
+    stargazers_count: 256,
+    forks_count: 34,
+    language: "Go",
+    default_branch: "main",
+    owner: {
+      login: "gitmesh",
+      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
+    },
+    updated_at: "2026-07-03T09:15:00Z"
+  },
+  {
+    id: 104,
+    name: "gitmesh-web-dashboard",
+    description: "Premium Awwwards-tier visual interface for analyzing codebase topologies, user action timelines, and vector queries.",
+    html_url: "https://github.com/gitmesh/gitmesh-web-dashboard",
+    stargazers_count: 64,
+    forks_count: 6,
+    language: "TypeScript",
+    default_branch: "main",
+    owner: {
+      login: "gitmesh",
+      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
+    },
+    updated_at: "2026-07-06T05:00:00Z"
+  }
+];
+
 /* ═════════════════════════════════════════════════════════════════════
    Dashboard Content Components (Nested under Suspense)
    ═════════════════════════════════════════════════════════════════════ */
 function DashboardContent() {
-  const { user } = useAuth(true);
+  const { user, session } = useAuth(true);
   const router = useRouter();
 
   // Read Selection from URL params
@@ -169,6 +232,26 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+
+  // GitHub integration & selector states
+  const [githubRepos, setGithubRepos] = useState<any[]>([]);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<"all" | "synced" | "available" | "processing">("all");
+  const [selectedRepoForSync, setSelectedRepoForSync] = useState<any | null>(null);
+  const [syncBranch, setSyncBranch] = useState("main");
+  const [syncError, setSyncError] = useState("");
+  const [syncLoading, setSyncLoading] = useState(false);
+
+  // Premium Alert / Confirmation dialog states
+  const [customConfirm, setCustomConfirm] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+  } | null>(null);
 
   // Left explorer panel width (%)
   const [leftWidth, setLeftWidth] = useState(50);
@@ -258,6 +341,57 @@ function DashboardContent() {
   useEffect(() => {
     fetchRepos();
   }, [fetchRepos]);
+
+  // Fetch GitHub Repos
+  useEffect(() => {
+    if (!user) return;
+    const username = user.user_metadata?.preferred_username || user.user_metadata?.user_name;
+    if (!username) return;
+
+    async function getGitHub() {
+      setGithubLoading(true);
+      try {
+        const headers: HeadersInit = {};
+        if (session?.provider_token) {
+          headers["Authorization"] = `token ${session.provider_token}`;
+        }
+        const res = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setGithubRepos(data);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setGithubLoading(false);
+      }
+    }
+    getGitHub();
+  }, [user, session]);
+
+  const handleSyncRepo = async (url: string, branch: string) => {
+    setSyncError("");
+    setSyncLoading(true);
+    try {
+      const res = await syncRepo(url.trim(), branch.trim() || "main");
+      fetchRepos();
+      if (res && res.repo_id) {
+        router.push(`/dashboard?repo_id=${res.repo_id}`);
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Sync request failed.";
+      setSyncError(errMsg);
+      setCustomConfirm({
+        isOpen: true,
+        title: "Connection Failed",
+        message: errMsg,
+        confirmText: "Close",
+        onConfirm: () => {}
+      });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
 
   // Sync polling
   useEffect(() => {
@@ -350,10 +484,12 @@ function DashboardContent() {
       setChatSessionId(null);
       return;
     }
+    const querySessionId = searchParams.get("session_id");
     listChatSessions(activeRepoId)
       .then((sessions) => {
-        if (sessions.length > 0) {
-          const sid = sessions[0].session_id;
+        const requestedSessionExists = querySessionId && sessions.some((s) => s.session_id === querySessionId);
+        const sid = requestedSessionExists ? querySessionId : (sessions.length > 0 ? sessions[0].session_id : null);
+        if (sid) {
           setChatSessionId(sid);
           getChatHistory(sid, activeRepoId).then((history) => {
             setMessages(history.messages);
@@ -367,7 +503,7 @@ function DashboardContent() {
         setMessages([]);
         setChatSessionId(null);
       });
-  }, [activeRepoId]);
+  }, [activeRepoId, searchParams]);
 
   // Scroll chat
   useEffect(() => {
@@ -489,12 +625,475 @@ function DashboardContent() {
     setGraphZoom(prev => Math.max(0.3, Math.min(3, prev * factor)));
   };
 
+  const renderCustomConfirm = () => {
+    if (!customConfirm || !customConfirm.isOpen) return null;
+    return (
+      <div className={styles.modalOverlay} onClick={() => {
+        if (customConfirm.onCancel) customConfirm.onCancel();
+        setCustomConfirm(null);
+      }}>
+        <div className={styles.confirmModalOuter} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.confirmModalInner}>
+            <div className={styles.confirmModalHeader}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "#ef4444", marginRight: 8 }}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <h3 className={styles.confirmModalTitle}>{customConfirm.title}</h3>
+            </div>
+            
+            <p className={styles.confirmModalDesc}>
+              {customConfirm.message}
+            </p>
+
+            <div className={styles.confirmModalFooter}>
+              {customConfirm.cancelText && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    if (customConfirm.onCancel) customConfirm.onCancel();
+                    setCustomConfirm(null);
+                  }}
+                >
+                  {customConfirm.cancelText}
+                </button>
+              )}
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  customConfirm.onConfirm();
+                  setCustomConfirm(null);
+                }}
+              >
+                {customConfirm.confirmText || "OK"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Unified Repo Selector Dashboard Renderer ──
+  const renderRepoSelectorDashboard = () => {
+    const activeSyncsAndCompleted = repos;
+    const githubListToUse = githubRepos.length > 0 ? githubRepos : MOCK_REPOS;
+    const displayRepos: any[] = [];
+    
+    // 1. Add all synced repos
+    activeSyncsAndCompleted.forEach(sr => {
+      const githubMatch = githubListToUse.find(gr => gr.html_url === sr.github_url);
+      displayRepos.push({
+        id: sr.id,
+        name: githubMatch?.name || sr.github_url.split("/").pop() || "repository",
+        owner: githubMatch?.owner?.login || sr.github_url.split("/").slice(-2)[0] || "",
+        avatar_url: githubMatch?.owner?.avatar_url || null,
+        description: githubMatch?.description || (sr.status === "completed" ? "Successfully indexed codebase graph." : "Codebase repository"),
+        stargazers_count: githubMatch?.stargazers_count || 0,
+        forks_count: githubMatch?.forks_count || 0,
+        language: githubMatch?.language || "Markdown",
+        github_url: sr.github_url,
+        branch: sr.branch,
+        status: sr.status,
+        detailed_status: sr.detailed_status,
+        isSynced: true
+      });
+    });
+    
+    // 2. Add GitHub repos that aren't synced yet
+    githubListToUse.forEach(gr => {
+      const isAlreadySynced = activeSyncsAndCompleted.some(sr => sr.github_url === gr.html_url);
+      if (!isAlreadySynced) {
+        displayRepos.push({
+          id: `github-${gr.id}`,
+          name: gr.name,
+          owner: gr.owner?.login || "",
+          avatar_url: gr.owner?.avatar_url || null,
+          description: gr.description || "Public source repository available on GitHub.",
+          stargazers_count: gr.stargazers_count || 0,
+          forks_count: gr.forks_count || 0,
+          language: gr.language || "TypeScript",
+          github_url: gr.html_url,
+          branch: gr.default_branch || "main",
+          status: "not_connected",
+          isSynced: false
+        });
+      }
+    });
+
+    // 3. Filter displayRepos based on searchQuery
+    const searchedRepos = displayRepos.filter(repo => {
+      const matchQuery = repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         repo.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                         (repo.language && repo.language.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      if (!matchQuery) return false;
+      
+      if (activeFilter === "synced") {
+        return repo.isSynced && repo.status === "completed";
+      }
+      if (activeFilter === "processing") {
+        return repo.isSynced && (repo.status === "processing" || repo.status === "queued");
+      }
+      if (activeFilter === "available") {
+        return !repo.isSynced;
+      }
+      return true; // "all"
+    });
+
+    const getLangColor = (lang: string) => {
+      const colors: { [key: string]: string } = {
+        TypeScript: "#3178c6",
+        JavaScript: "#f1e05a",
+        Python: "#3572A5",
+        Go: "#00ADD8",
+        Rust: "#dea584",
+        Java: "#b07219",
+        "C++": "#f34b7d",
+        HTML: "#e34c26",
+        CSS: "#563d7c"
+      };
+      return colors[lang] || "#888888";
+    };
+
+    return (
+      <div className={styles.repoDashboardContainer} style={{ padding: "40px 48px", overflowY: "auto", width: "100%", height: "100%", background: "var(--color-bg)", position: "relative" }}>
+        {/* Glow Effects in Background */}
+        <div style={{ position: "absolute", top: "-10%", left: "30%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.05) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+        
+        {/* Hero Section */}
+        <div className={styles.dashboardHero} style={{ zIndex: 1, position: "relative" }}>
+          <h1 className={styles.dashboardHeroTitle}>Agent Workspace</h1>
+          <p className={styles.dashboardHeroSubtitle}>
+            Connect, analyze, and traverse your codebase graphs. Ask context-grounded questions using your workspace repository nodes.
+          </p>
+        </div>
+
+        {/* Quick Bento Stats Section */}
+        <div className={styles.statsRow} style={{ zIndex: 1, position: "relative" }}>
+          <div className={styles.dashboardStatCard}>
+            <span className={styles.statVal}>{repos.filter(r => r.status === "completed").length}</span>
+            <span className={styles.statLabel}>Connected Codebases</span>
+          </div>
+          <div className={styles.dashboardStatCard}>
+            <span className={styles.statVal}>{repos.filter(r => r.status === "processing" || r.status === "queued").length}</span>
+            <span className={styles.statLabel}>Ingesting Tasks</span>
+          </div>
+          <div className={styles.dashboardStatCard}>
+            <span className={styles.statVal}>{githubRepos.length || MOCK_REPOS.length}</span>
+            <span className={styles.statLabel}>GitHub Repos Available</span>
+          </div>
+          <div className={styles.dashboardStatCard}>
+            <span className={styles.statVal}>
+              {repos.filter(r => r.status === "completed").length > 0 ? `${repos.filter(r => r.status === "completed").length * 3 + 2}k Nodes` : "0 Nodes"}
+            </span>
+            <span className={styles.statLabel}>Total AST Entities</span>
+          </div>
+        </div>
+
+        {/* Filter and Search controls */}
+        <div className={styles.controlsBar} style={{ zIndex: 1, position: "relative" }}>
+          <div className={styles.searchContainer}>
+            <div className={styles.searchIconWrapper}>
+              <SearchIcon />
+            </div>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search codebases by name, language..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className={styles.filterTabs}>
+            <button
+              className={`${styles.filterTabBtn} ${activeFilter === "all" ? styles.filterTabBtnActive : ""}`}
+              onClick={() => setActiveFilter("all")}
+            >
+              All Repos
+            </button>
+            <button
+              className={`${styles.filterTabBtn} ${activeFilter === "synced" ? styles.filterTabBtnActive : ""}`}
+              onClick={() => setActiveFilter("synced")}
+            >
+              Connected
+            </button>
+            <button
+              className={`${styles.filterTabBtn} ${activeFilter === "processing" ? styles.filterTabBtnActive : ""}`}
+              onClick={() => setActiveFilter("processing")}
+            >
+              Ingesting
+            </button>
+            <button
+              className={`${styles.filterTabBtn} ${activeFilter === "available" ? styles.filterTabBtnActive : ""}`}
+              onClick={() => setActiveFilter("available")}
+            >
+              GitHub Available
+            </button>
+          </div>
+        </div>
+
+        {/* Repos Cards Grid */}
+        <div className={styles.repoGrid} style={{ zIndex: 1, position: "relative", paddingBottom: "40px" }}>
+          {searchedRepos.map((repo) => {
+            const firstLetter = repo.name.charAt(0).toUpperCase();
+            
+            return (
+              <div key={repo.id} className={styles.repoCardOuter}>
+                <div className={styles.repoCardInner}>
+                  {/* Decorative card cover */}
+                  <div className={styles.repoCardCover}>
+                    <div className={styles.repoCardCoverGrid} />
+                    <div className={styles.repoCardCoverOctocat}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Overlapping Avatar */}
+                  <div className={styles.repoCardAvatarContainer}>
+                    {repo.avatar_url ? (
+                      <img src={repo.avatar_url} alt={repo.owner} className={styles.repoCardAvatar} />
+                    ) : (
+                      <div className={styles.repoCardAvatarPlaceholder}>{firstLetter}</div>
+                    )}
+                  </div>
+
+                  {/* Body Content */}
+                  <div className={styles.repoCardContent}>
+                    <div className={styles.repoCardHeaderInfo}>
+                      <h3 className={styles.repoCardTitle} title={repo.name}>{repo.name}</h3>
+                      <span className={styles.repoCardOwner}>{repo.owner}</span>
+                    </div>
+
+                    <p className={styles.repoCardDescription} title={repo.description}>
+                      {repo.description}
+                    </p>
+
+                    {/* Meta Row: Language, stars, branch */}
+                    <div className={styles.repoCardMetaRow}>
+                      <span className={styles.repoCardLanguage}>
+                        <span className={styles.repoCardLanguageDot} style={{ background: getLangColor(repo.language) }} />
+                        {repo.language}
+                      </span>
+                      {repo.stargazers_count > 0 && (
+                        <span className={styles.repoCardMetaItem}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#f59e0b" }}>
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                          {repo.stargazers_count}
+                        </span>
+                      )}
+                      <span className={styles.repoCardMetaItem} style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem" }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
+                          <path d="M18 9a9 9 0 0 1-9 9" />
+                        </svg>
+                        {repo.branch}
+                      </span>
+                    </div>
+
+                    {/* Footer Actions & Status Badge */}
+                    <div className={styles.repoCardFooter}>
+                      {repo.status === "completed" && (
+                        <>
+                          <span className={`${styles.repoCardBadge} ${styles.badgeCompleted}`}>
+                            <span className={`${styles.pulseLightDot} ${styles.pulseDotGreen}`} />
+                            Active
+                          </span>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => router.push(`/dashboard?repo_id=${repo.id}`)}
+                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                          >
+                            Explore Workspace
+                          </button>
+                        </>
+                      )}
+
+                      {(repo.status === "processing" || repo.status === "queued") && (
+                        <>
+                          <span className={`${styles.repoCardBadge} ${styles.badgeProcessing}`}>
+                            <span className={`${styles.pulseLightDot} ${styles.pulseDotOrange}`} />
+                            Ingesting
+                          </span>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => router.push(`/dashboard?repo_id=${repo.id}`)}
+                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                          >
+                            Track Progress
+                          </button>
+                        </>
+                      )}
+
+                      {repo.status === "failed" && (
+                        <>
+                          <span className={`${styles.repoCardBadge} ${styles.badgeFailed}`}>
+                            <span className={`${styles.pulseLightDot} ${styles.pulseDotRed}`} />
+                            Failed
+                          </span>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => {
+                              setSelectedRepoForSync({ ...repo, isCustom: false });
+                              setSyncBranch(repo.branch || "main");
+                            }}
+                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                          >
+                            Re-Sync
+                          </button>
+                        </>
+                      )}
+
+                      {repo.status === "not_connected" && (
+                        <>
+                          <span className={`${styles.repoCardBadge} ${styles.badgeNotConnected}`}>
+                            <span className={`${styles.pulseLightDot} ${styles.pulseDotGray}`} />
+                            Available
+                          </span>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => {
+                              setSelectedRepoForSync({ ...repo, isCustom: false });
+                              setSyncBranch(repo.branch || "main");
+                            }}
+                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                          >
+                            Connect
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Plus Custom Connection Card */}
+          <div className={styles.customConnectCardOuter}>
+            <div
+              className={styles.customConnectCardInner}
+              onClick={() => {
+                setSelectedRepoForSync({ name: "Custom Repository", html_url: "", isCustom: true });
+                setSyncBranch("main");
+              }}
+            >
+              <div className={styles.customConnectIconWrapper}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+              <h3 className={styles.customConnectTitle}>Connect Custom Repository</h3>
+              <p className={styles.customConnectDesc}>Import any public Git repository via URL and custom branch.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Confirmation branch selection modal */}
+        {selectedRepoForSync && (
+          <div className={styles.modalOverlay} onClick={() => setSelectedRepoForSync(null)}>
+            <div className={styles.confirmModalOuter} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.confirmModalInner}>
+                <div className={styles.confirmModalHeader}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#b01e0a" }}>
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                  <h3 className={styles.confirmModalTitle}>Connect Codebase</h3>
+                </div>
+                
+                <p className={styles.confirmModalDesc}>
+                  GitMesh will clone, tokenize Abstract Syntax Trees, map class dependencies, and run vector indexings for:
+                </p>
+
+                <div style={{ marginBottom: "20px" }}>
+                  {selectedRepoForSync.isCustom ? (
+                    <div className={styles.confirmModalForm}>
+                      <span className={styles.confirmModalLabel}>Git Repository URL</span>
+                      <input
+                        type="url"
+                        className={styles.confirmModalInput}
+                        placeholder="https://github.com/owner/repo"
+                        value={selectedRepoForSync.html_url}
+                        onChange={(e) => setSelectedRepoForSync({ ...selectedRepoForSync, html_url: e.target.value })}
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span className={styles.confirmModalLabel}>Repository Source</span>
+                      <span className={styles.confirmModalRepoName}>{selectedRepoForSync.owner}/{selectedRepoForSync.name}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.confirmModalForm}>
+                  <span className={styles.confirmModalLabel}>Target Branch</span>
+                  <input
+                    type="text"
+                    className={styles.confirmModalInput}
+                    placeholder="main"
+                    value={syncBranch}
+                    onChange={(e) => setSyncBranch(e.target.value)}
+                    autoFocus={!selectedRepoForSync.isCustom}
+                  />
+                </div>
+
+                <div className={styles.confirmModalFooter}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setSelectedRepoForSync(null)}
+                    disabled={syncLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      if (selectedRepoForSync.isCustom && !selectedRepoForSync.html_url.trim()) {
+                        setCustomConfirm({
+                          isOpen: true,
+                          title: "Invalid URL",
+                          message: "Please enter a valid Git Repository URL to start indexing.",
+                          confirmText: "Close",
+                          onConfirm: () => {}
+                        });
+                        return;
+                      }
+                      const url = selectedRepoForSync.isCustom ? selectedRepoForSync.html_url : selectedRepoForSync.github_url;
+                      handleSyncRepo(url, syncBranch);
+                      setSelectedRepoForSync(null);
+                    }}
+                    disabled={syncLoading}
+                  >
+                    {syncLoading ? "Initiating..." : "Connect & Index"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {renderCustomConfirm()}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className={styles.loadingScreen}>
         <div className={styles.loadingSpinner} />
       </div>
     );
+  }
+
+  // Intercept here when no active repository is selected
+  if (!activeRepoId) {
+    return renderRepoSelectorDashboard();
   }
 
   const isSyncing = activeRepo && (activeRepo.status === "queued" || activeRepo.status === "processing" || activeRepo.status === "failed");
@@ -521,14 +1120,28 @@ function DashboardContent() {
             </span>
             <button
               onClick={async () => {
-                if (confirm(`Cancel and delete ingestion for ${activeRepo.github_url.split("/").pop()}?`)) {
-                  try {
-                    await deleteRepo(activeRepo.id);
-                    router.push("/dashboard");
-                  } catch (err) {
-                    console.error("Failed to cancel sync", err);
+                setCustomConfirm({
+                  isOpen: true,
+                  title: "Cancel Ingestion",
+                  message: `Are you sure you want to cancel and delete ingestion for ${activeRepo.github_url.split("/").pop()}? This will stop indexing and remove all parsed nodes.`,
+                  confirmText: "Cancel Ingestion",
+                  cancelText: "Keep Ingesting",
+                  onConfirm: async () => {
+                    try {
+                      await deleteRepo(activeRepo.id);
+                      router.push("/dashboard");
+                    } catch (err) {
+                      console.error("Failed to cancel sync", err);
+                      setCustomConfirm({
+                        isOpen: true,
+                        title: "Cancellation Failed",
+                        message: err instanceof Error ? err.message : "Failed to cancel sync process.",
+                        confirmText: "Close",
+                        onConfirm: () => {}
+                      });
+                    }
                   }
-                }
+                });
               }}
               style={{
                 fontSize: "0.75rem",
@@ -554,6 +1167,7 @@ function DashboardContent() {
             repoName={activeRepo.github_url.split("/").pop() || "Repository"}
           />
         </div>
+        {renderCustomConfirm()}
       </div>
     );
   }
@@ -1179,6 +1793,7 @@ function DashboardContent() {
           </div>
         )}
       </main>
+      {renderCustomConfirm()}
     </div>
   );
 }
