@@ -358,7 +358,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 <span>Recent Conversations</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: "300px", overflowY: "auto" }}>
-                {chatsLoading ? (
+                {chatsLoading && recentChats.length === 0 ? (
                   <div style={{ display: "flex", justifyContent: "center", padding: 12 }}>
                     <div className={styles.loadingSpinner} style={{ width: 12, height: 12 }} />
                   </div>

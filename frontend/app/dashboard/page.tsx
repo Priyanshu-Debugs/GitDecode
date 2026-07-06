@@ -402,6 +402,8 @@ function DashboardContent() {
     return () => clearInterval(interval);
   }, [repos, fetchRepos]);
 
+  const activeRepoStatus = repos.find(r => r.id === activeRepoId)?.status;
+
   // Fetch graph details when active repository or tab changes
   useEffect(() => {
     if (!activeRepoId) {
@@ -411,8 +413,7 @@ function DashboardContent() {
       return;
     }
 
-    const activeRepo = repos.find(r => r.id === activeRepoId);
-    if (activeRepo?.status !== "completed") {
+    if (activeRepoStatus !== "completed") {
       setGraphData(null);
       setLayoutNodes([]);
       setSummaryData(null);
@@ -454,7 +455,7 @@ function DashboardContent() {
     setGraphZoom(1);
     setGraphPan({ x: 0, y: 0 });
     setHoveredNode(null);
-  }, [activeRepoId, activeGraphTab, repos]);
+  }, [activeRepoId, activeGraphTab, activeRepoStatus]);
 
   // Fetch Diagrams
   useEffect(() => {
@@ -477,6 +478,8 @@ function DashboardContent() {
       });
   }, [activeRepoId, activeGraphTab]);
 
+  const querySessionId = searchParams.get("session_id");
+
   // Load chat histories
   useEffect(() => {
     if (!activeRepoId) {
@@ -484,7 +487,7 @@ function DashboardContent() {
       setChatSessionId(null);
       return;
     }
-    const querySessionId = searchParams.get("session_id");
+    
     listChatSessions(activeRepoId)
       .then((sessions) => {
         const requestedSessionExists = querySessionId && sessions.some((s) => s.session_id === querySessionId);
@@ -503,7 +506,7 @@ function DashboardContent() {
         setMessages([]);
         setChatSessionId(null);
       });
-  }, [activeRepoId, searchParams]);
+  }, [activeRepoId, querySessionId]);
 
   // Scroll chat
   useEffect(() => {
@@ -601,7 +604,7 @@ function DashboardContent() {
     try {
       const res = await sendChatMessage(activeRepoId, query, chatSessionId || undefined);
       if (!chatSessionId) setChatSessionId(res.session_id);
-      setMessages((prev) => [...prev.filter(m => m.message_id !== tempMsg.message_id), res]);
+      setMessages((prev) => [...prev, res]);
     } catch {
       setMessages((prev) => [
         ...prev.filter(m => m.message_id !== tempMsg.message_id),

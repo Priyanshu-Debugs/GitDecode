@@ -150,8 +150,15 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      <style dangerouslySetInnerHTML={{ __html: `
+        .mermaid-diagram-container svg {
+          max-width: none !important;
+          height: auto !important;
+        }
+      `}} />
       <div
         ref={ref}
+        className="mermaid-diagram-container"
         dangerouslySetInnerHTML={{ __html: svg }}
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,

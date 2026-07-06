@@ -901,7 +901,7 @@
 }
 .chatBubbleAssistant {
   align-self: flex-start;
-  max-width: 85%;
+  max-width: 98%;
   background: rgba(10, 10, 10, 0.4);
   border: 0.5px solid var(--color-border);
   padding: 16px 20px !important;

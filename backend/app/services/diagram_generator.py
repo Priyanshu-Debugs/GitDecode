@@ -34,7 +34,7 @@ CRITICAL MERMAID.JS SYNTAX RULES:
 1. NEVER draw edges (arrows) to or from subgraph IDs (e.g. do NOT do `subgraphId --> node` or `node --> subgraphId`). Edges must ONLY connect leaf node IDs directly (e.g., `nodeA --> nodeB`).
 2. Node IDs must be strictly alphanumeric with underscores (e.g. `F_MAIN`, `B_DB`). Never use file paths, dots, slashes, or file extensions as node IDs.
 3. Subgraph names and titles must use double quotes inside brackets, e.g., `subgraph UI_Comp ["UI Components"]`. Do not use slashes inside the subgraph identifier itself.
-4. Keep node titles clean and wrap special characters/extensions in double quotes inside brackets: `F_CHAT["ChatInterface.tsx"]`.
+4. Keep node titles clean and ALWAYS wrap special characters, slashes, and brackets (e.g. Next.js routes like `[id]`) in double quotes inside the node brackets. Example: `F_CHAT["app/projects/[id]/page.tsx"]`.
 5. NEVER use colon syntax for edge labels in graph TD or LR (e.g., DO NOT use `A --> B: label`). For edge labels in flowcharts, you MUST use the pipe syntax. 
 6. ALL edge labels MUST be wrapped in double quotes inside the pipes to prevent parser errors from special characters like `&` or `()`. Example: `A -->|"1. Sends & Receives (Data)"| B`.
 7. Return ONLY the raw Mermaid diagram text. Absolutely no conversational intro, no trailing remarks, and no markdown code block wrapping backticks (do NOT wrap with ```mermaid or ```).
