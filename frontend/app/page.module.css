@@ -166,13 +166,6 @@
   z-index: 2;
 }
 
-.heroVisual {
-  width: 100%;
-  max-width: 900px;
-  padding: 0 24px;
-  position: relative;
-  z-index: 2;
-}
 
 .heroTitle {
   font-family: var(--font-display);

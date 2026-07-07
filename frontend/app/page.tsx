@@ -5,8 +5,9 @@ import AnimatedSection from "./components/AnimatedSection";
 import ChatDemo from "./components/ChatDemo";
 import Button from "./components/Button";
 import InteractiveDiagram from "./components/InteractiveDiagram";
-import HeroDashboardMockup from "./components/HeroDashboardMockup";
+import LanguageMarquee from "./components/LanguageMarquee";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
+import MeshBackground from "./components/MeshBackground";
 import styles from "./page.module.css";
 
 /* ── Icons (inline SVGs) ─────────────────────────────────────────── */
@@ -160,12 +161,9 @@ export default function Home() {
               <ChevronDown />
             </div>
           </div>
-
-          {/* Hero Dashboard Visual */}
-          <AnimatedSection delay={700} className={styles.heroVisual}>
-            <HeroDashboardMockup />
-          </AnimatedSection>
         </section>
+
+        <LanguageMarquee />
 
         {/* ── FEATURES ──────────────────────────────────────────── */}
         <section id="features" className={`section-padding ${styles.section}`}>
