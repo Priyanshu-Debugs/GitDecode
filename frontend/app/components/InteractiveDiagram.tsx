@@ -164,38 +164,38 @@ export default function InteractiveDiagram() {
           <path d="M 440 200 C 540 200, 540 300, 670 300" className={styles.linePulse} />
 
           {/* FLOATING BINARY DATA ANIMATION (flowing along Left paths) */}
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             0
             <animateMotion dur="3.5s" repeatCount="indefinite" path="M 180 80 C 280 80, 280 200, 380 200" />
           </text>
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             1
             <animateMotion dur="3.2s" begin="1.2s" repeatCount="indefinite" path="M 180 80 C 280 80, 280 200, 380 200" />
           </text>
 
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             1
             <animateMotion dur="2.8s" repeatCount="indefinite" path="M 180 160 C 280 160, 280 200, 380 200" />
           </text>
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             0
             <animateMotion dur="2.5s" begin="0.8s" repeatCount="indefinite" path="M 180 160 C 280 160, 280 200, 380 200" />
           </text>
 
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             0
             <animateMotion dur="3s" repeatCount="indefinite" path="M 180 240 C 280 240, 280 200, 380 200" />
           </text>
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             1
             <animateMotion dur="3.3s" begin="1.5s" repeatCount="indefinite" path="M 180 240 C 280 240, 280 200, 380 200" />
           </text>
 
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             1
             <animateMotion dur="2.6s" repeatCount="indefinite" path="M 180 320 C 280 320, 280 200, 380 200" />
           </text>
-          <text className={styles.binaryFlow} fill="#b01e0a" fontSize="9" fontFamily="monospace">
+          <text className={styles.binaryFlow} fill="#d4270f" fontSize="9" fontFamily="monospace">
             0
             <animateMotion dur="3s" begin="0.6s" repeatCount="indefinite" path="M 180 320 C 280 320, 280 200, 380 200" />
           </text>

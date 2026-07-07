@@ -105,10 +105,10 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #b01e0a;
+  background: #d4270f;
   transition: all var(--transition-fast);
   flex-shrink: 0;
-  box-shadow: 0 0 6px #b01e0a;
+  box-shadow: 0 0 6px #d4270f;
 }
 
 .cardLabel {
@@ -151,8 +151,8 @@
 }
 
 .pulsingCore {
-  fill: #b01e0a;
-  stroke: #b01e0a;
+  fill: #d4270f;
+  stroke: #d4270f;
   stroke-width: 2;
   transform-origin: 30px 30px;
   animation: corePulse 3s infinite cubic-bezier(0.32, 0.72, 0, 1);
@@ -166,11 +166,11 @@
 @keyframes corePulse {
   0%, 100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 6px #b01e0a);
+    filter: drop-shadow(0 0 6px #d4270f);
   }
   50% {
     transform: scale(1.06);
-    filter: drop-shadow(0 0 12px #b01e0a);
+    filter: drop-shadow(0 0 12px #d4270f);
   }
 }
 
@@ -194,13 +194,13 @@
 
 /* Glowing laser pulse beam */
 .linePulse {
-  stroke: #b01e0a;
+  stroke: #d4270f;
   stroke-width: 1.5px;
   stroke-linecap: round;
   fill: none;
   stroke-dasharray: 50, 250;
   animation: shootLaser 2.2s infinite linear;
-  filter: drop-shadow(0 0 4px #b01e0a);
+  filter: drop-shadow(0 0 4px #d4270f);
 }
 
 @keyframes shootLaser {
@@ -216,7 +216,7 @@
 .binaryFlow {
   font-weight: 500;
   opacity: 0.6;
-  filter: drop-shadow(0 0 2px #b01e0a);
+  filter: drop-shadow(0 0 2px #d4270f);
   user-select: none;
   pointer-events: none;
 }
@@ -286,7 +286,7 @@
 
 .badgeOutput {
   background: rgba(176, 30, 10, 0.06);
-  color: #b01e0a;
+  color: #d4270f;
   border: 0.5px solid rgba(176, 30, 10, 0.2);
 }
 

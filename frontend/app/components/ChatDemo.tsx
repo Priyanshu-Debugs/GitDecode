@@ -41,14 +41,14 @@ const renderFormattedText = (text: string) => {
   return parts.map((part, index) => {
     if (part.startsWith('`') && part.endsWith('`')) {
       return (
-        <code key={index} className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-[#cb220b]">
+        <code key={index} className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-[#ef3b22]">
           {part.slice(1, -1)}
         </code>
       );
     }
     if (/\b[a-zA-Z0-9_]+\.[a-z]{2,3}\b/.test(part) || /\b[a-zA-Z0-9_]+\(\)/.test(part)) {
       return (
-        <code key={index} className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-[#cb220b]">
+        <code key={index} className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-[10px] text-[#ef3b22]">
           {part}
         </code>
       );

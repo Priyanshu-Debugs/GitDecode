@@ -152,7 +152,7 @@
   text-decoration: none;
   text-align: center;
   padding: 10px;
-  background: #b01e0a;
+  background: #d4270f;
   border-radius: var(--radius-full);
   margin-top: 4px;
   border: 0.5px solid rgba(255, 255, 255, 0.1);
@@ -160,7 +160,7 @@
 }
 
 .mobileGetStarted:hover {
-  background: #cb220b;
+  background: #ef3b22;
 }
 
 /* ── Responsive ───────────────────────────────────────────── */
