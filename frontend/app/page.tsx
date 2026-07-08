@@ -7,13 +7,12 @@ import Button from "./components/Button";
 import InteractiveDiagram from "./components/InteractiveDiagram";
 import LanguageMarquee from "./components/LanguageMarquee";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
-import MeshBackground from "./components/MeshBackground";
 import styles from "./page.module.css";
 
 /* ── Icons (inline SVGs) ─────────────────────────────────────────── */
 function DiagramIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d4270f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b01e0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="8" y="14" width="7" height="7" rx="1" />
@@ -27,7 +26,7 @@ function DiagramIcon() {
 
 function ChatIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d4270f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b01e0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       <line x1="8" y1="8" x2="16" y2="8" />
       <line x1="8" y1="12" x2="13" y2="12" />
@@ -37,7 +36,7 @@ function ChatIcon() {
 
 function BlastIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d4270f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b01e0a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <circle cx="12" cy="12" r="6" />
       <circle cx="12" cy="12" r="2" />
@@ -126,7 +125,7 @@ export default function Home() {
               <span className={styles.heroAccent}>
                 any
                 <svg className={styles.heroUnderline} viewBox="0 0 100 10" fill="none" preserveAspectRatio="none">
-                  <path d="M 2 8 Q 50 2 98 8" stroke="#d4270f" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M 2 8 Q 50 2 98 8" stroke="#b01e0a" strokeWidth="2.5" strokeLinecap="round" />
                 </svg>
               </span>{" "}
               codebase
@@ -250,7 +249,7 @@ export default function Home() {
               {steps.map((step, i) => (
                 <AnimatedSection key={step.number} delay={i * 150} className={styles.pipelineCol}>
                   {/* Giant elegant step number */}
-                  <div className="font-display text-5xl font-extralight select-none bg-gradient-to-b from-[#d4270f] to-[#400802] bg-clip-text text-transparent leading-none">
+                  <div className="font-display text-5xl font-extralight select-none bg-gradient-to-b from-[#b01e0a] to-[#400802] bg-clip-text text-transparent leading-none">
                     {step.number}
                   </div>
                   {/* Fine divider line */}

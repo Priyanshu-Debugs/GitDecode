@@ -100,7 +100,7 @@
 }
 
 .userMessage .messageBubble {
-  background: #d4270f;
+  background: #b01e0a;
   color: #ffffff;
   border-bottom-right-radius: 3px;
   border: 0.5px solid rgba(255, 255, 255, 0.1);
@@ -137,7 +137,7 @@
 }
 
 .sourceTag svg {
-  color: #d4270f;
+  color: #b01e0a;
   stroke-width: 1.8px;
 }
 
@@ -210,7 +210,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #d4270f;
+  background: #b01e0a;
   color: #ffffff;
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-full);
@@ -221,7 +221,7 @@
 }
 
 .sendBtn:hover {
-  background: #ef3b22;
+  background: #cb220b;
   box-shadow: 0 6px 16px rgba(176, 30, 10, 0.35);
 }
 

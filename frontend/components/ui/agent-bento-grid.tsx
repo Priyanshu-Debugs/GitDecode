@@ -40,21 +40,21 @@ export function FeatCard({ title, description, children, className = "" }: FeatC
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "relative flex flex-col justify-between rounded-[20px] border border-white/[0.07] bg-[#111113] p-6 h-full gap-4 overflow-hidden group",
+        "relative flex flex-col justify-between rounded-[20px] border border-white/5 bg-[#050505] p-6 h-full gap-4 overflow-hidden group",
         "transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-        "hover:border-white/[0.14] hover:shadow-[0_0_40px_rgba(212,39,15,0.06),0_20px_60px_-16px_rgba(0,0,0,0.5)]",
+        "hover:border-white/[0.10] hover:shadow-[0_0_20px_rgba(176,30,10,0.04),0_20px_60px_-16px_rgba(0,0,0,0.5)]",
         "hover:-translate-y-[2px]",
         className
       )}
     >
       {/* Hover spotlight gradient */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-[20px] bg-[radial-gradient(600px_circle_at_50%_0%,rgba(212,39,15,0.04),transparent_60%)]" />
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-[20px] bg-[radial-gradient(600px_circle_at_50%_0%,rgba(176,30,10,0.02),transparent_60%)]" />
       
       <div className="flex flex-col gap-1 z-10">
         <h3 className="font-display font-medium text-white text-sm tracking-tight">{title}</h3>
         <p className="text-zinc-400 text-xs leading-relaxed max-w-[95%] font-light">{description}</p>
       </div>
-      <div className="relative mt-2 flex-1 w-full rounded-[14px] overflow-hidden border border-white/[0.06] bg-[#0a0a0b] group-hover:border-white/[0.10] transition-colors duration-500">
+      <div className="relative mt-2 flex-1 w-full rounded-[14px] overflow-hidden border border-white/5 bg-[#030303] group-hover:border-white/[0.08] transition-colors duration-500">
         {children}
       </div>
     </motion.div>
