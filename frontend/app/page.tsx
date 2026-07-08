@@ -185,31 +185,33 @@ export default function Home() {
         {/* ── DIAGRAM DEMO ──────────────────────────────────────── */}
         <section id="demo-diagram" className={`section-padding ${styles.section}`}>
           <div className="container mx-auto px-4">
-            <div className={styles.demoSplit}>
-              <AnimatedSection className={styles.demoText}>
+            <div className={styles.demoVerticalStack}>
+              <AnimatedSection className={styles.demoTextCentered}>
                 <SectionHeading
                   tag="Visualization"
                   title="See your codebase structure at a glance"
+                  subtitle="A decentralized ecosystem where background AI Agents ingest your code, map AST relationships, run verification tests, and self-heal defects autonomously."
+                  centered={true}
                 />
-                <ul className={styles.demoBullets}>
+                <ul className={styles.demoBulletsCentered}>
                   <li>
                     <span className={styles.bulletDot} />
-                    File dependency graphs
+                    AST Code Ingestion
                   </li>
                   <li>
                     <span className={styles.bulletDot} />
-                    Class and function relationships
+                    Autonomous Agent Orchestration
                   </li>
                   <li>
                     <span className={styles.bulletDot} />
-                    Auto-updated on every sync
+                    Natural Language Code Chat
                   </li>
                 </ul>
               </AnimatedSection>
 
-              <AnimatedSection delay={200} className={styles.demoVisual}>
+              <div className={styles.demoVisualFull}>
                 <InteractiveDiagram />
-              </AnimatedSection>
+              </div>
             </div>
           </div>
         </section>
