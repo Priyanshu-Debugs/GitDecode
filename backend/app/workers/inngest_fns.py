@@ -26,6 +26,7 @@ from app.core.config import get_settings
 from app.services.embeddings import HuggingFaceEmbeddingsClient
 from app.services.parsers.python_parser import parse_python_file
 from app.services.parsers.ts_parser import parse_ts_file
+from app.services.parsers.generic_parser import parse_generic_file, parse_notebook_file
 
 logger = logging.getLogger(__name__)
 
@@ -247,7 +248,14 @@ async def sync_github_repository(
             for rel_path in all_files:
                 full_path = os.path.join(temp_dir, rel_path)
                 ext = os.path.splitext(rel_path)[1].lower()
-                if ext not in (".py", ".ts", ".tsx", ".js", ".jsx"):
+                # Supported file extensions for chunking
+                PARSEABLE_EXTENSIONS = {
+                    ".py", ".ts", ".tsx", ".js", ".jsx",
+                    ".md", ".json", ".html", ".css",
+                    ".yml", ".yaml", ".sh", ".sql",
+                    ".ipynb", ".env", ".toml", ".cfg",
+                }
+                if ext not in PARSEABLE_EXTENSIONS:
                     continue
 
                 try:
@@ -267,8 +275,16 @@ async def sync_github_repository(
                     chunks, graph_data = parse_python_file(
                         file_content, rel_path, repo_id, user_id
                     )
-                else:
+                elif ext in (".ts", ".tsx", ".js", ".jsx"):
                     chunks, graph_data = parse_ts_file(
+                        file_content, rel_path, repo_id, user_id
+                    )
+                elif ext == ".ipynb":
+                    chunks, graph_data = parse_notebook_file(
+                        file_content, rel_path, repo_id, user_id
+                    )
+                else:
+                    chunks, graph_data = parse_generic_file(
                         file_content, rel_path, repo_id, user_id
                     )
 
