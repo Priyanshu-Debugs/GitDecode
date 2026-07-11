@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from app.services.parsers.generic_parser import split_into_chunks
+
 from tree_sitter import Language, Parser
 import tree_sitter_python
 
@@ -254,23 +256,33 @@ def parse_python_file(
         })
         chunk_index += 1
 
-    # If the file contains no classes or functions (or just to have a file-level representation)
-    if not vector_chunks:
+    # ALWAYS add file-level chunks to ensure 100% content coverage.
+    # Semantic chunks (classes/functions above) provide rich metadata;
+    # these file-level chunks guarantee no code is lost.
+    file_text_chunks = split_into_chunks(content, chunk_size=4000, overlap=200)
+    for i, text_slice in enumerate(file_text_chunks):
+        char_start = i * (4000 - 200)
+        start_ln = content[:char_start].count("\n") + 1
+        end_ln = content[:char_start + len(text_slice)].count("\n") + 1
+
         vector_chunks.append({
             "repo_id": repo_id,
             "user_id": user_id,
             "file_path": file_path,
             "chunk_index": chunk_index,
-            "content": content[:4000],  # Take first 4000 characters
-            "node_type": "file",
+            "content": text_slice,
+            "node_type": "file_chunk",
             "node_name": os.path.basename(file_path),
-            "start_line": 1,
-            "end_line": len(content.splitlines()),
+            "start_line": start_ln,
+            "end_line": end_ln,
             "metadata": {
                 "layer": layer,
                 "frameworks": list(detected_frameworks),
+                "chunk_part": i + 1,
+                "total_parts": len(file_text_chunks),
             }
         })
+        chunk_index += 1
 
     # 4. Build Neo4j AST nodes & edges
     graph_nodes = []
