@@ -228,7 +228,7 @@ class SupabasePGClient:
         user_id: str,
         embedding: list[float],
         match_count: int = 5,
-        threshold: float = 0.78,
+        threshold: float = 0.3,
     ) -> list[dict[str, Any]]:
         """Perform pgvector similarity search via the ``match_vectors`` SQL function.
 
