@@ -35,7 +35,7 @@ const gtWalsheim = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "GitMesh — Understand Any Codebase",
+  title: "GitMesh | Understand Any Codebase",
   description:
     "AI-powered codebase intelligence. GitMesh parses your repository, builds a knowledge graph, and lets you explore it through interactive architecture diagrams and natural conversation.",
   keywords: [
