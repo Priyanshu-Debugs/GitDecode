@@ -126,6 +126,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeRepoId = searchParams.get("repo_id");
+  const activeRepoName = repos.find((r) => r.id === activeRepoId)?.github_url.split("/").pop();
 
   const completedRepos = repos.filter((r) => r.status === "completed");
 
@@ -451,7 +452,9 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           <div className={styles.breadcrumb}>
             <span className={styles.breadcrumbCurrent}>
               {pathname === "/dashboard"
-                ? "Overview"
+                ? activeRepoId && activeRepoName
+                  ? activeRepoName
+                  : "Overview"
                 : pathname.includes("/repo/")
                   ? "Repository"
                   : "Dashboard"}

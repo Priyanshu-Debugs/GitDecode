@@ -177,14 +177,14 @@ export default function NvlGraphViewer({
     }
 
     // 3. Format into NVL elements list
-    const nvlNodes: NvlNode[] = filteredNodes.map((node) => {
+    const nvlNodes: NvlNode[] = filteredNodes.map((node, idx) => {
       const type = (node.type || "file").toLowerCase();
       const isSelected = selectedNode?.id === node.id;
       const isHovered = hoveredElement?.type === "node" && hoveredElement.id === node.id;
       const isBlastTarget = blastRadiusFiles.length > 0 && node.file_path === blastRadiusFiles[0];
       const isBlastAffected = blastRadiusFiles.length > 0 && blastRadiusFiles.includes(node.file_path || "");
 
-      // Color selection logic
+      // Color selection logic (keep native type color, only color by blast if active)
       let nodeColor = colors[type as keyof typeof colors] || colors.default;
       if (isBlastAffected) {
         nodeColor = isBlastTarget ? colors.highlight : colors.blastAffected;
@@ -194,16 +194,40 @@ export default function NvlGraphViewer({
       const isSearchMatch =
         searchQuery && node.label.toLowerCase().includes(searchQuery.toLowerCase());
 
+      // Pre-position nodes to prevent starting stacked in a single point
+      const angle = (idx / filteredNodes.length) * 2 * Math.PI;
+      const radius = 150 + Math.sqrt(filteredNodes.length) * 25; // wide spiral/circle
+      const initialX = Math.cos(angle) * radius;
+      const initialY = Math.sin(angle) * radius;
+
+      // Glow outline for selection
+      let strokeColor = "rgba(0,0,0,0.5)";
+      let strokeWidth = 1;
+
+      if (isSelected) {
+        strokeColor = "#ffffff"; // elegant white border glow
+        strokeWidth = 4;
+      } else if (isSearchMatch) {
+        strokeColor = "#38bdf8"; // search highlight cyan
+        strokeWidth = 3;
+      } else if (isBlastTarget) {
+        strokeColor = "#ef4444"; // blast center red border
+        strokeWidth = 4;
+      }
+
       return {
         id: node.id,
         size: computeNodeSize(node),
         color: nodeColor,
         caption: getCleanLabel(node.label, type),
-        captionColor: "#94a3b8",
+        captionColor: "#ffffff", // high-contrast white name on the node
         captionSize: isSelected || isHovered ? 11 : 9,
-        strokeColor: isSelected ? "#ef4444" : isSearchMatch ? "#38bdf8" : "rgba(0,0,0,0.5)",
-        strokeWidth: isSelected || isSearchMatch ? 3 : 1,
+        strokeColor,
+        strokeWidth,
         pinned: pinnedNodeIds.has(node.id),
+        x: initialX,
+        y: initialY,
+        captionAlign: "center", // Align centered inside the node circle
       };
     });
 
@@ -355,6 +379,7 @@ export default function NvlGraphViewer({
     layout: currentLayout,
     disableWebWorkers: true,
     initialZoom: 1,
+    renderer: "canvas" as const, // Explicitly use canvas renderer to show captions
   }), [currentLayout]);
 
   return (

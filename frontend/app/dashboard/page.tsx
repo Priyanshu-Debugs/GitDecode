@@ -233,8 +233,6 @@ function DashboardContent() {
   // States
   const [repos, setRepos] = useState<RepoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   // GitHub integration & selector states
   const [githubRepos, setGithubRepos] = useState<any[]>([]);
@@ -256,23 +254,10 @@ function DashboardContent() {
     onCancel?: () => void;
   } | null>(null);
 
-  // Left explorer panel width (%)
-  const [leftWidth, setLeftWidth] = useState(50);
-  const [isDraggingLeft, setIsDraggingLeft] = useState(false);
-
   // Graphs states
-  const [activeGraphTab, setActiveGraphTab] = useState<"overview" | "dep" | "call" | "class" | "diagrams" | "metrics">("overview");
+  const [activeGraphTab, setActiveGraphTab] = useState<"graph" | "chat" | "diagrams" | "insights">("graph");
   const [graphData, setGraphData] = useState<DependencyGraph | null>(null);
-  const [layoutNodes, setLayoutNodes] = useState<LayoutNode[]>([]);
-  const [hoveredNode, setHoveredNode] = useState<LayoutNode | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [graphZoom, setGraphZoom] = useState(1);
-  const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
-
-  // Interactive node dragging
-  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   // Blast Radius interactive highlighting
   const [blastRadiusFiles, setBlastRadiusFiles] = useState<string[]>([]);
@@ -293,40 +278,6 @@ function DashboardContent() {
   const [selectedCitation, setSelectedCitation] = useState<any | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // ── Resizer mouse handlers ──────────────────────────────────────────
-
-  const startDragLeft = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDraggingLeft(true);
-  };
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDraggingLeft) {
-        const sidebar = document.querySelector("aside");
-        const sidebarWidth = sidebar ? sidebar.getBoundingClientRect().width : 260;
-        const remainingWidth = window.innerWidth - sidebarWidth;
-        const relativeX = e.clientX - sidebarWidth;
-        const pct = (relativeX / remainingWidth) * 100;
-        setLeftWidth(Math.max(20, Math.min(80, pct)));
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDraggingLeft(false);
-    };
-
-    if (isDraggingLeft) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDraggingLeft]);
 
   // ── Database & State Queries ─────────────────────────────────────────
 
@@ -407,15 +358,9 @@ function DashboardContent() {
 
   const activeRepoStatus = repos.find(r => r.id === activeRepoId)?.status;
 
-  // Fetch graph details when active repository or tab changes
+  // Fetch graph details when active repository changes
   useEffect(() => {
-    if (!activeRepoId) {
-      setGraphData(null);
-      setSummaryData(null);
-      return;
-    }
-
-    if (activeRepoStatus !== "completed") {
+    if (!activeRepoId || activeRepoStatus !== "completed") {
       setGraphData(null);
       setSummaryData(null);
       return;
@@ -428,15 +373,16 @@ function DashboardContent() {
     setBlastRadiusFiles([]);
     setActiveBlastFilePath(null);
 
-    // Load Full Graph for NVL exploration
-    if (activeGraphTab === "dep" || activeGraphTab === "call" || activeGraphTab === "class") {
-      getFullGraph(activeRepoId)
-        .then((data) => {
-          setGraphData(data);
-        })
-        .catch(() => {});
-    }
-  }, [activeRepoId, activeGraphTab, activeRepoStatus]);
+    // Load Full Graph for NVL exploration ONCE
+    getFullGraph(activeRepoId)
+      .then((data) => {
+        setGraphData(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load graph data:", err);
+        setGraphData(null);
+      });
+  }, [activeRepoId, activeRepoStatus]);
 
   // Fetch Diagrams
   useEffect(() => {
@@ -557,9 +503,7 @@ function DashboardContent() {
 
   const activeRepo = repos.find((r) => r.id === activeRepoId);
 
-  const handleZoom = (factor: number) => {
-    setGraphZoom(prev => Math.max(0.3, Math.min(3, prev * factor)));
-  };
+
 
   const renderCustomConfirm = () => {
     if (!customConfirm || !customConfirm.isOpen) return null;
@@ -1109,40 +1053,16 @@ function DashboardContent() {
   }
 
   return (
-    <div className={styles.workspace} style={{ cursor: isDraggingLeft && !leftCollapsed && !rightCollapsed ? "col-resize" : "default", position: "relative" }}>
-      
-      {/* Floating Restore Buttons */}
-      {leftCollapsed && (
-        <button
-          className={styles.restorePanelBtn}
-          onClick={() => setLeftCollapsed(false)}
-          style={{ position: "absolute", left: 16, top: 16, zIndex: 90 }}
-          title="Restore Explorer Panel"
-        >
-          📁 Restore Explorer
-        </button>
-      )}
-
-      {rightCollapsed && (
-        <button
-          className={styles.restorePanelBtn}
-          onClick={() => setRightCollapsed(false)}
-          style={{ position: "absolute", right: 24, top: 18, zIndex: 90 }}
-          title="Restore Chat Panel"
-        >
-          💬 Restore Chat Q&A
-        </button>
-      )}
-
+    <div className={styles.workspace} style={{ position: "relative" }}>
       {/* ═════════════════════════════════════════════════════════════════
-         LEFT HALF: Explorer graphs, Diagrams & Insights
+         MAIN WORKSPACE: Knowledge Graph, Chat, Diagrams & Insights
          ═════════════════════════════════════════════════════════════════ */}
       <aside
         className={styles.leftPanel}
         style={{
-          width: leftCollapsed ? "0%" : rightCollapsed ? "100%" : `${leftWidth}%`,
-          display: leftCollapsed || (activeRepo && activeRepo.status !== "completed") ? "none" : "flex",
-          flex: "none",
+          width: "100%",
+          display: activeRepo && activeRepo.status !== "completed" ? "none" : "flex",
+          flex: "1",
         }}
       >
         <div className={styles.panelHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1154,15 +1074,6 @@ function DashboardContent() {
               </span>
             )}
           </div>
-          {!rightCollapsed && (
-            <button
-              className={styles.panelHeaderCollapseBtn}
-              onClick={() => setLeftCollapsed(true)}
-              title="Collapse Explorer Panel"
-            >
-              ✕
-            </button>
-          )}
         </div>
 
         {activeRepo?.status !== "completed" ? (
@@ -1180,28 +1091,16 @@ function DashboardContent() {
             {/* Graph Category Toggles */}
             <div className={styles.graphTabs}>
               <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "overview" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("overview")}
+                className={`${styles.graphTabButton} ${activeGraphTab === "graph" ? styles.graphTabButtonActive : ""}`}
+                onClick={() => setActiveGraphTab("graph")}
               >
-                Overview
+                Knowledge Graph
               </button>
               <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "dep" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("dep")}
+                className={`${styles.graphTabButton} ${activeGraphTab === "chat" ? styles.graphTabButtonActive : ""}`}
+                onClick={() => setActiveGraphTab("chat")}
               >
-                Dependencies
-              </button>
-              <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "call" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("call")}
-              >
-                Call Graph
-              </button>
-              <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "class" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("class")}
-              >
-                Classes
+                Chat
               </button>
               <button
                 className={`${styles.graphTabButton} ${activeGraphTab === "diagrams" ? styles.graphTabButtonActive : ""}`}
@@ -1210,29 +1109,20 @@ function DashboardContent() {
                 Diagrams
               </button>
               <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "metrics" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("metrics")}
+                className={`${styles.graphTabButton} ${activeGraphTab === "insights" ? styles.graphTabButtonActive : ""}`}
+                onClick={() => setActiveGraphTab("insights")}
               >
                 Insights
               </button>
             </div>
 
-            {activeGraphTab === "overview" ? (
-              <div className={styles.panelBody} style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", height: "100%" }}>
-                <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                  <AgentBentoGrid
-                    detailedStatus="completed"
-                    repoName={activeRepo.github_url.split("/").pop() || "Repository"}
-                  />
-                </div>
-              </div>
-            ) : activeGraphTab !== "metrics" && activeGraphTab !== "diagrams" ? (
+            {activeGraphTab === "graph" ? (
               <div className={styles.graphCanvasContainer} style={{ width: "100%", height: "100%", flex: 1, minHeight: 0 }}>
                 {graphData ? (
                   <NvlGraphViewer
                     nodes={graphData.nodes}
                     edges={graphData.edges}
-                    graphType={activeGraphTab}
+                    graphType="overview"
                     repoId={activeRepoId}
                     blastRadiusFiles={blastRadiusFiles}
                     searchQuery={searchQuery}
@@ -1243,6 +1133,132 @@ function DashboardContent() {
                     Loading graph visualization...
                   </div>
                 )}
+              </div>
+            ) : activeGraphTab === "chat" ? (
+              /* Chat Workspace Q&A Section inside tab */
+              <div className={styles.panelBody} style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", padding: 0 }}>
+                {/* Conversation list */}
+                <div className={styles.chatFeed}>
+                  {messages.length === 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+                      <h3 style={{ fontFamily: "var(--font-display)", color: "var(--color-white)", fontSize: "1.1rem", marginBottom: 6 }}>
+                        Ask about this codebase
+                      </h3>
+                      <p style={{ fontSize: "0.8125rem", color: "var(--color-text-secondary)", maxWidth: 300, lineHeight: 1.5 }}>
+                        GitMesh parses files, imports, and methods into Neo4j. Try asking:
+                      </p>
+                      <div className={styles.chatSuggestions} style={{ justifyContent: "center", maxWidth: 400, marginTop: 12 }}>
+                        <button className={styles.chatSuggestionItem} onClick={() => setChatInput("Explain how files import each other in this repo.")}>
+                          Explain file imports
+                        </button>
+                        <button className={styles.chatSuggestionItem} onClick={() => setChatInput("List the primary functions and methods defined.")}>
+                          Show functions map
+                        </button>
+                        <button className={styles.chatSuggestionItem} onClick={() => setChatInput("Which files have class structures?")}>
+                          Find classes
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.message_id}
+                      className={msg.role === "user" ? styles.chatBubbleUser : styles.chatBubbleAssistant}
+                    >
+                      {msg.role === "user" ? (
+                        <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+                      ) : (
+                        <ChatMarkdown content={msg.content} />
+                      )}
+                      
+                      {/* Inline Source Citations */}
+                      {msg.sources && msg.sources.length > 0 && (
+                        <div className={styles.citationsList}>
+                          {msg.sources.map((src, i) => {
+                            const label = src.file_path.split("/").pop() || "source";
+                            const lines = src.start_line ? ` (L${src.start_line}-${src.end_line})` : "";
+                            return (
+                              <button
+                                key={i}
+                                className={styles.citationBadge}
+                                onClick={() => setSelectedCitation(src)}
+                                title={`Inspect ${src.file_path}`}
+                              >
+                                📄 {label}{lines}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {chatLoading && (
+                    <div className={styles.chatBubbleAssistant}>
+                      <div className={styles.loadingSpinner} style={{ width: 14, height: 14, borderWidth: 1.5 }} />
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+
+                {/* Inline Citations Snippet modal overlay */}
+                {selectedCitation && (
+                  <div className={styles.modalOverlay} onClick={() => setSelectedCitation(null)}>
+                    <div className={styles.modal} style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <div>
+                          <h4 style={{ color: "var(--color-white)", fontSize: "0.875rem", fontFamily: "var(--font-mono)" }}>
+                            {selectedCitation.file_path}
+                          </h4>
+                          {selectedCitation.start_line && (
+                            <span style={{ fontSize: "0.6875rem", color: "var(--color-text-secondary)" }}>
+                              Lines {selectedCitation.start_line} to {selectedCitation.end_line}
+                            </span>
+                          )}
+                        </div>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedCitation(null)}>Close</button>
+                      </div>
+                      {selectedCitation.snippet ? (
+                        <pre style={{ background: "rgba(0,0,0,0.3)", padding: 16, border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-md)", overflowX: "auto", fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "#f5f5f5" }}>
+                          <code>{selectedCitation.snippet}</code>
+                        </pre>
+                      ) : (
+                        <p style={{ fontSize: "0.75rem", color: "var(--color-text-tertiary)" }}>No snippet extracted for this citation node.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Input Form */}
+                <div className={styles.chatInputWrapper}>
+                  <div className={styles.chatInputBox}>
+                    <textarea
+                      className={styles.chatInputArea}
+                      placeholder="Query codebase structures or methods..."
+                      rows={1}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendChat();
+                        }
+                      }}
+                      disabled={chatLoading}
+                    />
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={handleSendChat}
+                      disabled={chatLoading || !chatInput.trim()}
+                      style={{ width: 32, height: 32, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : activeGraphTab === "diagrams" ? (
               /* Visual Model Diagrams (Mermaid.js) */
@@ -1378,201 +1394,6 @@ function DashboardContent() {
           </>
         )}
       </aside>
-
-      {/* ── CENTRAL RESIZE DIVIDER ── */}
-      {!leftCollapsed && !rightCollapsed && (
-        <div
-          className={`${styles.resizeDivider} ${isDraggingLeft ? styles.resizeDividerActive : ""}`}
-          onMouseDown={startDragLeft}
-        />
-      )}
-
-      {/* ═════════════════════════════════════════════════════════════════
-         RIGHT HALF: Code Q&A Chat Space (Expanded to fill remaining screen)
-         ═════════════════════════════════════════════════════════════════ */}
-      <main
-        className={styles.middlePanel}
-        style={{
-          width: rightCollapsed ? "0%" : leftCollapsed ? "100%" : `${100 - leftWidth}%`,
-          display: rightCollapsed ? "none" : "flex",
-          flex: "none",
-        }}
-      >
-        {activeRepo ? (
-          <>
-            {/* Header */}
-            <div className={styles.chatWorkspaceHeader}>
-              <div>
-                <h1 className={styles.panelTitle} style={{ fontSize: "1rem" }}>
-                  {activeRepo.github_url.split("/").pop() || "Repository"}
-                </h1>
-                <span className={styles.repoBranch} style={{ marginTop: 2 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 2 }}>
-                    <line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
-                    <path d="M18 9a9 9 0 0 1-9 9" />
-                  </svg>
-                  {activeRepo.branch}
-                </span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span className={`${styles.statusBadge} ${
-                  activeRepo.status === "completed" ? styles.statusCompleted : styles.statusProcessing
-                }`}>
-                  <span className={`${styles.statusDot} ${
-                    activeRepo.status === "completed" ? styles.statusDotCompleted : styles.statusDotProcessing
-                  }`} />
-                  {activeRepo.status}
-                </span>
-                {!leftCollapsed && (
-                  <button
-                    className={styles.panelHeaderCollapseBtn}
-                    onClick={() => setRightCollapsed(true)}
-                    title="Collapse Chat Panel"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Conversation list */}
-            <div className={styles.chatFeed}>
-              {messages.length === 0 && (
-                <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-                  <h3 style={{ fontFamily: "var(--font-display)", color: "var(--color-white)", fontSize: "1.1rem", marginBottom: 6 }}>
-                    Ask about this codebase
-                  </h3>
-                  <p style={{ fontSize: "0.8125rem", color: "var(--color-text-secondary)", maxWidth: 300, lineHeight: 1.5 }}>
-                    GitMesh parses files, imports, and methods into Neo4j. Try asking:
-                  </p>
-                  <div className={styles.chatSuggestions} style={{ justifyContent: "center", maxWidth: 400, marginTop: 12 }}>
-                    <button className={styles.chatSuggestionItem} onClick={() => setChatInput("Explain how files import each other in this repo.")}>
-                      Explain file imports
-                    </button>
-                    <button className={styles.chatSuggestionItem} onClick={() => setChatInput("List the primary functions and methods defined.")}>
-                      Show functions map
-                    </button>
-                    <button className={styles.chatSuggestionItem} onClick={() => setChatInput("Which files have class structures?")}>
-                      Find classes
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {messages.map((msg) => (
-                <div
-                  key={msg.message_id}
-                  className={msg.role === "user" ? styles.chatBubbleUser : styles.chatBubbleAssistant}
-                >
-                  {msg.role === "user" ? (
-                    <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
-                  ) : (
-                    <ChatMarkdown content={msg.content} />
-                  )}
-                  
-                  {/* Inline Source Citations */}
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className={styles.citationsList}>
-                      {msg.sources.map((src, i) => {
-                        const label = src.file_path.split("/").pop() || "source";
-                        const lines = src.start_line ? ` (L${src.start_line}-${src.end_line})` : "";
-                        return (
-                          <button
-                            key={i}
-                            className={styles.citationBadge}
-                            onClick={() => setSelectedCitation(src)}
-                            title={`Inspect ${src.file_path}`}
-                          >
-                            📄 {label}{lines}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {chatLoading && (
-                <div className={styles.chatBubbleAssistant}>
-                  <div className={styles.loadingSpinner} style={{ width: 14, height: 14, borderWidth: 1.5 }} />
-                </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* Citations Snippet overlay */}
-            {selectedCitation && (
-              <div className={styles.modalOverlay} onClick={() => setSelectedCitation(null)}>
-                <div className={styles.modal} style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <div>
-                      <h4 style={{ color: "var(--color-white)", fontSize: "0.875rem", fontFamily: "var(--font-mono)" }}>
-                        {selectedCitation.file_path}
-                      </h4>
-                      {selectedCitation.start_line && (
-                        <span style={{ fontSize: "0.6875rem", color: "var(--color-text-secondary)" }}>
-                          Lines {selectedCitation.start_line} to {selectedCitation.end_line}
-                        </span>
-                      )}
-                    </div>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setSelectedCitation(null)}>Close</button>
-                  </div>
-                  {selectedCitation.snippet ? (
-                    <pre style={{ background: "rgba(0,0,0,0.3)", padding: 16, border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-md)", overflowX: "auto", fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "#f5f5f5" }}>
-                      <code>{selectedCitation.snippet}</code>
-                    </pre>
-                  ) : (
-                    <p style={{ fontSize: "0.75rem", color: "var(--color-text-tertiary)" }}>No snippet extracted for this citation node.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Input Form */}
-            <div className={styles.chatInputWrapper}>
-              <div className={styles.chatInputBox}>
-                <textarea
-                  className={styles.chatInputArea}
-                  placeholder="Query codebase structures or methods..."
-                  rows={1}
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendChat();
-                    }
-                  }}
-                  disabled={chatLoading}
-                />
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={handleSendChat}
-                  disabled={chatLoading || !chatInput.trim()}
-                  style={{ width: 32, height: 32, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
-                >
-                  <SendIcon />
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          /* Empty Workspace Welcome Panel with AgentBentoGrid */
-          <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", padding: "40px", gap: "24px", width: "100%" }}>
-            <div style={{ textAlign: "center", maxWidth: "600px", margin: "0 auto 12px" }}>
-              <h1 style={{ fontFamily: "var(--font-display)", color: "var(--color-white)", fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 8 }}>
-                GitMesh Workspace
-              </h1>
-              <p style={{ fontSize: "0.875rem", color: "var(--color-text-secondary)", lineHeight: 1.6, fontWeight: 300 }}>
-                Construct codebase dependency graphs, traverse function calls, analyze blast radiuses, and ask context-grounded questions about your repositories. Select a repository from the sidebar to begin.
-              </p>
-            </div>
-            <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-              <AgentBentoGrid />
-            </div>
-          </div>
-        )}
-      </main>
       {renderCustomConfirm()}
     </div>
   );
