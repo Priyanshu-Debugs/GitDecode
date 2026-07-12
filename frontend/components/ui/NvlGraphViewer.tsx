@@ -22,6 +22,76 @@ import {
 import styles from "./NvlGraphViewer.module.css";
 import type { GraphNode, GraphEdge } from "@/app/lib/api";
 
+function CustomSelect({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value) || options[0];
+
+  return (
+    <div className={styles.customSelectContainer} ref={containerRef}>
+      <button
+        type="button"
+        className={styles.customSelectTrigger}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>{selectedOption.label}</span>
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
+            opacity: 0.7,
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className={styles.customSelectDropdown}>
+          {options.map((option) => (
+            <div
+              key={option.value}
+              className={`${styles.customSelectItem} ${option.value === value ? styles.customSelectItemActive : ""}`}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface NvlGraphViewerProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -47,6 +117,7 @@ export default function NvlGraphViewer({
 
   // Layout & Navigation State
   const [currentLayout, setCurrentLayout] = useState<LayoutType>("forceDirected");
+  const [currentPerspective, setCurrentPerspective] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<{ source: string; target: string; type?: string } | null>(null);
@@ -353,6 +424,7 @@ export default function NvlGraphViewer({
   // Perspectives Configuration (Bloom-style Views)
   const handlePerspectiveChange = useCallback((perspective: string) => {
     setFocusNodeId(null);
+    setCurrentPerspective(perspective);
     switch (perspective) {
       case "all":
         setFilterType({ file: true, class: true, function: true, route: true });
@@ -382,35 +454,39 @@ export default function NvlGraphViewer({
     renderer: "canvas" as const, // Explicitly use canvas renderer to show captions
   }), [currentLayout]);
 
+  const perspectiveOptions = useMemo(() => [
+    { value: "all", label: "Full Graph View" },
+    { value: "files", label: "File Dependencies" },
+    { value: "class", label: "Class Hierarchies" },
+    { value: "call", label: "Function Call Flows" },
+  ], []);
+
+  const layoutOptions = useMemo(() => [
+    { value: "forceDirected", label: "Force-Directed" },
+    { value: "hierarchical", label: "Hierarchical" },
+    { value: "circular", label: "Circular Layout" },
+  ], []);
+
   return (
     <div className={styles.wrapper}>
       {/* ── Top Toolbar ── */}
       <div className={styles.toolbar}>
         <div className={styles.toolbarGroup}>
           <span className={styles.toolbarLabel}>View Perspective:</span>
-          <select
-            className={styles.select}
-            onChange={(e) => handlePerspectiveChange(e.target.value)}
-            defaultValue="all"
-          >
-            <option value="all">Full Graph View</option>
-            <option value="files">File Dependencies</option>
-            <option value="class">Class Hierarchies</option>
-            <option value="call">Function Call Flows</option>
-          </select>
+          <CustomSelect
+            options={perspectiveOptions}
+            value={currentPerspective}
+            onChange={handlePerspectiveChange}
+          />
         </div>
 
         <div className={styles.toolbarGroup}>
           <span className={styles.toolbarLabel}>Layout:</span>
-          <select
-            className={styles.select}
+          <CustomSelect
+            options={layoutOptions}
             value={currentLayout}
-            onChange={(e) => setCurrentLayout(e.target.value as LayoutType)}
-          >
-            <option value="forceDirected">Force-Directed</option>
-            <option value="hierarchical">Hierarchical</option>
-            <option value="circular">Circular Layout</option>
-          </select>
+            onChange={(val) => setCurrentLayout(val as LayoutType)}
+          />
         </div>
 
         {/* Dynamic Filters (Chips) */}
