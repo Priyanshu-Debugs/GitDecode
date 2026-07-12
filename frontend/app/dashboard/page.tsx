@@ -13,6 +13,7 @@ import {
   getDependencyGraph,
   getCallGraph,
   getClassGraph,
+  getFullGraph,
   getRepoSummary,
   getBlastRadius,
   getRepoDiagrams,
@@ -23,9 +24,11 @@ import {
   type DependencyGraph,
   type ChatMessage,
   type RepoDiagrams,
+  type GraphNode,
 } from "@/app/lib/api";
 import styles from "./dashboard.module.css";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
+import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
 
 /* ── Inline SVG Icons ────────────────────────────────────────────────── */
 function SearchIcon() {
@@ -408,14 +411,12 @@ function DashboardContent() {
   useEffect(() => {
     if (!activeRepoId) {
       setGraphData(null);
-      setLayoutNodes([]);
       setSummaryData(null);
       return;
     }
 
     if (activeRepoStatus !== "completed") {
       setGraphData(null);
-      setLayoutNodes([]);
       setSummaryData(null);
       return;
     }
@@ -427,34 +428,14 @@ function DashboardContent() {
     setBlastRadiusFiles([]);
     setActiveBlastFilePath(null);
 
-    // Load Graphs
-    if (activeGraphTab === "dep") {
-      getDependencyGraph(activeRepoId)
+    // Load Full Graph for NVL exploration
+    if (activeGraphTab === "dep" || activeGraphTab === "call" || activeGraphTab === "class") {
+      getFullGraph(activeRepoId)
         .then((data) => {
           setGraphData(data);
-          setLayoutNodes(computeSpringLayout(data.nodes, data.edges));
-        })
-        .catch(() => {});
-    } else if (activeGraphTab === "call") {
-      getCallGraph(activeRepoId)
-        .then((data) => {
-          setGraphData(data);
-          setLayoutNodes(computeSpringLayout(data.nodes, data.edges));
-        })
-        .catch(() => {});
-    } else if (activeGraphTab === "class") {
-      getClassGraph(activeRepoId)
-        .then((data) => {
-          setGraphData(data);
-          setLayoutNodes(computeSpringLayout(data.nodes, data.edges));
         })
         .catch(() => {});
     }
-    
-    // Zoom/Pan reset
-    setGraphZoom(1);
-    setGraphPan({ x: 0, y: 0 });
-    setHoveredNode(null);
   }, [activeRepoId, activeGraphTab, activeRepoStatus]);
 
   // Fetch Diagrams
@@ -513,56 +494,8 @@ function DashboardContent() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ── SVG Interactive Mouse Events ─────────────────────────────────────
-
-  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
-    e.preventDefault();
-    const zoomFactor = 1.1;
-    let nextZoom = graphZoom;
-    if (e.deltaY < 0) {
-      nextZoom = Math.min(3, graphZoom * zoomFactor);
-    } else {
-      nextZoom = Math.max(0.3, graphZoom / zoomFactor);
-    }
-    setGraphZoom(nextZoom);
-  };
-
-  const handleNodeMouseDown = (e: React.MouseEvent, nodeId: string) => {
-    e.stopPropagation();
-    setDraggedNodeId(nodeId);
-  };
-
-  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (draggedNodeId) {
-      e.preventDefault();
-      const rect = e.currentTarget.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      const svgX = (mouseX - graphPan.x) / graphZoom;
-      const svgY = (mouseY - graphPan.y) / graphZoom;
-
-      setLayoutNodes(prev =>
-        prev.map(n => (n.id === draggedNodeId ? { ...n, x: svgX, y: svgY } : n))
-      );
-    } else if (isPanning) {
-      setGraphPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
-    }
-  };
-
-  const handleSvgMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
-    if ((e.target as HTMLElement).tagName === "circle" || (e.target as HTMLElement).tagName === "text") return;
-    setIsPanning(true);
-    setPanStart({ x: e.clientX - graphPan.x, y: e.clientY - graphPan.y });
-  };
-
-  const handleSvgMouseUp = () => {
-    setDraggedNodeId(null);
-    setIsPanning(false);
-  };
-
-  // Node click triggers Blast Radius
-  const handleNodeClick = async (node: LayoutNode) => {
+  // Node selection triggers Blast Radius scan
+  const handleNodeSelect = async (node: GraphNode) => {
     if (!node.file_path || !activeRepoId) return;
 
     setBlastRadiusLoading(true);
@@ -1294,183 +1227,23 @@ function DashboardContent() {
                 </div>
               </div>
             ) : activeGraphTab !== "metrics" && activeGraphTab !== "diagrams" ? (
-              <>
-                {/* Search Bar & Active Blast info */}
-                <div className={styles.graphSearchWrap} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", width: "100%", gap: 8 }}>
-                    <div style={{ position: "relative", flex: 1 }}>
-                      <input
-                        type="text"
-                        className={styles.formInput}
-                        placeholder="Search entities/files..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ paddingLeft: 30, fontSize: "0.75rem", height: 32 }}
-                      />
-                      <div style={{ position: "absolute", left: 10, top: 9, color: "var(--color-text-tertiary)" }}>
-                        <SearchIcon />
-                      </div>
-                    </div>
-                    {searchQuery && (
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => setSearchQuery("")}
-                        style={{ fontSize: "0.6875rem" }}
-                      >
-                        Clear
-                      </button>
-                    )}
+              <div className={styles.graphCanvasContainer} style={{ width: "100%", height: "100%", flex: 1, minHeight: 0 }}>
+                {graphData ? (
+                  <NvlGraphViewer
+                    nodes={graphData.nodes}
+                    edges={graphData.edges}
+                    graphType={activeGraphTab}
+                    repoId={activeRepoId}
+                    blastRadiusFiles={blastRadiusFiles}
+                    searchQuery={searchQuery}
+                    onNodeSelect={handleNodeSelect}
+                  />
+                ) : (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--color-text-tertiary)", fontSize: "0.8125rem" }}>
+                    Loading graph visualization...
                   </div>
-                  
-                  {/* Interactive Blast Radius Scan Controls */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "0.5px solid var(--color-border)", paddingTop: 8 }}>
-                    <span style={{ fontSize: "0.6875rem", color: "var(--color-text-secondary)" }}>
-                      {activeBlastFilePath ? (
-                        <span>Blast scan: <code style={{ color: "#ef4444", fontSize: "0.625rem" }}>{activeBlastFilePath.split("/").pop()}</code></span>
-                      ) : (
-                        <span>Click a node to inspect its Blast Radius</span>
-                      )}
-                    </span>
-                    {activeBlastFilePath && (
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={clearBlastHighlight}
-                        style={{ fontSize: "0.625rem", height: 20, padding: "0 6px" }}
-                      >
-                        Clear Highlight
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* SVG Visualizer Canvas */}
-                <div className={styles.graphCanvasContainer}>
-                  {/* Zoom controls */}
-                  <div className={styles.graphControls}>
-                    <button className={styles.graphControlBtn} onClick={() => handleZoom(1.2)} title="Zoom In">+</button>
-                    <button className={styles.graphControlBtn} onClick={() => handleZoom(0.8)} title="Zoom Out">-</button>
-                    <button className={styles.graphControlBtn} onClick={() => { setGraphZoom(1); setGraphPan({ x: 0, y: 0 }); }} title="Reset Layout">⟲</button>
-                  </div>
-
-                  {/* Active hover info overlays */}
-                  {hoveredNode && (
-                    <div className={styles.graphNodeHoverInfo}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                        <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-white)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {hoveredNode.label}
-                        </span>
-                        <span className={styles.repoBranch} style={{ fontSize: "0.625rem", color: "#b01e0a" }}>
-                          {hoveredNode.type || "file"}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: "0.6875rem", fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)" }}>
-                        {hoveredNode.file_path && <div>Path: {hoveredNode.file_path}</div>}
-                        {hoveredNode.size_bytes && <div>Size: {(hoveredNode.size_bytes / 1024).toFixed(1)} KB</div>}
-                        {hoveredNode.language && <div>Lang: {hoveredNode.language}</div>}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SVG Nodes and Links Map */}
-                  <svg
-                    width="100%"
-                    height="100%"
-                    viewBox="0 0 700 500"
-                    onWheel={handleWheel}
-                    onMouseMove={handleSvgMouseMove}
-                    onMouseDown={handleSvgMouseDown}
-                    onMouseUp={handleSvgMouseUp}
-                    onMouseLeave={handleSvgMouseUp}
-                    style={{ cursor: draggedNodeId ? "grabbing" : isPanning ? "grabbing" : "grab" }}
-                  >
-                    <g transform={`translate(${graphPan.x}, ${graphPan.y}) scale(${graphZoom})`}>
-                      {/* Lines/Edges */}
-                      {graphData?.edges.map((edge, i) => {
-                        const s = layoutNodes.find(n => n.id === edge.source);
-                        const t = layoutNodes.find(n => n.id === edge.target);
-                        if (!s || !t) return null;
-
-                        const isHighlighted = searchQuery && (
-                          s.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          t.label.toLowerCase().includes(searchQuery.toLowerCase())
-                        );
-
-                        const isInBlastEdge = blastRadiusFiles.includes(s.file_path || "") && blastRadiusFiles.includes(t.file_path || "");
-
-                        return (
-                          <line
-                            key={`edge-${i}`}
-                            x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                            stroke={isHighlighted ? "rgba(176, 30, 10, 0.9)" : isInBlastEdge ? "rgba(239, 68, 68, 0.7)" : "rgba(255, 255, 255, 0.25)"}
-                            strokeWidth={isHighlighted || isInBlastEdge ? 1.5 : 1}
-                          />
-                        );
-                      })}
-
-                      {/* Node Circles */}
-                      {layoutNodes.map((node) => {
-                        const isMatchingSearch = searchQuery && node.label.toLowerCase().includes(searchQuery.toLowerCase());
-                        const isInBlastRadius = blastRadiusFiles.includes(node.file_path || "") || node.file_path === activeBlastFilePath;
-
-                        const r = node.type === "class" ? 7 : node.type === "function" ? 5 : 6;
-                        
-                        let fill = node.type === "class" ? "#ffffff" : node.type === "function" ? "#b01e0a" : "rgba(255, 255, 255, 0.3)";
-                        if (isInBlastRadius) {
-                          fill = node.file_path === activeBlastFilePath ? "#ef4444" : "#f87171";
-                        }
-
-                        return (
-                          <g
-                            key={node.id}
-                            transform={`translate(${node.x}, ${node.y})`}
-                            onMouseEnter={() => setHoveredNode(node)}
-                            onMouseLeave={() => setHoveredNode(null)}
-                            onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
-                            onClick={() => handleNodeClick(node)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            <circle
-                              r={r}
-                              fill={fill}
-                              stroke={isMatchingSearch ? "#b01e0a" : isInBlastRadius ? "#ef4444" : "rgba(0,0,0,0.6)"}
-                              strokeWidth={isMatchingSearch || isInBlastRadius ? 3 : 1}
-                            />
-                            {isMatchingSearch && (
-                              <circle
-                                r={r + 6}
-                                fill="none"
-                                stroke="rgba(176, 30, 10, 0.3)"
-                                strokeWidth="2"
-                                style={{ animation: "pulse 1.5s infinite" }}
-                              />
-                            )}
-                            {isInBlastRadius && (
-                              <circle
-                                r={r + 8}
-                                fill="none"
-                                stroke="rgba(239, 68, 68, 0.4)"
-                                strokeWidth="2"
-                                style={{ animation: "pulse 2.0s infinite" }}
-                              />
-                            )}
-                            {/* Monospace Labels */}
-                            <text
-                              y={r + 10}
-                              textAnchor="middle"
-                              fill={isMatchingSearch ? "var(--color-white)" : isInBlastRadius ? "#ef4444" : "var(--color-text-secondary)"}
-                              fontSize="7.5"
-                              fontFamily="var(--font-mono)"
-                              opacity={searchQuery && !isMatchingSearch ? 0.2 : 0.8}
-                            >
-                              {node.label.split("/").pop()}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </g>
-                  </svg>
-                </div>
-              </>
+                )}
+              </div>
             ) : activeGraphTab === "diagrams" ? (
               /* Visual Model Diagrams (Mermaid.js) */
               <div className={styles.panelBody} style={{ padding: 16 }}>

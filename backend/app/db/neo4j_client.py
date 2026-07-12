@@ -541,12 +541,12 @@ class Neo4jClient:
         nodes_cypher = """
         MATCH (f:File {repo_id: $repo_id})
         RETURN f.path AS id, f.path AS label, f.language AS language,
-               f.size_bytes AS size_bytes
+               f.size_bytes AS size_bytes, 'file' AS type
         ORDER BY f.path
         """
         edges_cypher = """
-        MATCH (a:File {repo_id: $repo_id})-[:IMPORTS]->(b:File {repo_id: $repo_id})
-        RETURN a.path AS source, b.path AS target
+        MATCH (a:File {repo_id: $repo_id})-[r:IMPORTS]->(b:File {repo_id: $repo_id})
+        RETURN a.path AS source, b.path AS target, type(r) AS type
         """
 
         async def work(tx):
@@ -675,7 +675,7 @@ class Neo4jClient:
         """
         edges_cypher = """
         MATCH (caller:Function {repo_id: $repo_id})-[r:CALLS]->(callee:Function {repo_id: $repo_id})
-        RETURN elementId(caller) AS source, elementId(callee) AS target
+        RETURN elementId(caller) AS source, elementId(callee) AS target, type(r) AS type
         """
 
         async def work(tx):
@@ -704,8 +704,8 @@ class Neo4jClient:
         RETURN elementId(m) AS id, m.name AS label, 'method' AS type, m.file_path AS file_path
         """
         edges_cypher = """
-        MATCH (c:Class {repo_id: $repo_id})-[:HAS_METHOD]->(m:Function {repo_id: $repo_id})
-        RETURN elementId(c) AS source, elementId(m) AS target
+        MATCH (c:Class {repo_id: $repo_id})-[r:HAS_METHOD]->(m:Function {repo_id: $repo_id})
+        RETURN elementId(c) AS source, elementId(m) AS target, type(r) AS type
         """
 
         async def work(tx):
@@ -728,6 +728,49 @@ class Neo4jClient:
 
             res3 = await tx.run(edges_cypher, repo_id=repo_id)
             edges = [record.data() async for record in res3]
+
+            return {"nodes": nodes, "edges": edges}
+
+        async with self._driver.session() as session:
+            return await session.execute_read(work)
+
+    async def get_full_graph(self, repo_id: str) -> dict[str, Any]:
+        """Get all nodes and edges (all types) for the repository full graph view.
+
+        Args:
+            repo_id: The repository identifier.
+
+        Returns:
+            Dict with ``nodes`` and ``edges``.
+        """
+        nodes_cypher = """
+        MATCH (n {repo_id: $repo_id})
+        WHERE n:File OR n:Class OR n:Function OR n:Route
+        RETURN elementId(n) AS id,
+               coalesce(n.name, n.path, n.path_pattern) AS label,
+               toLower(labels(n)[0]) AS type,
+               n.file_path AS file_path,
+               n.path AS path,
+               n.language AS language,
+               n.size_bytes AS size_bytes,
+               n.signature AS signature,
+               n.start_line AS start_line,
+               n.end_line AS end_line,
+               n.docstring AS docstring,
+               n.method AS method
+        """
+        edges_cypher = """
+        MATCH (a {repo_id: $repo_id})-[r]->(b {repo_id: $repo_id})
+        WHERE type(r) IN ['IMPORTS', 'CALLS', 'HAS_METHOD', 'CONTAINS']
+        RETURN elementId(a) AS source, elementId(b) AS target, type(r) AS type
+        """
+
+        async def work(tx):
+            res = await tx.run(nodes_cypher, repo_id=repo_id)
+            nodes = [record.data() async for record in res]
+
+            res2 = await tx.run(edges_cypher, repo_id=repo_id)
+            edges = [record.data() async for record in res2]
 
             return {"nodes": nodes, "edges": edges}
 

@@ -8,6 +8,7 @@ import {
   getRepoStatus,
   getGraphStats,
   getDependencyGraph,
+  getFullGraph,
   getBlastRadius,
   sendChatMessage,
   getChatHistory,
@@ -20,6 +21,7 @@ import {
 } from "@/app/lib/api";
 import styles from "./repo.module.css";
 import dashStyles from "../../dashboard.module.css";
+import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
 
 /* ── Icons ─────────────────────────────────────────────────────────── */
 function BackIcon() {
@@ -98,7 +100,7 @@ export default function RepoDetailPage() {
   // Fetch graph when tab switches
   useEffect(() => {
     if (activeTab === "graph" && !graph) {
-      getDependencyGraph(repoId)
+      getFullGraph(repoId)
         .then(setGraph)
         .catch(() => {});
     }
@@ -285,59 +287,14 @@ export default function RepoDetailPage() {
 
       {/* ── Graph Tab ──────────────────────────────────────────── */}
       {activeTab === "graph" && (
-        <div className={styles.graphContainer}>
+        <div className={styles.graphContainer} style={{ height: "600px" }}>
           {graph && graph.nodes.length > 0 ? (
-            <svg className={styles.graphSvg} viewBox="0 0 1000 600">
-              {/* Edges */}
-              {graph.edges.map((edge, i) => {
-                const sourceIdx = graph.nodes.findIndex((n) => n.id === edge.source);
-                const targetIdx = graph.nodes.findIndex((n) => n.id === edge.target);
-                if (sourceIdx === -1 || targetIdx === -1) return null;
-
-                const cols = Math.ceil(Math.sqrt(graph.nodes.length));
-                const sx = ((sourceIdx % cols) + 0.5) * (900 / cols) + 50;
-                const sy = (Math.floor(sourceIdx / cols) + 0.5) * (500 / Math.ceil(graph.nodes.length / cols)) + 50;
-                const tx = ((targetIdx % cols) + 0.5) * (900 / cols) + 50;
-                const ty = (Math.floor(targetIdx / cols) + 0.5) * (500 / Math.ceil(graph.nodes.length / cols)) + 50;
-
-                return (
-                  <line
-                    key={`e-${i}`}
-                    x1={sx} y1={sy} x2={tx} y2={ty}
-                    stroke="rgba(176, 30, 10, 0.2)"
-                    strokeWidth="1"
-                  />
-                );
-              })}
-
-              {/* Nodes */}
-              {graph.nodes.map((node, i) => {
-                const cols = Math.ceil(Math.sqrt(graph.nodes.length));
-                const x = ((i % cols) + 0.5) * (900 / cols) + 50;
-                const y = (Math.floor(i / cols) + 0.5) * (500 / Math.ceil(graph.nodes.length / cols)) + 50;
-                const shortLabel = node.label.split("/").pop() || node.label;
-
-                return (
-                  <g key={node.id}>
-                    <circle
-                      cx={x} cy={y} r="6"
-                      fill="#b01e0a"
-                      stroke="rgba(176, 30, 10, 0.4)"
-                      strokeWidth="2"
-                    />
-                    <text
-                      x={x} y={y + 16}
-                      textAnchor="middle"
-                      fill="#888"
-                      fontSize="8"
-                      fontFamily="var(--font-mono)"
-                    >
-                      {shortLabel}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
+            <NvlGraphViewer
+              nodes={graph.nodes}
+              edges={graph.edges}
+              graphType="dep"
+              repoId={repoId}
+            />
           ) : (
             <div className={styles.graphEmptyMsg}>
               {graph ? "No dependency data found." : "Loading graph data..."}

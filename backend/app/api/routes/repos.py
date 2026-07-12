@@ -32,6 +32,7 @@ from app.schemas.responses import (
     ErrorResponse,
     CallGraphResponse,
     ClassGraphResponse,
+    FullGraphResponse,
 )
 
 router = APIRouter(
@@ -204,6 +205,33 @@ async def get_dependency_graph(
 
     graph_data = await neo4j.get_dependency_graph(repo_id=str(repo_id))
     return DependencyGraphResponse(**graph_data)
+
+
+@router.get(
+    "/{repo_id}/full-graph",
+    response_model=FullGraphResponse,
+    summary="Get full repository graph",
+    description="Returns all entity nodes and relationships in the knowledge graph for visualization.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_full_graph(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+    neo4j: Neo4jClient = Depends(get_neo4j),
+) -> FullGraphResponse:
+    """Get the full graph for visualization."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+
+    graph_data = await neo4j.get_full_graph(repo_id=str(repo_id))
+    return FullGraphResponse(**graph_data)
 
 
 @router.get(

@@ -168,6 +168,19 @@ class GraphEdge(BaseModel):
 
     source: str
     target: str
+    type: str | None = None
+
+
+class FullGraphResponse(BaseModel):
+    """Full graph representing all nodes and relationships.
+
+    Attributes:
+        nodes: List of all entity nodes.
+        edges: List of all relationships.
+    """
+
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
 
 
 class DependencyGraphResponse(BaseModel):

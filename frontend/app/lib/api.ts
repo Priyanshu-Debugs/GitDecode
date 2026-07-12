@@ -110,11 +110,15 @@ export interface GraphNode {
   label: string;
   language: string | null;
   size_bytes: number | null;
+  type?: string;
+  file_path?: string | null;
+  signature?: string | null;
 }
 
 export interface GraphEdge {
   source: string;
   target: string;
+  type?: string;
 }
 
 export interface DependencyGraph {
@@ -196,6 +200,13 @@ export async function getDependencyGraph(
   repoId: string
 ): Promise<DependencyGraph> {
   return apiFetch<DependencyGraph>(`/repos/${repoId}/dependency-graph`);
+}
+
+/** Get full repository graph containing all entities and relationships */
+export async function getFullGraph(
+  repoId: string
+): Promise<DependencyGraph> {
+  return apiFetch<DependencyGraph>(`/repos/${repoId}/full-graph`);
 }
 
 /** Get blast radius analysis for a file */
