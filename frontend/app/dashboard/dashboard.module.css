@@ -16,7 +16,12 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  margin-left: 260px;
   transition: margin-left var(--transition-base);
+}
+
+.mainAreaCollapsed {
+  margin-left: 72px;
 }
 
 .content {
@@ -674,13 +679,71 @@
   }
 }
 
+.sidebarOverlay {
+  display: none;
+}
+
+.mobileMenuBtn {
+  display: none;
+}
+
+.topbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 @media (max-width: 768px) {
   .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+  }
+
+  .sidebarCollapsed {
+    width: 260px;
     transform: translateX(-100%);
   }
 
   .sidebarOpen {
     transform: translateX(0);
+    width: 260px;
+  }
+
+  .mainArea,
+  .mainAreaCollapsed {
+    margin-left: 0;
+  }
+
+  .sidebarOverlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 99;
+    animation: fadeIn var(--transition-fast) ease-out;
+  }
+
+  .mobileMenuBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    background: rgba(255, 255, 255, 0.03);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .mobileMenuBtn:hover {
+    color: var(--color-white);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .statsGrid {

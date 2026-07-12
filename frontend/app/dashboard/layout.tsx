@@ -103,6 +103,16 @@ function SettingsIcon() {
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
 /* ── Sidebar Layout Inner ───────────────────────────────────────────── */
 function SidebarContent({ children }: { children: React.ReactNode }) {
   const { user, session, loading, signOut } = useAuth(true);
@@ -121,6 +131,25 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   // Recent chats states
   const [recentChats, setRecentChats] = useState<any[]>([]);
   const [chatsLoading, setChatsLoading] = useState(false);
+
+  // Auto-collapse sidebar on mobile sizes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCollapsed(true);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleNavClick = (path: string) => {
+    router.push(path);
+    if (window.innerWidth < 768) {
+      setCollapsed(true);
+    }
+  };
 
   const pathname = usePathname();
   const router = useRouter();
@@ -285,9 +314,17 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={styles.dashboardLayout}>
+      {/* Mobile Sidebar Backdrop */}
+      {!collapsed && (
+        <div
+          className={styles.sidebarOverlay}
+          onClick={() => setCollapsed(true)}
+        />
+      )}
+
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside
-        className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ""}`}
+        className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : styles.sidebarOpen}`}
         style={{ display: "flex", flexDirection: "column" }}
       >
         <div className={styles.sidebarHeader}>
@@ -318,7 +355,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           <Link
             href="/dashboard"
             className={`${styles.navItem} ${pathname === "/dashboard" && !activeRepoId ? styles.navItemActive : ""}`}
-            onClick={() => router.push("/dashboard")}
+            onClick={() => handleNavClick("/dashboard")}
           >
             <HomeIcon />
             {!collapsed && <span>Workspace Home</span>}
@@ -327,7 +364,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           <Link
             href="/dashboard/profile"
             className={`${styles.navItem} ${pathname === "/dashboard/profile" ? styles.navItemActive : ""}`}
-            onClick={() => router.push("/dashboard/profile")}
+            onClick={() => handleNavClick("/dashboard/profile")}
           >
             <UserIcon />
             {!collapsed && <span>Developer Profile</span>}
@@ -374,13 +411,13 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                     return (
                       <div
                         key={chat.session_id}
-                        onClick={() => router.push(`/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}`)}
+                        onClick={() => handleNavClick(`/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}`)}
                         className={styles.repoCard}
                         style={{
-                          padding: 8,
-                          cursor: "pointer",
-                          background: "rgba(255, 255, 255, 0.01)",
-                          border: "0.5px solid rgba(255, 255, 255, 0.03)"
+                           padding: 8,
+                           cursor: "pointer",
+                           background: "rgba(255, 255, 255, 0.01)",
+                           border: "0.5px solid rgba(255, 255, 255, 0.03)"
                         }}
                       >
                         <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--color-white)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
@@ -407,7 +444,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
         {/* Sidebar Footer User profile */}
         <div className={styles.sidebarFooter}>
           {!collapsed ? (
-            <div className={styles.userSection} onClick={() => router.push("/dashboard/profile")} style={{ cursor: "pointer" }}>
+            <div className={styles.userSection} onClick={() => handleNavClick("/dashboard/profile")} style={{ cursor: "pointer" }}>
               {user.user_metadata?.avatar_url ? (
                 <div className={styles.userAvatar} style={{ overflow: "hidden", padding: 0 }}>
                   <img src={user.user_metadata.avatar_url} alt={user.email || "Profile"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -426,7 +463,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           ) : (
             <button
               className={styles.collapseBtn}
-              onClick={() => router.push("/dashboard/profile")}
+              onClick={() => handleNavClick("/dashboard/profile")}
               aria-label="View Profile"
               style={{ margin: "0 auto" }}
             >
@@ -444,21 +481,29 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
       {/* ── Main Workspace Area ── */}
       <div
-        className={styles.mainArea}
-        style={{ marginLeft: collapsed ? 72 : 260 }}
+        className={`${styles.mainArea} ${collapsed ? styles.mainAreaCollapsed : ""}`}
       >
         {/* Topbar */}
         <div className={styles.topbar}>
-          <div className={styles.breadcrumb}>
-            <span className={styles.breadcrumbCurrent}>
-              {pathname === "/dashboard"
-                ? activeRepoId && activeRepoName
-                  ? activeRepoName
-                  : "Overview"
-                : pathname.includes("/repo/")
-                  ? "Repository"
-                  : "Dashboard"}
-            </span>
+          <div className={styles.topbarLeft}>
+            <button
+              className={styles.mobileMenuBtn}
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? "Open menu" : "Close menu"}
+            >
+              <MenuIcon />
+            </button>
+            <div className={styles.breadcrumb}>
+              <span className={styles.breadcrumbCurrent}>
+                {pathname === "/dashboard"
+                  ? activeRepoId && activeRepoName
+                    ? activeRepoName
+                    : "Overview"
+                  : pathname.includes("/repo/")
+                    ? "Repository"
+                    : "Dashboard"}
+              </span>
+            </div>
           </div>
         </div>
 
