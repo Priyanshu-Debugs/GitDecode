@@ -353,6 +353,7 @@ async def get_repo_summary(
 async def get_diagrams(
     repo_id: UUID,
     force_refresh: bool = Query(False, description="Force regeneration of diagrams"),
+    diagram_type: str | None = Query(None, description="Specific diagram to regenerate (architecture, userFlow, dataFlow)"),
     user: AuthenticatedUser = Depends(require_auth),
     pg: SupabasePGClient = Depends(get_pg),
     neo4j: Neo4jClient = Depends(get_neo4j),
@@ -375,7 +376,15 @@ async def get_diagrams(
     repo_name = repo_row.get("github_url", "repo").split("/")[-1]
     from app.services.diagram_generator import DiagramGenerator
     generator = DiagramGenerator(neo4j)
-    generated = await generator.generate_all_diagrams(str(repo_id), repo_name)
-    await pg.update_repo_diagrams(str(repo_id), user.id, generated)
-    return generated
+    
+    if force_refresh and diagram_type:
+        existing_diagrams = repo_row.get("diagrams") or {}
+        new_diagram = await generator.generate_single_diagram(str(repo_id), repo_name, diagram_type)
+        existing_diagrams[diagram_type] = new_diagram
+        await pg.update_repo_diagrams(str(repo_id), user.id, existing_diagrams)
+        return existing_diagrams
+    else:
+        generated = await generator.generate_all_diagrams(str(repo_id), repo_name)
+        await pg.update_repo_diagrams(str(repo_id), user.id, generated)
+        return generated
 

@@ -268,6 +268,7 @@ export interface RepoDiagrams {
 }
 
 /** Get generated Mermaid diagrams for a repository */
-export async function getRepoDiagrams(repoId: string, forceRefresh = false): Promise<RepoDiagrams> {
-  return apiFetch<RepoDiagrams>(`/repos/${repoId}/diagrams?force_refresh=${forceRefresh}`);
+export async function getRepoDiagrams(repoId: string, forceRefresh = false, diagramType?: string): Promise<RepoDiagrams> {
+  const query = `force_refresh=${forceRefresh}${diagramType ? `&diagram_type=${diagramType}` : ''}`;
+  return apiFetch<RepoDiagrams>(`/repos/${repoId}/diagrams?${query}`);
 }

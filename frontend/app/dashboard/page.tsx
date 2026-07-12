@@ -279,7 +279,7 @@ function DashboardContent() {
   // Summary & Diagrams Metrics
   const [summaryData, setSummaryData] = useState<any | null>(null);
   const [diagrams, setDiagrams] = useState<RepoDiagrams | null>(null);
-  const [diagramsLoading, setDiagramsLoading] = useState(false);
+  const [diagramsLoading, setDiagramsLoading] = useState<Record<string, boolean>>({});
   const [activeDiagramSubTab, setActiveDiagramSubTab] = useState<"arch" | "flow" | "data">("arch");
 
   // Chat states
@@ -464,7 +464,7 @@ function DashboardContent() {
       return;
     }
 
-    setDiagramsLoading(true);
+    setDiagramsLoading({ arch: true, flow: true, data: true });
     getRepoDiagrams(activeRepoId)
       .then((data) => {
         setDiagrams(data);
@@ -474,7 +474,7 @@ function DashboardContent() {
         setDiagrams(null);
       })
       .finally(() => {
-        setDiagramsLoading(false);
+        setDiagramsLoading({});
       });
   }, [activeRepoId, activeGraphTab]);
 
@@ -1499,24 +1499,28 @@ function DashboardContent() {
                     className="btn btn-ghost btn-sm"
                     onClick={async () => {
                       if (!activeRepoId) return;
-                      setDiagramsLoading(true);
+                      const currentTab = activeDiagramSubTab;
+                      setDiagramsLoading(prev => ({ ...prev, [currentTab]: true }));
                       try {
-                        const data = await getRepoDiagrams(activeRepoId, true);
+                        let diagramType = "architecture";
+                        if (currentTab === "flow") diagramType = "userFlow";
+                        if (currentTab === "data") diagramType = "dataFlow";
+                        const data = await getRepoDiagrams(activeRepoId, true, diagramType);
                         setDiagrams(data);
                       } catch (err) {
                         console.error("Error regenerating diagrams:", err);
                       } finally {
-                        setDiagramsLoading(false);
+                        setDiagramsLoading(prev => ({ ...prev, [currentTab]: false }));
                       }
                     }}
-                    disabled={diagramsLoading}
+                    disabled={diagramsLoading[activeDiagramSubTab] || false}
                     style={{ fontSize: "0.6875rem", height: 26, padding: "0 8px" }}
                   >
-                    {diagramsLoading ? "Generating..." : "Regenerate"}
+                    {diagramsLoading[activeDiagramSubTab] ? "Generating..." : "Regenerate"}
                   </button>
                 </div>
 
-                {diagramsLoading ? (
+                {diagramsLoading[activeDiagramSubTab] && !diagrams ? (
                   <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
                     <div className={styles.loadingSpinner} />
                   </div>
