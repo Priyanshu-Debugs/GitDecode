@@ -33,11 +33,8 @@ export default function Navbar() {
 
         {/* Desktop Actions */}
         <div className={styles.desktopActions}>
-          <Button href="/auth/sign-in" variant="ghost" size="sm">
+          <Button href="/auth/sign-in" variant="primary" size="sm">
             Sign In
-          </Button>
-          <Button href="/auth/sign-in" size="sm">
-            Get Started
           </Button>
         </div>
 
@@ -70,17 +67,11 @@ export default function Navbar() {
           <div className={styles.mobileDivider} />
           <Link
             href="/auth/sign-in"
-            className={styles.mobileLink}
-            onClick={() => setMobileOpen(false)}
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/auth/sign-in"
             className={styles.mobileGetStarted}
             onClick={() => setMobileOpen(false)}
+            style={{ textAlign: "center" }}
           >
-            Get Started
+            Sign In
           </Link>
         </div>
       )}

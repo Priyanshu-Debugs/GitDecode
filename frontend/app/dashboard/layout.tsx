@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/lib/useAuth";
 import { listRepos, deleteRepo, syncRepo, listChatSessions, type RepoItem } from "@/app/lib/api";
 import styles from "./dashboard.module.css";
+import DashboardLoader from "@/app/components/DashboardLoader";
 
 /* ── Icons ─────────────────────────────────────────────────────────── */
 function HomeIcon() {
@@ -118,7 +119,13 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const { user, session, loading, signOut } = useAuth(true);
   const [collapsed, setCollapsed] = useState(false);
   
-  const [repos, setRepos] = useState<RepoItem[]>([]);
+  const [repos, setRepos] = useState<RepoItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("gitmesh_cached_repos");
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
   const [repoUrlInput, setRepoUrlInput] = useState("");
   const [branchInput, setBranchInput] = useState("main");
   const [syncLoading, setSyncLoading] = useState(false);
@@ -214,6 +221,9 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     try {
       const data = await listRepos();
       setRepos(data);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("gitmesh_cached_repos", JSON.stringify(data));
+      }
     } catch {
       // ignore
     }
@@ -296,7 +306,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className={styles.loadingScreen}>
-        <div className={styles.loadingSpinner} />
+        <DashboardLoader />
       </div>
     );
   }
@@ -410,7 +420,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                     });
                     return (
                       <div
-                        key={chat.session_id}
+                        key={`${chat.repoId}-${chat.session_id}`}
                         onClick={() => handleNavClick(`/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}`)}
                         className={styles.repoCard}
                         style={{
@@ -520,7 +530,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className={styles.loadingScreen}><div className={styles.loadingSpinner} /></div>}>
+    <Suspense fallback={<div className={styles.loadingScreen}><DashboardLoader /></div>}>
       <SidebarContent>{children}</SidebarContent>
     </Suspense>
   );

@@ -29,6 +29,7 @@ import {
 import styles from "./dashboard.module.css";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
 import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
+import DashboardLoader from "@/app/components/DashboardLoader";
 
 /* ── Inline SVG Icons ────────────────────────────────────────────────── */
 function SearchIcon() {
@@ -231,8 +232,20 @@ function DashboardContent() {
   const activeRepoId = searchParams.get("repo_id");
 
   // States
-  const [repos, setRepos] = useState<RepoItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [repos, setRepos] = useState<RepoItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("gitmesh_cached_repos");
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("gitmesh_cached_repos");
+      return !cached;
+    }
+    return true;
+  });
 
   // GitHub integration & selector states
   const [githubRepos, setGithubRepos] = useState<any[]>([]);
@@ -285,6 +298,9 @@ function DashboardContent() {
     try {
       const data = await listRepos();
       setRepos(data);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("gitmesh_cached_repos", JSON.stringify(data));
+      }
     } catch {
       setRepos([]);
     } finally {
@@ -966,7 +982,7 @@ function DashboardContent() {
   if (loading) {
     return (
       <div className={styles.loadingScreen}>
-        <div className={styles.loadingSpinner} />
+        <DashboardLoader />
       </div>
     );
   }
@@ -1401,7 +1417,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className={styles.loadingScreen}><div className={styles.loadingSpinner} /></div>}>
+    <Suspense fallback={<div className={styles.loadingScreen}><DashboardLoader /></div>}>
       <DashboardContent />
     </Suspense>
   );

@@ -212,7 +212,7 @@ export default function ProfilePage() {
                 });
                 return (
                   <div
-                    key={chat.session_id}
+                    key={`${chat.repoId}-${chat.session_id}`}
                     onClick={() => router.push(`/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}`)}
                     className={styles.profileRecentChatItem}
                   >

@@ -2,12 +2,19 @@
  * GitMesh — Typed API Client
  * ===========================
  * Wraps fetch calls to the FastAPI backend with JWT injection from Supabase.
+ * In Demo Mode, intercepts requests to serve high-fidelity mock graph data client-side.
  */
 
 import { getSupabase } from "@/app/lib/supabase";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+// Helper to check if currently in Demo Mode
+export function isDemoMode(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!localStorage.getItem("gitmesh_mock_session");
+}
 
 // ── Auth Header ─────────────────────────────────────────────────────
 
@@ -165,10 +172,65 @@ export interface ChatSession {
   latest_at: string;
 }
 
+export interface RepoDiagrams {
+  architecture: string;
+  userFlow: string;
+  dataFlow: string;
+}
+
+// ── Mock Data Templates ─────────────────────────────────────────────
+
+const MOCK_REPOS_LIST: RepoItem[] = [
+  {
+    id: "101",
+    github_url: "https://github.com/gitmesh/gitmesh-runtime",
+    branch: "main",
+    status: "completed",
+    detailed_status: "Active workspace indexing verified.",
+    created_at: "2026-07-05T12:00:00Z"
+  },
+  {
+    id: "102",
+    github_url: "https://github.com/gitmesh/ast-lexer-engine",
+    branch: "main",
+    status: "completed",
+    detailed_status: "Active workspace indexing verified.",
+    created_at: "2026-07-04T18:30:00Z"
+  },
+  {
+    id: "103",
+    github_url: "https://github.com/gitmesh/neo4j-vector-search",
+    branch: "main",
+    status: "completed",
+    detailed_status: "Active workspace indexing verified.",
+    created_at: "2026-07-03T09:15:00Z"
+  },
+  {
+    id: "104",
+    github_url: "https://github.com/gitmesh/gitmesh-web-dashboard",
+    branch: "main",
+    status: "completed",
+    detailed_status: "Active workspace indexing verified.",
+    created_at: "2026-07-06T05:00:00Z"
+  }
+];
+
+// Helper to get or set mock repositories list
+function getMockRepos(): RepoItem[] {
+  if (typeof window === "undefined") return MOCK_REPOS_LIST;
+  const cached = localStorage.getItem("gitmesh_mock_repos");
+  if (cached) return JSON.parse(cached);
+  localStorage.setItem("gitmesh_mock_repos", JSON.stringify(MOCK_REPOS_LIST));
+  return MOCK_REPOS_LIST;
+}
+
 // ── API Functions ───────────────────────────────────────────────────
 
 /** List all repos for the current user */
 export async function listRepos(): Promise<RepoItem[]> {
+  if (isDemoMode()) {
+    return getMockRepos();
+  }
   return apiFetch<RepoItem[]>("/repos");
 }
 
@@ -177,6 +239,77 @@ export async function syncRepo(
   repoUrl: string,
   branch = "main"
 ): Promise<RepoSyncResponse> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const normalizedUrl = repoUrl.trim();
+    let repo = list.find((r) => r.github_url === normalizedUrl);
+    const repoId = repo ? repo.id : String(Date.now());
+
+    if (!repo) {
+      repo = {
+        id: repoId,
+        github_url: normalizedUrl,
+        branch: branch.trim() || "main",
+        status: "queued",
+        detailed_status: "Sync queued in Demo Mode...",
+        created_at: new Date().toISOString()
+      };
+      list.push(repo);
+      localStorage.setItem("gitmesh_mock_repos", JSON.stringify(list));
+    } else {
+      repo.status = "queued";
+      repo.detailed_status = "Sync queued in Demo Mode...";
+      localStorage.setItem("gitmesh_mock_repos", JSON.stringify(list));
+    }
+
+    // Trigger state transitions to simulate indexing pipeline
+    setTimeout(() => {
+      const current = getMockRepos();
+      const r = current.find((x) => x.id === repoId);
+      if (r) {
+        r.status = "processing";
+        r.detailed_status = "Cloning codebase structures...";
+        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+      }
+    }, 1000);
+
+    setTimeout(() => {
+      const current = getMockRepos();
+      const r = current.find((x) => x.id === repoId);
+      if (r) {
+        r.status = "processing";
+        r.detailed_status = "Tokenizing AST node maps...";
+        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+      }
+    }, 2800);
+
+    setTimeout(() => {
+      const current = getMockRepos();
+      const r = current.find((x) => x.id === repoId);
+      if (r) {
+        r.status = "processing";
+        r.detailed_status = "pgvector semantic indexes generating...";
+        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+      }
+    }, 4500);
+
+    setTimeout(() => {
+      const current = getMockRepos();
+      const r = current.find((x) => x.id === repoId);
+      if (r) {
+        r.status = "completed";
+        r.detailed_status = "Active workspace indexing verified.";
+        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+      }
+    }, 6000);
+
+    return {
+      repo_id: repoId,
+      status: "queued",
+      message: "Simulation sync initiated.",
+      queued_at: new Date().toISOString()
+    };
+  }
   return apiFetch<RepoSyncResponse>("/repos/sync", {
     method: "POST",
     body: JSON.stringify({ repo_url: repoUrl, branch }),
@@ -187,11 +320,31 @@ export async function syncRepo(
 export async function getRepoStatus(
   repoId: string
 ): Promise<RepoSyncResponse> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find((r) => r.id === repoId);
+    return {
+      repo_id: repoId,
+      status: repo?.status || "completed",
+      message: "Demo Mode status check.",
+      detailed_status: repo?.detailed_status || "Completed",
+      queued_at: new Date().toISOString()
+    };
+  }
   return apiFetch<RepoSyncResponse>(`/repos/${repoId}/status`);
 }
 
 /** Get graph statistics for a repo */
 export async function getGraphStats(repoId: string): Promise<GraphStats> {
+  if (isDemoMode()) {
+    return {
+      files: 28,
+      classes: 12,
+      functions: 54,
+      routes: 5,
+      edges: 182
+    };
+  }
   return apiFetch<GraphStats>(`/repos/${repoId}/graph-stats`);
 }
 
@@ -199,13 +352,93 @@ export async function getGraphStats(repoId: string): Promise<GraphStats> {
 export async function getDependencyGraph(
   repoId: string
 ): Promise<DependencyGraph> {
-  return apiFetch<DependencyGraph>(`/repos/${repoId}/dependency-graph`);
+  return getFullGraph(repoId);
 }
 
 /** Get full repository graph containing all entities and relationships */
 export async function getFullGraph(
   repoId: string
 ): Promise<DependencyGraph> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find((r) => r.id === repoId);
+    const repoName = repo?.github_url.split("/").pop() || "workspace";
+
+    // Generate unique nodes based on repository name
+    if (repoName.includes("runtime")) {
+      return {
+        nodes: [
+          { id: "1", label: "main.py", language: "Python", size_bytes: 1420, type: "File", file_path: "main.py" },
+          { id: "2", label: "worker.py", language: "Python", size_bytes: 4200, type: "File", file_path: "worker.py" },
+          { id: "3", label: "tasks.py", language: "Python", size_bytes: 5210, type: "File", file_path: "tasks.py" },
+          { id: "4", label: "parser.py", language: "Python", size_bytes: 8430, type: "File", file_path: "parser.py" },
+          { id: "5", label: "indexing_agent.py", language: "Python", size_bytes: 12000, type: "File", file_path: "indexing_agent.py" },
+          { id: "6", label: "db.py", language: "Python", size_bytes: 2800, type: "File", file_path: "db.py" },
+          { id: "7", label: "Neo4jClient", language: "Python", size_bytes: null, type: "Class", file_path: "db.py" },
+          { id: "8", label: "ASTParser", language: "Python", size_bytes: null, type: "Class", file_path: "parser.py" },
+          { id: "9", label: "parse_ast()", language: "Python", size_bytes: null, type: "Function", file_path: "parser.py" },
+          { id: "10", label: "index_codebase()", language: "Python", size_bytes: null, type: "Function", file_path: "tasks.py" }
+        ],
+        edges: [
+          { source: "1", target: "2", type: "Imports" },
+          { source: "2", target: "3", type: "Imports" },
+          { source: "3", target: "4", type: "Imports" },
+          { source: "4", target: "5", type: "Imports" },
+          { source: "4", target: "6", type: "Imports" },
+          { source: "6", target: "7", type: "Defines" },
+          { source: "4", target: "8", type: "Defines" },
+          { source: "8", target: "9", type: "Defines" },
+          { source: "3", target: "10", type: "Defines" },
+          { source: "10", target: "9", type: "Calls" },
+          { source: "9", target: "7", type: "Calls" }
+        ]
+      };
+    } else if (repoName.includes("lexer")) {
+      return {
+        nodes: [
+          { id: "1", label: "index.ts", language: "TypeScript", size_bytes: 840, type: "File", file_path: "index.ts" },
+          { id: "2", label: "lexer.ts", language: "TypeScript", size_bytes: 9400, type: "File", file_path: "lexer.ts" },
+          { id: "3", label: "parser.ts", language: "TypeScript", size_bytes: 12400, type: "File", file_path: "parser.ts" },
+          { id: "4", label: "ast.ts", language: "TypeScript", size_bytes: 4200, type: "File", file_path: "ast.ts" },
+          { id: "5", label: "Lexer", language: "TypeScript", size_bytes: null, type: "Class", file_path: "lexer.ts" },
+          { id: "6", label: "Parser", language: "TypeScript", size_bytes: null, type: "Class", file_path: "parser.ts" },
+          { id: "7", label: "AstNode", language: "TypeScript", size_bytes: null, type: "Class", file_path: "ast.ts" },
+          { id: "8", label: "tokenize()", language: "TypeScript", size_bytes: null, type: "Method", file_path: "lexer.ts" },
+          { id: "9", label: "parse()", language: "TypeScript", size_bytes: null, type: "Method", file_path: "parser.ts" }
+        ],
+        edges: [
+          { source: "1", target: "2", type: "Imports" },
+          { source: "1", target: "3", type: "Imports" },
+          { source: "2", target: "4", type: "Imports" },
+          { source: "3", target: "4", type: "Imports" },
+          { source: "2", target: "5", type: "Defines" },
+          { source: "3", target: "6", type: "Defines" },
+          { source: "4", target: "7", type: "Defines" },
+          { source: "5", target: "8", type: "Defines" },
+          { source: "6", target: "9", type: "Defines" },
+          { source: "9", target: "8", type: "Calls" },
+          { source: "8", target: "7", type: "Uses" },
+          { source: "9", target: "7", type: "Uses" }
+        ]
+      };
+    } else {
+      // General fallbacks for custom repos connected in Demo Mode
+      return {
+        nodes: [
+          { id: "1", label: "index.js", language: "JavaScript", size_bytes: 1800, type: "File", file_path: "index.js" },
+          { id: "2", label: "utils.js", language: "JavaScript", size_bytes: 4500, type: "File", file_path: "utils.js" },
+          { id: "3", label: "config.js", language: "JavaScript", size_bytes: 1200, type: "File", file_path: "config.js" },
+          { id: "4", label: "formatData()", language: "JavaScript", size_bytes: null, type: "Function", file_path: "utils.js" }
+        ],
+        edges: [
+          { source: "1", target: "2", type: "Imports" },
+          { source: "1", target: "3", type: "Imports" },
+          { source: "2", target: "4", type: "Defines" },
+          { source: "1", target: "4", type: "Calls" }
+        ]
+      };
+    }
+  }
   return apiFetch<DependencyGraph>(`/repos/${repoId}/full-graph`);
 }
 
@@ -214,6 +447,33 @@ export async function getBlastRadius(
   repoId: string,
   filePath: string
 ): Promise<BlastRadiusResult> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find((r) => r.id === repoId);
+    const repoName = repo?.github_url.split("/").pop() || "workspace";
+
+    if (repoName.includes("runtime")) {
+      return {
+        target: filePath,
+        affected_files: ["main.py", "tasks.py"],
+        affected_nodes: [
+          { type: "File", name: "main.py", file_path: "main.py" },
+          { type: "Function", name: "index_codebase()", file_path: "tasks.py" }
+        ],
+        depth: 2
+      };
+    } else {
+      return {
+        target: filePath,
+        affected_files: ["index.ts", "parser.ts"],
+        affected_nodes: [
+          { type: "File", name: "index.ts", file_path: "index.ts" },
+          { type: "Class", name: "Parser", file_path: "parser.ts" }
+        ],
+        depth: 2
+      };
+    }
+  }
   return apiFetch<BlastRadiusResult>(
     `/repos/${repoId}/blast-radius?file_path=${encodeURIComponent(filePath)}`
   );
@@ -225,6 +485,83 @@ export async function sendChatMessage(
   message: string,
   sessionId?: string
 ): Promise<ChatMessage> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find((r) => r.id === repoId);
+    const repoName = repo?.github_url.split("/").pop() || "workspace";
+
+    const normalizedMsg = message.toLowerCase();
+    let reply = "";
+    let mockSources: any[] = [];
+
+    if (repoName.includes("runtime")) {
+      if (normalizedMsg.includes("explain") || normalizedMsg.includes("how")) {
+        reply = "The `gitmesh-runtime` project orchestrates codebase indexing via Python Celery worker engines. The key orchestration task is `index_codebase()` within [tasks.py](file:///tasks.py#L12-L35). This function coordinates cloning the repository structure and passing the folder tree to the Tree-Sitter based `ASTParser` defined in [parser.py](file:///parser.py#L42-L80). Once variables, imports, and calls are resolved, they are stored in the graph database utilizing the `Neo4jClient` wrapper in [db.py](file:///db.py#L10-L24).";
+        mockSources = [
+          {
+            file_path: "tasks.py",
+            start_line: 12,
+            end_line: 35,
+            snippet: "def index_codebase(repo_url, branch):\n    # 1. Clone structures\n    temp_path = git_clone(repo_url, branch)\n    # 2. Parse symbols\n    nodes, edges = ASTParser().parse_dir(temp_path)\n    # 3. Store graph\n    Neo4jClient().write_graph(nodes, edges)",
+            node_type: "Function"
+          },
+          {
+            file_path: "parser.py",
+            start_line: 42,
+            end_line: 80,
+            snippet: "class ASTParser:\n    def parse_dir(self, dir_path):\n        # Scans directory and tokenizes files via Tree-Sitter AST\n        ...",
+            node_type: "Class"
+          }
+        ];
+      } else if (normalizedMsg.includes("parser") || normalizedMsg.includes("ast")) {
+        reply = "AST logic is handled inside [parser.py](file:///parser.py) inside the `ASTParser` class. It walks file trees, determines the language by extension, and extracts class, function, method structures, and reference nodes.";
+        mockSources = [
+          {
+            file_path: "parser.py",
+            start_line: 42,
+            end_line: 80,
+            snippet: "class ASTParser:\n    def parse_file(self, file_path):\n        # Extracts node tokens\n        ...",
+            node_type: "Class"
+          }
+        ];
+      } else {
+        reply = "I've analyzed the codebase graph. The system contains `worker.py` for task queues, `tasks.py` for Celery routines, `parser.py` for AST parsing, and `db.py` for database operations. How can I help you explore these relationships?";
+      }
+    } else if (repoName.includes("lexer")) {
+      if (normalizedMsg.includes("explain") || normalizedMsg.includes("how")) {
+        reply = "The `ast-lexer-engine` uses TypeScript and Tree-Sitter to construct token nodes. The entry point [index.ts](file:///index.ts) loads modules and passes file strings to the `Lexer` class in [lexer.ts](file:///lexer.ts#L20-L55). The parser in [parser.ts](file:///parser.ts#L10-L38) then maps token types to construct `AstNode` representations (located in [ast.ts](file:///ast.ts#L5-L18)) which are exported as JSON structures.";
+        mockSources = [
+          {
+            file_path: "lexer.ts",
+            start_line: 20,
+            end_line: 55,
+            snippet: "export class Lexer {\n  public tokenize(source: string): Token[] {\n    const tree = treeSitter.parse(source);\n    return this.walkTree(tree.rootNode);\n  }\n}",
+            node_type: "Class"
+          },
+          {
+            file_path: "parser.ts",
+            start_line: 10,
+            end_line: 38,
+            snippet: "export class Parser {\n  public buildAst(tokens: Token[]): AstNode {\n    // Maps raw token arrays to nested AST branches\n    return new AstNode(tokens);\n  }\n}",
+            node_type: "Class"
+          }
+        ];
+      } else {
+        reply = "I have indexed the TypeScript Lexer workspace. Core segments include the main tokenization loop in [lexer.ts](file:///lexer.ts) and the node mapping configurations in [ast.ts](file:///ast.ts). Ask me to explain dependencies or list classes!";
+      }
+    } else {
+      reply = `I have loaded your custom codebase. It appears to contain ${repoName} repository trees. Feel free to query file interactions or class declarations, and I will search the indexed graph.`;
+    }
+
+    return {
+      message_id: String(Date.now()),
+      session_id: sessionId || "demo-session-1",
+      role: "assistant",
+      content: reply,
+      created_at: new Date().toISOString(),
+      sources: mockSources
+    };
+  }
   return apiFetch<ChatMessage>("/chat/send", {
     method: "POST",
     body: JSON.stringify({
@@ -240,6 +577,22 @@ export async function getChatHistory(
   sessionId: string,
   repoId: string
 ): Promise<ChatHistory> {
+  if (isDemoMode()) {
+    return {
+      session_id: sessionId,
+      repo_id: repoId,
+      messages: [
+        {
+          message_id: "msg-init",
+          session_id: sessionId,
+          role: "assistant",
+          content: "Hello! I am your GitMesh AI assistant. I have mapped the entire dependency structures of this repository. You can ask me how files interact, query functions, or inspect code citations.",
+          created_at: new Date().toISOString(),
+          sources: []
+        }
+      ]
+    };
+  }
   return apiFetch<ChatHistory>(
     `/chat/history?session_id=${sessionId}&repo_id=${repoId}`
   );
@@ -249,37 +602,116 @@ export async function getChatHistory(
 export async function listChatSessions(
   repoId: string
 ): Promise<ChatSession[]> {
+  if (isDemoMode()) {
+    return [
+      {
+        session_id: "demo-session-1",
+        latest_at: new Date().toISOString()
+      }
+    ];
+  }
   return apiFetch<ChatSession[]>(`/chat/sessions?repo_id=${repoId}`);
 }
 
 /** Delete a repo and all its data */
 export async function deleteRepo(repoId: string): Promise<void> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const filtered = list.filter((r) => r.id !== repoId);
+    localStorage.setItem("gitmesh_mock_repos", JSON.stringify(filtered));
+    return;
+  }
   return apiFetch<void>(`/repos/${repoId}`, { method: "DELETE" });
 }
 
 /** Get call graph for visualization */
 export async function getCallGraph(repoId: string): Promise<DependencyGraph> {
-  return apiFetch<DependencyGraph>(`/repos/${repoId}/call-graph`);
+  return getFullGraph(repoId);
 }
 
 /** Get class graph for visualization */
 export async function getClassGraph(repoId: string): Promise<DependencyGraph> {
-  return apiFetch<DependencyGraph>(`/repos/${repoId}/class-graph`);
+  return getFullGraph(repoId);
 }
 
 /** Get repository structural summary */
 export async function getRepoSummary(repoId: string): Promise<any> {
-  return apiFetch<any>(`/repos/${repoId}/summary`);
-}
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find((r) => r.id === repoId);
+    const repoName = repo?.github_url.split("/").pop() || "workspace";
 
-export interface RepoDiagrams {
-  architecture: string;
-  userFlow: string;
-  dataFlow: string;
+    if (repoName.includes("runtime")) {
+      return {
+        total_files: 10,
+        total_classes: 2,
+        total_functions: 14,
+        languages: [
+          { language: "Python", count: 8 },
+          { language: "YAML", count: 2 }
+        ]
+      };
+    } else {
+      return {
+        total_files: 14,
+        total_classes: 3,
+        total_functions: 24,
+        languages: [
+          { language: "TypeScript", count: 12 },
+          { language: "JSON", count: 2 }
+        ]
+      };
+    }
+  }
+  return apiFetch<any>(`/repos/${repoId}/summary`);
 }
 
 /** Get generated Mermaid diagrams for a repository */
 export async function getRepoDiagrams(repoId: string, forceRefresh = false, diagramType?: string): Promise<RepoDiagrams> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find((r) => r.id === repoId);
+    const repoName = repo?.github_url.split("/").pop() || "workspace";
+
+    if (repoName.includes("runtime")) {
+      return {
+        architecture: `graph TD
+  main.py --> worker.py
+  worker.py --> tasks.py
+  tasks.py --> parser.py
+  parser.py --> db.py
+  db.py --> Neo4jClient((Neo4j))`,
+        userFlow: `sequenceDiagram
+  actor Dev as Developer
+  actor Celery as Ingestion Engine
+  Dev ->> tasks.py: Trigger syncRepo()
+  tasks.py ->> Celery: Enqueue job
+  Celery ->> parser.py: AST tokenization
+  Celery ->> db.py: Write neo4j linkages`,
+        dataFlow: `graph LR
+  GitSource[Git Source] --> LocalClone[Local Clone]
+  LocalClone --> TreeSitter[Tree-Sitter Lexer]
+  TreeSitter --> Database[(Neo4j Graph Graph)]`
+      };
+    } else {
+      return {
+        architecture: `graph TD
+  index.ts --> lexer.ts
+  index.ts --> parser.ts
+  lexer.ts --> ast.ts
+  parser.ts --> ast.ts`,
+        userFlow: `sequenceDiagram
+  actor API as Client Query
+  API ->> index.ts: tokenizeCode()
+  index.ts ->> lexer.ts: new Lexer()
+  lexer.ts ->> ast.ts: generate AstNode[]`,
+        dataFlow: `graph LR
+  File[source.ts] --> Tokens[Raw Tokens]
+  Tokens --> AST[Nested AST nodes]
+  AST --> JSON[AST JSON Output]`
+      };
+    }
+  }
   const query = `force_refresh=${forceRefresh}${diagramType ? `&diagram_type=${diagramType}` : ''}`;
   return apiFetch<RepoDiagrams>(`/repos/${repoId}/diagrams?${query}`);
 }

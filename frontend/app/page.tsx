@@ -140,8 +140,8 @@ export default function Home() {
             </p>
 
             <div className={styles.heroCtas}>
-              <Button href="/auth/sign-in" size="lg">
-                Get Started Free
+              <Button href="/auth/sign-in" variant="primary" size="lg">
+                Sign In
                 <ArrowRight />
               </Button>
               <Button href="#demo-diagram" variant="ghost" size="lg">
@@ -281,8 +281,8 @@ export default function Home() {
               <p className={styles.ctaSubtitle}>
                 Start exploring in under 60 seconds.
               </p>
-              <Button href="/auth/sign-in" size="lg">
-                Get Started Free
+              <Button href="/auth/sign-in" variant="primary" size="lg">
+                Sign In
                 <ArrowRight />
               </Button>
             </AnimatedSection>

@@ -13,13 +13,86 @@ import styles from "./page.module.css";
    toward flat border-based structures and interactive mock previews.
    ────────────────────────────────────────────────────────────────── */
 
+import { useEffect } from "react";
+
+function TerminalConsole() {
+  const [logs, setLogs] = useState<string[]>([]);
+
+  useEffect(() => {
+    const lines = [
+      "git clone https://github.com/gitmesh/ast-lexer-engine.git...",
+      "Cloning repository structures: 100% complete.",
+      "Parsing tree-sitter AST maps...",
+      "Found 42 TypeScript source files, 15 modules.",
+      "Analyzing class dependencies...",
+      "Indexed 28 class declarations, 142 functions.",
+      "Indexing dependency graph relationships into Neo4j...",
+      "Created 170 nodes and 342 reference linkages.",
+      "Generating vector representations for chat Q&A...",
+      "pgvector embeddings generated successfully.",
+      "Indexing complete. Knowledge graph is online.",
+      "--------------------------------------------------",
+    ];
+
+    let currentIdx = 0;
+    setLogs(["$ " + lines[0]]);
+
+    const interval = setInterval(() => {
+      currentIdx = (currentIdx + 1) % lines.length;
+      if (currentIdx === 0) {
+        setLogs(["$ " + lines[0]]);
+      } else {
+        const nextLine = lines[currentIdx];
+        const prefix = nextLine.startsWith("git") || nextLine.startsWith("Cloning") ? "$ " : "  ";
+        setLogs((prev) => [...prev.slice(-7), prefix + nextLine]);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className={styles.terminalContainer}>
+      <div className={styles.terminalHeader}>
+        <div className={styles.terminalDots}>
+          <span className={styles.terminalDot} style={{ background: "#ef4444" }} />
+          <span className={styles.terminalDot} style={{ background: "#f59e0b" }} />
+          <span className={styles.terminalDot} style={{ background: "#22c55e" }} />
+        </div>
+        <span className={styles.terminalTitle}>indexing_agent@gitmesh: ~</span>
+      </div>
+      <div className={styles.terminalBody}>
+        {logs.map((log, i) => (
+          <div key={i} className={styles.terminalLine}>
+            <span className={log.startsWith("$") ? styles.terminalPrompt : styles.terminalLog}>
+              {log}
+            </span>
+          </div>
+        ))}
+        <div className={styles.terminalCursor} />
+      </div>
+    </div>
+  );
+}
+
 export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gitmesh_mock_session");
+      localStorage.removeItem("gitmesh_cached_repos");
+    }
+  }, []);
+
   const handleGitHubSignIn = async () => {
     setError("");
     setLoading(true);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gitmesh_mock_session");
+      localStorage.removeItem("gitmesh_cached_repos");
+    }
     try {
       const supabase = getSupabase();
       const { error: authError } = await supabase.auth.signInWithOAuth({
@@ -43,7 +116,7 @@ export default function SignInPage() {
     const header = { alg: "HS256", typ: "JWT" };
     const payload = {
       sub: "00000000-0000-0000-0000-000000000000",
-      email: "dev@gitmesh.local",
+      email: "demo@gitmesh.local",
       role: "authenticated",
       aud: "authenticated",
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
@@ -62,7 +135,7 @@ export default function SignInPage() {
       expires_in: 86400,
       user: {
         id: "00000000-0000-0000-0000-000000000000",
-        email: "dev@gitmesh.local",
+        email: "demo@gitmesh.local",
         role: "authenticated",
       },
     };
@@ -75,14 +148,19 @@ export default function SignInPage() {
     <div className={styles.splitLayout}>
       {/* ── Left Side: Premium Interactive Visual Chat Mockup ───── */}
       <div className={styles.visualPanel}>
+        <div className={styles.gridOverlay} />
+        <div className={styles.glowSpot} />
+        
         <div className={styles.infoWrapper}>
           <div className={styles.infoBrand}>
             <span className={styles.infoBrandGit}>Git</span>
             <span className={styles.infoBrandMesh}>Mesh</span>
-            <span className={styles.infoBrandSub}>Platform</span>
+            <span className={styles.infoBrandSub}>Agentic AI</span>
           </div>
-          <h2 className={styles.infoTitle}>Next-generation codebase intelligence</h2>
+          <h2 className={styles.infoTitle}>Analyze codebases with context graph intelligence</h2>
           
+          <TerminalConsole />
+
           <div className={styles.featureList}>
             <div className={styles.featureItem}>
               <div className={styles.featureNumber}>01</div>
@@ -100,16 +178,6 @@ export default function SignInPage() {
                 <h4 className={styles.featureTitle}>Context-Aware Code Q&A</h4>
                 <p className={styles.featureDescription}>
                   Ask direct questions about functions or API pipelines. Receive grounded explanations complete with exact code citations and line ranges.
-                </p>
-              </div>
-            </div>
-            
-            <div className={styles.featureItem}>
-              <div className={styles.featureNumber}>03</div>
-              <div className={styles.featureContent}>
-                <h4 className={styles.featureTitle}>Blast Radius Analysis</h4>
-                <p className={styles.featureDescription}>
-                  Trace downstream consequences of refactoring. Know exactly what modules, functions, or queries will be affected before editing.
                 </p>
               </div>
             </div>
@@ -164,13 +232,19 @@ export default function SignInPage() {
               </svg>
               Continue with GitHub
             </Button>
+            
+            <div className={styles.divider}>
+              <span className={styles.dividerText}>or test-drive the platform</span>
+            </div>
+
             <Button
               onClick={handleDevBypass}
-              variant="ghost"
+              variant="primary"
               size="lg"
               fullWidth
+              className={styles.demoModeBtn}
             >
-              Continue as Developer (Demo Mode)
+              Enter Demo Mode
             </Button>
           </div>
 
