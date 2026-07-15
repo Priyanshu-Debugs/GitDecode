@@ -11,8 +11,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from app.services.parsers.generic_parser import split_into_chunks
-
 from tree_sitter import Language, Parser
 import tree_sitter_typescript
 
@@ -47,8 +45,8 @@ def parse_ts_file(
     file_path: str,
     repo_id: str,
     user_id: str,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Parse TypeScript/JavaScript source code into vector chunks and graph data.
+) -> dict[str, Any]:
+    """Parse TypeScript/JavaScript source code into graph data.
 
     Supports both .ts/.js and .tsx/.jsx files by selecting the appropriate grammar.
 
@@ -59,9 +57,7 @@ def parse_ts_file(
         user_id: Owner user UUID.
 
     Returns:
-        A tuple of:
-          - A list of vector chunk dictionaries (for pgvector).
-          - A dictionary of graph elements (nodes and relationships for Neo4j).
+        A dictionary of graph elements (nodes and relationships).
     """
     # Select parser based on file extension
     ext = os.path.splitext(file_path)[1].lower()
@@ -268,104 +264,7 @@ def parse_ts_file(
         for child in reversed(node.children):
             node_stack.append((child, current_class, current_fn))
 
-    # 3. Build pgvector chunks
-    vector_chunks = []
-    chunk_index = 0
-
-    # Class Chunks
-    for cls in classes:
-        vector_chunks.append({
-            "repo_id": repo_id,
-            "user_id": user_id,
-            "file_path": file_path,
-            "chunk_index": chunk_index,
-            "content": cls["content"],
-            "node_type": "class",
-            "node_name": cls["name"],
-            "start_line": cls["start_line"],
-            "end_line": cls["end_line"],
-            "metadata": {
-                "layer": layer,
-                "frameworks": list(detected_frameworks),
-                "is_tsx": is_tsx
-            }
-        })
-        chunk_index += 1
-
-    # Interface Chunks
-    for iface in interfaces:
-        vector_chunks.append({
-            "repo_id": repo_id,
-            "user_id": user_id,
-            "file_path": file_path,
-            "chunk_index": chunk_index,
-            "content": iface["content"],
-            "node_type": "class",  # map interface as class-type boundary in pgvector for simplicity
-            "node_name": iface["name"],
-            "start_line": iface["start_line"],
-            "end_line": iface["end_line"],
-            "metadata": {
-                "layer": layer,
-                "frameworks": list(detected_frameworks),
-                "is_tsx": is_tsx,
-                "kind": "interface"
-            }
-        })
-        chunk_index += 1
-
-    # Function/Method Chunks
-    for fn in functions:
-        vector_chunks.append({
-            "repo_id": repo_id,
-            "user_id": user_id,
-            "file_path": file_path,
-            "chunk_index": chunk_index,
-            "content": fn["content"],
-            "node_type": "function",
-            "node_name": fn["name"],
-            "start_line": fn["start_line"],
-            "end_line": fn["end_line"],
-            "metadata": {
-                "layer": layer,
-                "frameworks": list(detected_frameworks),
-                "class_name": fn["class_name"],
-                "signature": fn["signature"],
-                "is_async": fn["is_async"],
-                "is_tsx": is_tsx
-            }
-        })
-        chunk_index += 1
-
-    # ALWAYS add file-level chunks to ensure 100% content coverage.
-    # Semantic chunks (classes/interfaces/functions above) provide rich metadata;
-    # these file-level chunks guarantee no code is lost.
-    file_text_chunks = split_into_chunks(content, chunk_size=4000, overlap=200)
-    for i, text_slice in enumerate(file_text_chunks):
-        char_start = i * (4000 - 200)
-        start_ln = content[:char_start].count("\n") + 1
-        end_ln = content[:char_start + len(text_slice)].count("\n") + 1
-
-        vector_chunks.append({
-            "repo_id": repo_id,
-            "user_id": user_id,
-            "file_path": file_path,
-            "chunk_index": chunk_index,
-            "content": text_slice,
-            "node_type": "file_chunk",
-            "node_name": os.path.basename(file_path),
-            "start_line": start_ln,
-            "end_line": end_ln,
-            "metadata": {
-                "layer": layer,
-                "frameworks": list(detected_frameworks),
-                "is_tsx": is_tsx,
-                "chunk_part": i + 1,
-                "total_parts": len(file_text_chunks),
-            }
-        })
-        chunk_index += 1
-
-    # 4. Build Neo4j AST nodes & edges
+    # 4. Build AST nodes & edges
     graph_nodes = []
     graph_edges = []
 
@@ -450,4 +349,4 @@ def parse_ts_file(
         "frameworks": list(detected_frameworks)
     }
 
-    return vector_chunks, graph_data
+    return graph_data

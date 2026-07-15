@@ -10,9 +10,6 @@ from __future__ import annotations
 
 import os
 from typing import Any
-
-from app.services.parsers.generic_parser import split_into_chunks
-
 from tree_sitter import Language, Parser
 import tree_sitter_python
 
@@ -40,8 +37,8 @@ def parse_python_file(
     file_path: str,
     repo_id: str,
     user_id: str,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Parse Python source code into chunks and graph data.
+) -> dict[str, Any]:
+    """Parse Python source code into graph data.
 
     Args:
         content: The code contents of the file.
@@ -50,9 +47,7 @@ def parse_python_file(
         user_id: Owner user UUID.
 
     Returns:
-        A tuple of:
-          - A list of vector chunk dictionaries (for pgvector).
-          - A dictionary of graph elements (nodes and relationships for Neo4j).
+        A dictionary of graph elements (nodes and relationships).
     """
     tree = py_parser.parse(bytes(content, "utf-8"))
     root_node = tree.root_node
@@ -162,9 +157,6 @@ def parse_python_file(
 
             # Check if async
             is_async = False
-            # If the node's parent or siblings indicate async (e.g. async_def)
-            # In tree-sitter, async functions are often represented under 'function_definition'
-            # with 'async' keyword node. Let's look for 'async' child.
             for child in node.children:
                 if child.type == "async":
                     is_async = True
@@ -208,81 +200,6 @@ def parse_python_file(
         # Traverse children
         for child in reversed(node.children):
             node_stack.append((child, current_class, current_fn))
-
-    # 3. Build pgvector chunks
-    vector_chunks = []
-    chunk_index = 0
-
-    # Class Chunks
-    for cls in classes:
-        vector_chunks.append({
-            "repo_id": repo_id,
-            "user_id": user_id,
-            "file_path": file_path,
-            "chunk_index": chunk_index,
-            "content": cls["content"],
-            "node_type": "class",
-            "node_name": cls["name"],
-            "start_line": cls["start_line"],
-            "end_line": cls["end_line"],
-            "metadata": {
-                "layer": layer,
-                "frameworks": list(detected_frameworks),
-                "docstring": cls["docstring"]
-            }
-        })
-        chunk_index += 1
-
-    # Function Chunks (excluding methods already represented inside classes, or index them independently)
-    for fn in functions:
-        vector_chunks.append({
-            "repo_id": repo_id,
-            "user_id": user_id,
-            "file_path": file_path,
-            "chunk_index": chunk_index,
-            "content": fn["content"],
-            "node_type": "function",
-            "node_name": fn["name"],
-            "start_line": fn["start_line"],
-            "end_line": fn["end_line"],
-            "metadata": {
-                "layer": layer,
-                "frameworks": list(detected_frameworks),
-                "class_name": fn["class_name"],
-                "signature": fn["signature"],
-                "is_async": fn["is_async"],
-                "docstring": fn["docstring"]
-            }
-        })
-        chunk_index += 1
-
-    # ALWAYS add file-level chunks to ensure 100% content coverage.
-    # Semantic chunks (classes/functions above) provide rich metadata;
-    # these file-level chunks guarantee no code is lost.
-    file_text_chunks = split_into_chunks(content, chunk_size=4000, overlap=200)
-    for i, text_slice in enumerate(file_text_chunks):
-        char_start = i * (4000 - 200)
-        start_ln = content[:char_start].count("\n") + 1
-        end_ln = content[:char_start + len(text_slice)].count("\n") + 1
-
-        vector_chunks.append({
-            "repo_id": repo_id,
-            "user_id": user_id,
-            "file_path": file_path,
-            "chunk_index": chunk_index,
-            "content": text_slice,
-            "node_type": "file_chunk",
-            "node_name": os.path.basename(file_path),
-            "start_line": start_ln,
-            "end_line": end_ln,
-            "metadata": {
-                "layer": layer,
-                "frameworks": list(detected_frameworks),
-                "chunk_part": i + 1,
-                "total_parts": len(file_text_chunks),
-            }
-        })
-        chunk_index += 1
 
     # 4. Build Neo4j AST nodes & edges
     graph_nodes = []
@@ -369,4 +286,4 @@ def parse_python_file(
         "frameworks": list(detected_frameworks)
     }
 
-    return vector_chunks, graph_data
+    return graph_data

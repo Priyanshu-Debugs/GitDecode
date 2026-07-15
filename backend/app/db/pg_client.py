@@ -183,105 +183,119 @@ class SupabasePGClient:
         logger.info("Deleted repo %s for user %s", repo_id, user_id)
 
     # ══════════════════════════════════════════════════════════════════════
-    #  Vector Chunks (pgvector)
+    #  Repo Files & Code Graph (Vectorless RAG)
     # ══════════════════════════════════════════════════════════════════════
 
-    async def insert_vector_chunks(
+    async def insert_repo_files(
         self,
-        chunks: list[dict[str, Any]],
+        files: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Bulk-insert vector embedding chunks.
+        """Bulk-insert full repository files.
 
-        Each chunk dict should contain::
-
-            {
-                "repo_id": str,
-                "user_id": str,
-                "file_path": str,
-                "chunk_index": int,
-                "content": str,
-                "node_type": str | None,    # "file" | "class" | "function" | "route"
-                "node_name": str | None,
-                "start_line": int | None,
-                "end_line": int | None,
-                "embedding": list[float],   # 768-dimensional (nomic-embed-code)
-                "metadata": dict | None,
-            }
-
-        Args:
-            chunks: List of chunk dictionaries to insert.
-
-        Returns:
-            The inserted rows.
+        Each file dict should contain:
+            - repo_id: str
+            - user_id: str
+            - file_path: str
+            - language: str
+            - content: str
+            - size_bytes: int
+            - checksum: str
         """
         response = (
-            self._client.table("vector_chunks")
-            .insert(chunks)
+            self._client.table("repo_files")
+            .insert(files)
             .execute()
         )
-        logger.info("Inserted %d vector chunks", len(response.data))
+        logger.info("Inserted %d repository files", len(response.data))
         return response.data
 
-    async def search_vectors(
+    async def get_repo_files(
         self,
         repo_id: str,
         user_id: str,
-        embedding: list[float],
-        match_count: int = 5,
-        threshold: float = 0.3,
+        file_paths: list[str],
     ) -> list[dict[str, Any]]:
-        """Perform pgvector similarity search via the ``match_vectors`` SQL function.
-
-        This calls the server-side ``match_vectors`` Postgres function which:
-        1. Accepts the embedding as ``float8[]`` and casts to ``vector`` internally.
-        2. Uses cosine distance (``<=>``) for similarity.
-        3. Filters by ``repo_id`` and ``user_id`` for data isolation.
-
-        Args:
-            repo_id: Scope search to this repository.
-            user_id: Scope search to this user (RLS defense-in-depth).
-            embedding: The query embedding (768-dimensional float list).
-            match_count: Maximum number of results to return.
-            threshold: Minimum similarity score (0.0–1.0).
-
-        Returns:
-            List of matching chunks, ordered by descending similarity.
-        """
-        response = self._client.rpc(
-            "match_vectors",
-            {
-                "p_repo_id": repo_id,
-                "p_user_id": user_id,
-                "p_embedding": embedding,
-                "p_match_count": match_count,
-                "p_match_threshold": threshold,
-            },
-        ).execute()
+        """Fetch content and metadata of specific repository files."""
+        response = (
+            self._client.table("repo_files")
+            .select("file_path, language, content, size_bytes")
+            .eq("repo_id", repo_id)
+            .eq("user_id", user_id)
+            .in_("file_path", file_paths)
+            .execute()
+        )
         return response.data
 
-    async def delete_repo_chunks(
+    async def get_all_repo_files(
         self,
         repo_id: str,
         user_id: str,
-    ) -> None:
-        """Delete all vector chunks for a repository.
-
-        Used before re-ingestion to avoid stale embeddings.
-
-        Args:
-            repo_id: The repository UUID.
-            user_id: The owner's user UUID (for RLS filtering).
-        """
-        (
-            self._client.table("vector_chunks")
-            .delete()
+    ) -> list[dict[str, Any]]:
+        """Fetch content and metadata of all repository files."""
+        response = (
+            self._client.table("repo_files")
+            .select("file_path, language, content, size_bytes")
             .eq("repo_id", repo_id)
             .eq("user_id", user_id)
             .execute()
         )
-        logger.info(
-            "Deleted vector chunks for repo %s, user %s", repo_id, user_id
+        return response.data
+
+    async def delete_repo_files(
+        self,
+        repo_id: str,
+        user_id: str,
+    ) -> None:
+        """Delete all files for a repository."""
+        self._client.table("repo_files").delete().eq("repo_id", repo_id).eq("user_id", user_id).execute()
+        logger.info("Deleted repository files for repo %s, user %s", repo_id, user_id)
+
+    async def save_repo_graph(
+        self,
+        repo_id: str,
+        user_id: str,
+        graph_data: dict[str, Any],
+        stats: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Upsert the JSON AST dependency graph for a repository."""
+        response = (
+            self._client.table("code_graph")
+            .upsert({
+                "repo_id": repo_id,
+                "user_id": user_id,
+                "graph_data": graph_data,
+                "stats": stats,
+                "updated_at": "now()",
+            }, on_conflict="repo_id")
+            .execute()
         )
+        logger.info("Saved code graph for repo %s, user %s", repo_id, user_id)
+        return response.data[0] if response.data else {}
+
+    async def get_repo_graph(
+        self,
+        repo_id: str,
+        user_id: str,
+    ) -> dict[str, Any] | None:
+        """Fetch the JSON AST dependency graph for a repository."""
+        response = (
+            self._client.table("code_graph")
+            .select("*")
+            .eq("repo_id", repo_id)
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        return response.data
+
+    async def delete_repo_graph(
+        self,
+        repo_id: str,
+        user_id: str,
+    ) -> None:
+        """Delete the code graph for a repository."""
+        self._client.table("code_graph").delete().eq("repo_id", repo_id).eq("user_id", user_id).execute()
+        logger.info("Deleted code graph for repo %s, user %s", repo_id, user_id)
 
     # ══════════════════════════════════════════════════════════════════════
     #  Chat History

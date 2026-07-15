@@ -40,13 +40,8 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str
     SUPABASE_JWT_SECRET: str
 
-    # ── Neo4j / AuraDB ──────────────────────────────────────────────────
-    NEO4J_URI: str
-    NEO4J_USERNAME: str
-    NEO4J_PASSWORD: str
-
-    # ── Hugging Face ─────────────────────────────────────────────────────
-    HUGGINGFACE_API_KEYS: str = ""
+    # ── Gemini Context Cache settings ──────────────────────────────────────
+    GEMINI_CONTEXT_MODEL: str = "gemini-3.1-flash-lite"
 
 
     # ── Validators ───────────────────────────────────────────────────────

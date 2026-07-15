@@ -9,7 +9,6 @@ dependency overrides).
 """
 
 from app.core.security import get_current_user, AuthenticatedUser  # noqa: F401
-from app.db.neo4j_client import Neo4jClient
 from app.db.pg_client import SupabasePGClient
 
 # ── Auth dependency alias (for readability in route signatures) ──────
@@ -21,34 +20,13 @@ require_auth = get_current_user
 # These are module-level singletons initialised at startup in main.py
 # and set via set_*() functions during the lifespan context.
 
-_neo4j_client: Neo4jClient | None = None
 _pg_client: SupabasePGClient | None = None
-
-
-def set_neo4j_client(client: Neo4jClient) -> None:
-    """Set the module-level Neo4j client (called from main.py lifespan)."""
-    global _neo4j_client
-    _neo4j_client = client
 
 
 def set_pg_client(client: SupabasePGClient) -> None:
     """Set the module-level Supabase PG client (called from main.py lifespan)."""
     global _pg_client
     _pg_client = client
-
-
-def get_neo4j() -> Neo4jClient:
-    """Return the Neo4j client singleton.
-
-    Raises:
-        RuntimeError: If called before the client is initialized at startup.
-    """
-    if _neo4j_client is None:
-        raise RuntimeError(
-            "Neo4j client is not initialized. "
-            "Ensure the application lifespan has started."
-        )
-    return _neo4j_client
 
 
 def get_pg() -> SupabasePGClient:

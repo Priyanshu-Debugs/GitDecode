@@ -24,9 +24,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.db.neo4j_client import Neo4jClient
 from app.db.pg_client import SupabasePGClient
-from app.api.dependencies import set_neo4j_client, set_pg_client
+from app.api.dependencies import set_pg_client
 from app.api.routes.repos import router as repos_router
 from app.api.routes.chat import router as chat_router
 
@@ -58,16 +57,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # ── STARTUP ──────────────────────────────────────────────────────
     logger.info("Starting %s...", settings.PROJECT_NAME)
 
-    # Neo4j / AuraDB
-    neo4j_client = Neo4jClient(
-        uri=settings.NEO4J_URI,
-        username=settings.NEO4J_USERNAME,
-        password=settings.NEO4J_PASSWORD,
-    )
-    await neo4j_client.verify_connectivity()
-    await neo4j_client.ensure_constraints()
-    set_neo4j_client(neo4j_client)
-
     # Supabase / PostgreSQL
     pg_client = SupabasePGClient(
         supabase_url=settings.SUPABASE_URL,
@@ -81,7 +70,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # ── SHUTDOWN ─────────────────────────────────────────────────────
     logger.info("Shutting down %s...", settings.PROJECT_NAME)
-    await neo4j_client.close()
     logger.info("Shutdown complete")
 
 

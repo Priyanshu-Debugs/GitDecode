@@ -2,26 +2,33 @@ import logging
 from typing import Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from app.db.neo4j_client import Neo4jClient
+from app.db.pg_client import SupabasePGClient
 
 logger = logging.getLogger(__name__)
 
 class DiagramGenerator:
-    """Service to automatically generate visual Mermaid.js diagrams for a repository using Gemini."""
+    """Service to automatically generate visual Mermaid.js diagrams for a repository using Gemini and JSON graph."""
 
-    def __init__(self, neo4j_client: Neo4jClient) -> None:
-        self.neo4j = neo4j_client
+    def __init__(self, pg_client: SupabasePGClient) -> None:
+        self.pg = pg_client
         self.llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
 
-    async def _get_base_context_and_prompts(self, repo_id: str, repo_name: str) -> tuple[str, Dict[str, str]]:
-        file_tree = await self.neo4j.get_file_tree(repo_id)
-        file_list = [f["path"] for f in file_tree[:150]] # Cap at 150 files to prevent token overflows
+    async def _get_base_context_and_prompts(self, repo_id: str, repo_name: str, user_id: str) -> tuple[str, Dict[str, str]]:
+        # Fetch graph and stats from Supabase
+        graph_record = await self.pg.get_repo_graph(repo_id, user_id)
+        if not graph_record:
+            raise ValueError(f"Graph data not found for repo {repo_id}")
+
+        graph_data = graph_record.get("graph_data", {})
+        summary = graph_record.get("stats", {})
         
-        summary = await self.neo4j.get_repo_summary(repo_id)
+        # Extract files tree
+        file_list = [node["id"] for node in graph_data.get("nodes", []) if node.get("type") == "file"]
+        file_list = file_list[:150] # Cap at 150 files to prevent token overflows
         
         context_str = f"Repository Name: {repo_name}\n"
-        context_str += f"Total Classes: {summary.get('total_classes', 0)}\n"
-        context_str += f"Total Functions: {summary.get('total_functions', 0)}\n"
+        context_str += f"Total Classes: {summary.get('classes_count', 0)}\n"
+        context_str += f"Total Functions: {summary.get('functions_count', 0)}\n"
         context_str += "Files:\n" + "\n".join([f"- {f}" for f in file_list])
 
         mermaid_guidelines = """
@@ -51,20 +58,20 @@ CRITICAL MERMAID.JS SYNTAX AND STYLING RULES:
         }
         return context_str, prompts
 
-    async def generate_single_diagram(self, repo_id: str, repo_name: str, diagram_type: str) -> str:
+    async def generate_single_diagram(self, repo_id: str, repo_name: str, diagram_type: str, user_id: str) -> str:
         """Generates a single diagram of the specified type."""
         logger.info("Generating %s diagram for repo_id: %s", diagram_type, repo_id)
-        context_str, prompts = await self._get_base_context_and_prompts(repo_id, repo_name)
+        context_str, prompts = await self._get_base_context_and_prompts(repo_id, repo_name, user_id)
         
         if diagram_type not in prompts:
             raise ValueError(f"Unknown diagram_type: {diagram_type}")
             
         return await self._generate_diagram(prompts[diagram_type], context_str)
 
-    async def generate_all_diagrams(self, repo_id: str, repo_name: str) -> Dict[str, str]:
+    async def generate_all_diagrams(self, repo_id: str, repo_name: str, user_id: str) -> Dict[str, str]:
         """Generates Architecture, User Flow, and Data Flow diagrams in Mermaid.js syntax."""
         logger.info("Generating all diagrams for repo_id: %s", repo_id)
-        context_str, prompts = await self._get_base_context_and_prompts(repo_id, repo_name)
+        context_str, prompts = await self._get_base_context_and_prompts(repo_id, repo_name, user_id)
 
         architecture = await self._generate_diagram(prompts["architecture"], context_str)
         user_flow = await self._generate_diagram(prompts["userFlow"], context_str)

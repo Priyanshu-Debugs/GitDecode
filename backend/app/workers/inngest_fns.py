@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 import os
 import re
 import shutil
@@ -20,13 +21,12 @@ from typing import Any
 import inngest
 
 from app.api.routes.repos import inngest_client
-from app.db.neo4j_client import Neo4jClient
 from app.db.pg_client import SupabasePGClient
 from app.core.config import get_settings
-from app.services.embeddings import HuggingFaceEmbeddingsClient
 from app.services.parsers.python_parser import parse_python_file
 from app.services.parsers.ts_parser import parse_ts_file
 from app.services.parsers.generic_parser import parse_generic_file, parse_notebook_file
+from app.services.context_caching import ContextCacheManager
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,6 @@ def resolve_import_path(
 
     return None
 
-
 @inngest_client.create_function(
     fn_id="sync_github_repository",
     trigger=inngest.TriggerEvent(event="repo/sync.requested"),
@@ -125,8 +124,8 @@ async def sync_github_repository(
 ) -> dict[str, Any]:
     """Background pipeline triggered on repo/sync.requested.
 
-    Clones the repository, walks it, chunks code using tree-sitter,
-    generates 768-dimensional embeddings, and saves metadata/relations.
+    Clones the repository, walks it, parses using tree-sitter AST,
+    compiles a unified JSON graph, and saves whole files and graph to Supabase.
     """
     step = ctx.step
     event_data = ctx.event.data
@@ -137,15 +136,10 @@ async def sync_github_repository(
 
     settings = get_settings()
 
-    # Instantiate database clients
+    # Instantiate Supabase PG client
     pg_client = SupabasePGClient(
         supabase_url=settings.SUPABASE_URL,
         service_role_key=settings.SUPABASE_SERVICE_ROLE_KEY,
-    )
-    neo4j_client = Neo4jClient(
-        uri=settings.NEO4J_URI,
-        username=settings.NEO4J_USERNAME,
-        password=settings.NEO4J_PASSWORD,
     )
 
     # Step 1: Update repository sync status to 'processing' (cloning)
@@ -189,9 +183,9 @@ async def sync_github_repository(
 
             result = await asyncio.to_thread(run_git_clone, cmd)
             if result.returncode != 0:
-                # If it failed to clone the specified branch, try falling back to the default branch
+                # Fallback to default branch
                 logger.warning(
-                    "Failed to clone branch '%s'. Falling back to repository's default branch...",
+                    "Failed to clone branch '%s'. Falling back to default branch...",
                     branch
                 )
                 if os.path.exists(temp_dir):
@@ -240,22 +234,27 @@ async def sync_github_repository(
                         continue
                     all_files.append(rel_path)
 
-            all_chunks = []
+            files_to_save = []
             all_graph_nodes = []
             all_graph_edges = []
             file_imports_map: dict[str, list[str]] = {}
 
+            BINARY_EXTENSIONS = {
+                ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".tiff", ".bmp",
+                ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+                ".zip", ".tar", ".gz", ".rar", ".7z", ".bz2", ".xz",
+                ".mp3", ".mp4", ".avi", ".mkv", ".mov", ".wav", ".flac", ".ogg",
+                ".exe", ".dll", ".so", ".bin", ".o", ".a", ".lib", ".out", ".app", ".dmg",
+                ".woff", ".woff2", ".ttf", ".otf", ".eot",
+                ".db", ".sqlite", ".sqlite3",
+                ".pyc", ".pyd", ".pyo"
+            }
+
             for rel_path in all_files:
                 full_path = os.path.join(temp_dir, rel_path)
                 ext = os.path.splitext(rel_path)[1].lower()
-                # Supported file extensions for chunking
-                PARSEABLE_EXTENSIONS = {
-                    ".py", ".ts", ".tsx", ".js", ".jsx",
-                    ".md", ".json", ".html", ".css",
-                    ".yml", ".yaml", ".sh", ".sql",
-                    ".ipynb", ".env", ".toml", ".cfg",
-                }
-                if ext not in PARSEABLE_EXTENSIONS:
+                
+                if ext in BINARY_EXTENSIONS:
                     continue
 
                 try:
@@ -271,89 +270,159 @@ async def sync_github_repository(
                     )
                     continue
 
+                # Run AST parser
                 if ext == ".py":
-                    chunks, graph_data = parse_python_file(
+                    graph_data = parse_python_file(
                         file_content, rel_path, repo_id, user_id
                     )
                 elif ext in (".ts", ".tsx", ".js", ".jsx"):
-                    chunks, graph_data = parse_ts_file(
+                    graph_data = parse_ts_file(
                         file_content, rel_path, repo_id, user_id
                     )
                 elif ext == ".ipynb":
-                    chunks, graph_data = parse_notebook_file(
+                    graph_data = parse_notebook_file(
                         file_content, rel_path, repo_id, user_id
                     )
                 else:
-                    chunks, graph_data = parse_generic_file(
+                    graph_data = parse_generic_file(
                         file_content, rel_path, repo_id, user_id
                     )
 
-                all_chunks.extend(chunks)
                 all_graph_nodes.extend(graph_data["nodes"])
                 all_graph_edges.extend(graph_data["edges"])
                 file_imports_map[rel_path] = graph_data["raw_imports"]
 
+                # Dynamic language mapping
+                language = ext.lstrip('.') if ext else "text"
+                if language == "tsx":
+                    language = "typescript"
+                elif language == "jsx":
+                    language = "javascript"
+                elif language == "yml":
+                    language = "yaml"
+
+                files_to_save.append({
+                    "repo_id": repo_id,
+                    "user_id": user_id,
+                    "file_path": rel_path,
+                    "language": language,
+                    "content": file_content,
+                    "size_bytes": len(file_content.encode("utf-8")),
+                    "checksum": str(hash(file_content))
+                })
+
+            # Reconstruct unified JSON graph nodes
+            resolved_nodes = []
+            
+            # Map of class/function details to easily group under files
+            file_symbols = {}
+            classes_count = 0
+            functions_count = 0
+            
+            for label, props in all_graph_nodes:
+                if label == "File":
+                    # Handled by base file node creation below
+                    continue
+                
+                fp = props.get("file_path")
+                if not fp:
+                    continue
+                
+                symbol = {
+                    "type": label.lower(),
+                    "name": props["name"],
+                    "start_line": props["start_line"],
+                    "end_line": props["end_line"],
+                    "docstring": props.get("docstring"),
+                    "signature": props.get("signature", "")
+                }
+                if label == "Class":
+                    classes_count += 1
+                elif label == "Function":
+                    functions_count += 1
+                    symbol["is_async"] = props.get("is_async", False)
+                
+                file_symbols.setdefault(fp, []).append(symbol)
+
+            # Build file nodes containing their symbol list
+            languages_breakdown = {}
+            for file_entry in files_to_save:
+                fp = file_entry["file_path"]
+                lang = file_entry["language"]
+                languages_breakdown[lang] = languages_breakdown.get(lang, 0) + 1
+                
+                resolved_nodes.append({
+                    "id": fp,
+                    "label": os.path.basename(fp),
+                    "type": "file",
+                    "language": lang,
+                    "size_bytes": file_entry["size_bytes"],
+                    "checksum": file_entry["checksum"],
+                    "symbols": file_symbols.get(fp, [])
+                })
+
+            # Stitch resolved edges
+            resolved_edges = []
+            
+            # Stitch AST imports edges
+            for source_file, import_stmts in file_imports_map.items():
+                for import_stmt in import_stmts:
+                    target_file = resolve_import_path(import_stmt, source_file, all_files)
+                    if target_file and target_file != source_file:
+                        resolved_edges.append({
+                            "source": source_file,
+                            "target": target_file,
+                            "type": "IMPORTS"
+                        })
+
+            # Stitch AST caller/callee or class/method edges
+            for rel_type, start_props, end_props in all_graph_edges:
+                if rel_type == "CALLS":
+                    # Caller and callee function nodes
+                    resolved_edges.append({
+                        "source": f"{start_props['caller_file']}#{start_props['caller_name']}",
+                        "target": f"{start_props['callee_file']}#{start_props['callee_name']}",
+                        "type": "CALLS",
+                        "line": start_props.get("line")
+                    })
+                elif rel_type == "HAS_METHOD":
+                    # Class to method
+                    resolved_edges.append({
+                        "source": f"{start_props['file_path']}#{start_props['class_name']}",
+                        "target": f"{start_props['file_path']}#{end_props['name']}",
+                        "type": "HAS_METHOD"
+                    })
+
+            # Combine graph
+            graph_data = {
+                "nodes": resolved_nodes,
+                "edges": resolved_edges
+            }
+
+            # Compile stats
+            stats = {
+                "files_count": len(files_to_save),
+                "classes_count": classes_count,
+                "functions_count": functions_count,
+                "languages": languages_breakdown,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+
             # Save state as temporary files to avoid Inngest payload limits
-            with open(os.path.join(temp_dir, "chunks.json"), "w", encoding="utf-8") as f:
-                json.dump(all_chunks, f)
-            with open(os.path.join(temp_dir, "graph_nodes.json"), "w", encoding="utf-8") as f:
-                json.dump(all_graph_nodes, f)
-            with open(os.path.join(temp_dir, "graph_edges.json"), "w", encoding="utf-8") as f:
-                json.dump(all_graph_edges, f)
-            with open(os.path.join(temp_dir, "imports.json"), "w", encoding="utf-8") as f:
-                json.dump({"imports": file_imports_map, "all_files": all_files}, f)
+            with open(os.path.join(temp_dir, "files_to_save.json"), "w", encoding="utf-8") as f:
+                json.dump(files_to_save, f)
+            with open(os.path.join(temp_dir, "graph_data.json"), "w", encoding="utf-8") as f:
+                json.dump(graph_data, f)
+            with open(os.path.join(temp_dir, "stats.json"), "w", encoding="utf-8") as f:
+                json.dump(stats, f)
 
             return {
-                "chunks_count": len(all_chunks),
-                "files_count": len(all_files),
+                "files_count": len(files_to_save),
+                "classes_count": classes_count,
+                "functions_count": functions_count
             }
 
         await step.run("parse_ast", parse_ast_step)
-
-        # Update detailed_status to 'embedding'
-        async def update_to_embedding() -> dict[str, Any]:
-            return await pg_client.update_repo_status(
-                repo_id, user_id, "processing", detailed_status="embedding"
-            )
-        await step.run("update_status_embedding", update_to_embedding)
-
-        # Step C: Batch generate embeddings
-        async def generate_embeddings_step() -> int:
-            chunks_path = os.path.join(temp_dir, "chunks.json")
-            if not os.path.exists(chunks_path):
-                return 0
-            
-            with open(chunks_path, "r", encoding="utf-8") as f:
-                all_chunks = json.load(f)
-
-            if not all_chunks:
-                return 0
-
-            emb_client = HuggingFaceEmbeddingsClient()
-            batch_size = 16
-            chunk_contents = [c["content"] for c in all_chunks]
-            embeddings: list[list[float]] = []
-
-            logger.info(
-                "Generating embeddings for %d chunks in batches of %d...",
-                len(all_chunks),
-                batch_size,
-            )
-            for i in range(0, len(chunk_contents), batch_size):
-                batch_texts = chunk_contents[i : i + batch_size]
-                batch_embs = await emb_client.get_embeddings(batch_texts)
-                embeddings.extend(batch_embs)
-                await asyncio.sleep(0.3)
-
-            for chunk, embedding in zip(all_chunks, embeddings):
-                chunk["embedding"] = embedding
-
-            with open(chunks_path, "w", encoding="utf-8") as f:
-                json.dump(all_chunks, f)
-
-            return len(all_chunks)
-
-        await step.run("generate_embeddings", generate_embeddings_step)
 
         # Update detailed_status to 'saving'
         async def update_to_saving() -> dict[str, Any]:
@@ -362,133 +431,54 @@ async def sync_github_repository(
             )
         await step.run("update_status_saving", update_to_saving)
 
-        # Step D: Save chunks and graph structure to DBs
+        # Step C: Save files and graph structure to Supabase
         async def save_to_dbs_step() -> dict[str, Any]:
             # Load states
-            chunks_path = os.path.join(temp_dir, "chunks.json")
-            nodes_path = os.path.join(temp_dir, "graph_nodes.json")
-            edges_path = os.path.join(temp_dir, "graph_edges.json")
-            imports_path = os.path.join(temp_dir, "imports.json")
+            files_path = os.path.join(temp_dir, "files_to_save.json")
+            graph_path = os.path.join(temp_dir, "graph_data.json")
+            stats_path = os.path.join(temp_dir, "stats.json")
 
-            all_chunks = []
-            if os.path.exists(chunks_path):
-                with open(chunks_path, "r", encoding="utf-8") as f:
-                    all_chunks = json.load(f)
+            files_to_save = []
+            if os.path.exists(files_path):
+                with open(files_path, "r", encoding="utf-8") as f:
+                    files_to_save = json.load(f)
 
-            all_graph_nodes = []
-            if os.path.exists(nodes_path):
-                with open(nodes_path, "r", encoding="utf-8") as f:
-                    all_graph_nodes = json.load(f)
+            graph_data = {"nodes": [], "edges": []}
+            if os.path.exists(graph_path):
+                with open(graph_path, "r", encoding="utf-8") as f:
+                    graph_data = json.load(f)
 
-            all_graph_edges = []
-            if os.path.exists(edges_path):
-                with open(edges_path, "r", encoding="utf-8") as f:
-                    all_graph_edges = json.load(f)
+            stats = {}
+            if os.path.exists(stats_path):
+                with open(stats_path, "r", encoding="utf-8") as f:
+                    stats = json.load(f)
 
-            imports_data = {"imports": {}, "all_files": []}
-            if os.path.exists(imports_path):
-                with open(imports_path, "r", encoding="utf-8") as f:
-                    imports_data = json.load(f)
-
-            # Purge stale db items only in final step to keep previous data active if pipeline fails mid-run
+            # Purge stale DB files & graph
             logger.info("Purging old records for repo_id: %s", repo_id)
-            await pg_client.delete_repo_chunks(repo_id, user_id)
-            await neo4j_client.delete_repo_graph(repo_id)
+            await pg_client.delete_repo_files(repo_id, user_id)
+            await pg_client.delete_repo_graph(repo_id, user_id)
 
-            # Insert chunks to Supabase
-            if all_chunks:
-                logger.info(
-                    "Inserting %d vector chunks to Supabase...",
-                    len(all_chunks),
-                )
-                db_batch_size = 100
-                for j in range(0, len(all_chunks), db_batch_size):
-                    await pg_client.insert_vector_chunks(
-                        all_chunks[j : j + db_batch_size]
+            # Insert files in batches
+            if files_to_save:
+                logger.info("Inserting %d repository files to Supabase...", len(files_to_save))
+                db_batch_size = 50
+                for j in range(0, len(files_to_save), db_batch_size):
+                    await pg_client.insert_repo_files(
+                        files_to_save[j : j + db_batch_size]
                     )
 
-            # Insert nodes to Neo4j
-            logger.info("Inserting nodes to Neo4j...")
-            for label, props in all_graph_nodes:
-                if label == "File":
-                    await neo4j_client.upsert_file_node(
-                        repo_id=repo_id,
-                        path=props["path"],
-                        language=props["language"],
-                        size_bytes=props["size_bytes"],
-                        checksum=props["checksum"],
-                    )
-                elif label == "Class":
-                    await neo4j_client.upsert_class_node(
-                        repo_id=repo_id,
-                        name=props["name"],
-                        file_path=props["file_path"],
-                        start_line=props["start_line"],
-                        end_line=props["end_line"],
-                        docstring=props.get("docstring"),
-                    )
-                elif label == "Function":
-                    await neo4j_client.upsert_function_node(
-                        repo_id=repo_id,
-                        name=props["name"],
-                        file_path=props["file_path"],
-                        start_line=props["start_line"],
-                        end_line=props["end_line"],
-                        signature=props["signature"],
-                        is_async=props["is_async"],
-                        docstring=props.get("docstring"),
-                    )
+            # Insert code graph
+            logger.info("Saving code graph structure...")
+            await pg_client.save_repo_graph(repo_id, user_id, graph_data, stats)
 
-            # Insert edges to Neo4j
-            logger.info("Inserting relationships to Neo4j...")
-            for rel_type, start_props, end_props in all_graph_edges:
-                if rel_type == "CONTAINS":
-                    await neo4j_client.create_contains_edge(
-                        repo_id=repo_id,
-                        file_path=start_props["file_path"],
-                        child_type=start_props["child_type"],
-                        child_identifier={
-                            k: v
-                            for k, v in end_props.items()
-                            if k != "repo_id"
-                        },
-                    )
-                elif rel_type == "HAS_METHOD":
-                    await neo4j_client.create_has_method_edge(
-                        repo_id=repo_id,
-                        class_name=start_props["class_name"],
-                        method_name=end_props["name"],
-                        file_path=start_props["file_path"],
-                    )
-                elif rel_type == "CALLS":
-                    await neo4j_client.create_calls_edge(
-                        repo_id=repo_id,
-                        caller_name=start_props["caller_name"],
-                        callee_name=start_props["callee_name"],
-                        caller_file=start_props["caller_file"],
-                        callee_file=start_props["callee_file"],
-                        line=start_props.get("line"),
-                    )
-
-            # Resolve external file imports
-            logger.info("Stitching import links...")
-            file_imports_map = imports_data.get("imports", {})
-            all_files = imports_data.get("all_files", [])
-            for source_file, import_stmts in file_imports_map.items():
-                for import_stmt in import_stmts:
-                    target_file = resolve_import_path(
-                        import_stmt, source_file, all_files
-                    )
-                    if target_file and target_file != source_file:
-                        await neo4j_client.create_imports_edge(
-                            repo_id=repo_id,
-                            source_path=source_file,
-                            target_path=target_file,
-                        )
+            # Pre-warm/Pre-create the Gemini context cache for the repository
+            logger.info("Pre-warming Gemini Context Cache for repo_id: %s", repo_id)
+            cache_mgr = ContextCacheManager(pg_client)
+            await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
 
             # Clean up temp folder
             shutil.rmtree(temp_dir, ignore_errors=True)
-            return {"saved_chunks": len(all_chunks)}
+            return {"saved_files": len(files_to_save)}
 
         await step.run("save_to_dbs", save_to_dbs_step)
 
@@ -499,7 +489,7 @@ async def sync_github_repository(
             )
         await step.run("update_status_diagrams", update_to_diagrams)
 
-        # Step E: Generate repository diagrams using the visualizer agent
+        # Step D: Generate repository diagrams
         async def generate_diagrams_step() -> dict[str, Any]:
             repo_row = await pg_client.get_repo(repo_id, user_id)
             repo_name = "repo"
@@ -507,8 +497,8 @@ async def sync_github_repository(
                 repo_name = repo_row["github_url"].split("/")[-1]
 
             from app.services.diagram_generator import DiagramGenerator
-            generator = DiagramGenerator(neo4j_client)
-            diagrams = await generator.generate_all_diagrams(repo_id, repo_name)
+            generator = DiagramGenerator(pg_client)
+            diagrams = await generator.generate_all_diagrams(repo_id, repo_name, user_id)
             await pg_client.update_repo_diagrams(repo_id, user_id, diagrams)
             return {"diagrams_count": len(diagrams)}
 
