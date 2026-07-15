@@ -1,9 +1,11 @@
 import logging
 import asyncio
+import os
 from typing import Dict, Any
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from ..state import AgentState
 from ..prompts import CODE_QA_PROMPT
@@ -71,11 +73,10 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
     if cache_name:
         logger.info("Cache hit! Querying model using cache name: %s", cache_name)
         try:
-            # When context is cached, we invoke the model directly with cached_content parameter
-            model = genai.GenerativeModel("models/gemini-3.1-flash-lite")
+            # Initialize Client
+            api_key = os.environ.get("GOOGLE_API_KEY")
+            client = genai.Client(api_key=api_key)
             
-            # The cache contains the codebase files. The query context includes the AST specific subset
-            # to focus the model's attention on the matched path.
             prompt = (
                 f"AST Routing Context (focus on these files and relationships):\n{dynamic_context}\n\n"
                 f"User Question:\n{user_query}\n\n"
@@ -84,7 +85,13 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
             
             # Run the synchronous API call in an async thread to prevent blocking
             def call_gemini():
-                return model.generate_content(contents=prompt, cached_content=cache_name)
+                return client.models.generate_content(
+                    model="gemini-3.1-flash-lite",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        cached_content=cache_name
+                    )
+                )
                 
             response = await asyncio.to_thread(call_gemini)
             return {"messages": [AIMessage(content=response.text)]}

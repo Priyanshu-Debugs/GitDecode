@@ -2,8 +2,8 @@ import logging
 import datetime
 import os
 from typing import Any, Dict, List, Optional
-import google.generativeai as genai
-from google.generativeai import caching
+from google import genai
+from google.genai import types
 from app.core.config import get_settings
 from app.db.pg_client import SupabasePGClient
 
@@ -19,11 +19,12 @@ class ContextCacheManager:
     def __init__(self, pg_client: SupabasePGClient) -> None:
         self.pg_client = pg_client
         self.settings = get_settings()
-        # Initialize Google GenAI
+        # Initialize Google GenAI Client
         api_key = os.environ.get("GOOGLE_API_KEY")
         if api_key:
-            genai.configure(api_key=api_key)
+            self.client = genai.Client(api_key=api_key)
         else:
+            self.client = None
             logger.warning("GOOGLE_API_KEY is not set in the environment.")
 
     def _estimate_tokens(self, text: str) -> int:
@@ -70,8 +71,12 @@ class ContextCacheManager:
         """
         Checks if a valid cache exists for the repository. If not, creates one if the
         codebase is large enough (>= 32,768 tokens).
-        Returns the cache name (e.g. 'cached_contents/xxxx') or None if caching is not applicable.
+        Returns the cache name (e.g. 'cachedContents/xxxx') or None if caching is not applicable.
         """
+        if not self.client:
+            logger.error("GenAI client not initialized.")
+            return None
+
         # 1. Fetch graph metadata to check for existing cache
         graph_record = await self.pg_client.get_repo_graph(repo_id, user_id)
         if not graph_record:
@@ -85,7 +90,9 @@ class ContextCacheManager:
         # 2. Check if existing cache is still valid
         if cache_name and cache_expires_at_str:
             try:
-                expires_at = datetime.datetime.fromisoformat(cache_expires_at_str.replace("Z", "+00:00"))
+                # Expiration from google-genai can be string like "2026-07-15T18:00:40Z" or datetime
+                clean_time = cache_expires_at_str.replace("Z", "+00:00")
+                expires_at = datetime.datetime.fromisoformat(clean_time)
                 # If cache is valid for at least another 2 minutes, reuse it
                 if expires_at > datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=2):
                     logger.info("Found valid cached context: %s, expires at: %s", cache_name, cache_expires_at_str)
@@ -120,22 +127,22 @@ class ContextCacheManager:
         try:
             logger.info("Creating Gemini Cached Content for model: %s (estimated tokens: %d)", model_name, estimated_tokens)
             
-            # Map friendly name to the Google API expected model format if needed
+            # Map model name
             model_endpoint = model_name
-            if not model_endpoint.startswith("models/"):
-                model_endpoint = f"models/{model_name}"
+            if model_endpoint.startswith("models/"):
+                model_endpoint = model_endpoint.replace("models/", "")
 
-            # Create cache with 1 hour TTL
-            ttl_seconds = 3600
-            cache = caching.CachedContent.create(
+            # Create cache with 1 hour TTL using new client.caches.create
+            cache = self.client.caches.create(
                 model=model_endpoint,
-                display_name=f"gitmesh_cache_{repo_id}",
-                contents=[formatted_content],
-                ttl=datetime.timedelta(seconds=ttl_seconds),
+                config=types.CreateCachedContentConfig(
+                    contents=[formatted_content],
+                    ttl="3600s",
+                    display_name=f"gitmesh_cache_{repo_id}"
+                )
             )
             
-            expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=ttl_seconds)
-            expires_at_str = expires_at.isoformat()
+            expires_at_str = str(cache.expire_time)
             
             # 6. Save cache metadata back to PostgreSQL stats
             stats["cache_name"] = cache.name
