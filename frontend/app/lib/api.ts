@@ -715,3 +715,13 @@ export async function getRepoDiagrams(repoId: string, forceRefresh = false, diag
   const query = `force_refresh=${forceRefresh}${diagramType ? `&diagram_type=${diagramType}` : ''}`;
   return apiFetch<RepoDiagrams>(`/repos/${repoId}/diagrams?${query}`);
 }
+
+export async function getSystemHealth(): Promise<{ status: string }> {
+  if (isDemoMode()) {
+    return { status: "healthy" };
+  }
+  const rootBase = API_BASE.split("/api/")[0];
+  const res = await fetch(`${rootBase}/health`);
+  if (!res.ok) throw new Error("Health check failed");
+  return res.json();
+}

@@ -27,6 +27,7 @@ import {
   type GraphNode,
 } from "@/app/lib/api";
 import styles from "./dashboard.module.css";
+import { motion } from "framer-motion";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
 import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
 import DashboardLoader from "@/app/components/DashboardLoader";
@@ -656,8 +657,11 @@ function DashboardContent() {
 
     return (
       <div className={styles.repoDashboardContainer} style={{ padding: "40px 48px", overflowY: "auto", width: "100%", height: "100%", background: "var(--color-bg)", position: "relative" }}>
+        {/* repeating dot mesh grid background */}
+        <div className={styles.dotMeshGrid} />
         {/* Glow Effects in Background */}
-        <div style={{ position: "absolute", top: "-10%", left: "30%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.05) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+        <div style={{ position: "absolute", top: "-10%", left: "30%", width: "450px", height: "450px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.08) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+        <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "350px", height: "350px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
         
         {/* Hero Section */}
         <div className={styles.dashboardHero} style={{ zIndex: 1, position: "relative" }}>
@@ -669,24 +673,23 @@ function DashboardContent() {
 
         {/* Quick Bento Stats Section */}
         <div className={styles.statsRow} style={{ zIndex: 1, position: "relative" }}>
-          <div className={styles.dashboardStatCard}>
-            <span className={styles.statVal}>{repos.filter(r => r.status === "completed").length}</span>
-            <span className={styles.statLabel}>Connected Codebases</span>
-          </div>
-          <div className={styles.dashboardStatCard}>
-            <span className={styles.statVal}>{repos.filter(r => r.status === "processing" || r.status === "queued").length}</span>
-            <span className={styles.statLabel}>Ingesting Tasks</span>
-          </div>
-          <div className={styles.dashboardStatCard}>
-            <span className={styles.statVal}>{githubRepos.length || MOCK_REPOS.length}</span>
-            <span className={styles.statLabel}>GitHub Repos Available</span>
-          </div>
-          <div className={styles.dashboardStatCard}>
-            <span className={styles.statVal}>
-              {repos.filter(r => r.status === "completed").length > 0 ? `${repos.filter(r => r.status === "completed").length * 3 + 2}k Nodes` : "0 Nodes"}
-            </span>
-            <span className={styles.statLabel}>Total AST Entities</span>
-          </div>
+          {[
+            { value: repos.filter(r => r.status === "completed").length, label: "Connected Codebases" },
+            { value: repos.filter(r => r.status === "processing" || r.status === "queued").length, label: "Ingesting Tasks" },
+            { value: githubRepos.length || MOCK_REPOS.length, label: "GitHub Repos Available" },
+            { value: repos.filter(r => r.status === "completed").length > 0 ? `${repos.filter(r => r.status === "completed").length * 3 + 2}k Nodes` : "0 Nodes", label: "Total AST Entities" },
+          ].map((stat, idx) => (
+            <motion.div
+              key={idx}
+              className={styles.dashboardStatCard}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <span className={styles.statVal}>{stat.value}</span>
+              <span className={styles.statLabel}>{stat.label}</span>
+            </motion.div>
+          ))}
         </div>
 
         {/* Filter and Search controls */}
@@ -733,11 +736,23 @@ function DashboardContent() {
 
         {/* Repos Cards Grid */}
         <div className={styles.repoGrid} style={{ zIndex: 1, position: "relative", paddingBottom: "40px" }}>
-          {searchedRepos.map((repo) => {
+          {searchedRepos.map((repo, idx) => {
             const firstLetter = repo.name.charAt(0).toUpperCase();
             
             return (
-              <div key={repo.id} className={styles.repoCardOuter}>
+              <motion.div
+                key={repo.id}
+                className={styles.repoCardOuter}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -6, scale: 1.01 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 18,
+                  opacity: { duration: 0.35, delay: idx * 0.04 }
+                }}
+              >
                 <div className={styles.repoCardInner}>
                   {/* Decorative card cover */}
                   <div className={styles.repoCardCover}>
@@ -866,12 +881,23 @@ function DashboardContent() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
 
           {/* Plus Custom Connection Card */}
-          <div className={styles.customConnectCardOuter}>
+          <motion.div
+            className={styles.customConnectCardOuter}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -6, scale: 1.01 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 18,
+              opacity: { duration: 0.35, delay: searchedRepos.length * 0.04 }
+            }}
+          >
             <div
               className={styles.customConnectCardInner}
               onClick={() => {
@@ -888,7 +914,7 @@ function DashboardContent() {
               <h3 className={styles.customConnectTitle}>Connect Custom Repository</h3>
               <p className={styles.customConnectDesc}>Import any public Git repository via URL and custom branch.</p>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Confirmation branch selection modal */}
