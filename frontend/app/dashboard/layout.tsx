@@ -322,10 +322,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
-  const initials = (user.email || "U")
-    .split("@")[0]
-    .slice(0, 2)
-    .toUpperCase();
+  const githubName = user.user_metadata?.preferred_username || user.user_metadata?.user_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Developer";
+  const initials = githubName.slice(0, 2).toUpperCase();
 
   const activeSyncs = repos.filter(
     (r) => r.status === "queued" || r.status === "processing" || r.status === "failed"
@@ -519,13 +517,13 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             >
               {user.user_metadata?.avatar_url ? (
                 <div className={styles.topbarAvatar} style={{ overflow: "hidden", padding: 0 }}>
-                  <img src={user.user_metadata.avatar_url} alt={user.email || "Profile"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={user.user_metadata.avatar_url} alt={githubName || "Profile"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
               ) : (
                 <div className={styles.topbarAvatar}>{initials}</div>
               )}
               <span className={styles.topbarProfileName}>
-                {user.email?.split("@")[0]}
+                {githubName}
               </span>
             </div>
             

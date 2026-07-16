@@ -174,10 +174,8 @@ export default function ProfilePage() {
     );
   }
 
-  const initials = (user.email || "U")
-    .split("@")[0]
-    .slice(0, 2)
-    .toUpperCase();
+  const githubName = user.user_metadata?.preferred_username || user.user_metadata?.user_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Developer";
+  const initials = githubName.slice(0, 2).toUpperCase();
 
   const completedCount = repos.filter((r) => r.status === "completed").length;
 
@@ -250,7 +248,7 @@ export default function ProfilePage() {
             />
             <div className={styles.profileAvatar} style={{ zIndex: 1, position: "relative" }}>
               {user.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} alt={user.email} />
+                <img src={user.user_metadata.avatar_url} alt={githubName} />
               ) : (
                 <div className={styles.profileAvatarInitials}>{initials}</div>
               )}
@@ -258,13 +256,13 @@ export default function ProfilePage() {
           </div>
           <div className={styles.profileDetails}>
             <h2 className={styles.profileEmail} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {user.email}
+              {githubName}
               <span style={{ fontSize: "0.6875rem", background: "rgba(200, 204, 212, 0.1)", border: "0.5px solid rgba(200, 204, 212, 0.3)", color: "#c8ccd4", padding: "2px 8px", borderRadius: 4, fontFamily: "var(--font-mono)", fontWeight: 500 }}>
                 CORE MEMBER
               </span>
             </h2>
             <span className={styles.profileMeta}>
-              Connected via {user.app_metadata?.provider || "GitHub"} • ID: <code style={{ fontSize: "0.75rem", opacity: 0.7 }}>{user.id}</code>
+              Connected via {user.app_metadata?.provider || "GitHub"} • Email: <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "var(--color-white)" }}>{user.email}</span>
             </span>
           </div>
         </div>
