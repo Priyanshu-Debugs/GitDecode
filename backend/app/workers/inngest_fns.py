@@ -257,11 +257,20 @@ async def sync_github_repository(
                 if ext in BINARY_EXTENSIONS:
                     continue
 
+                # Skip massive files (e.g. large CSVs, telemetry datasets) to prevent OOM/Payload limits
+                MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024 if ext == ".ipynb" else 1 * 1024 * 1024
+                try:
+                    if os.path.getsize(full_path) > MAX_FILE_SIZE_BYTES:
+                        logger.warning("Skipping large file %s (exceeds size limit)", rel_path)
+                        continue
+                except OSError:
+                    continue
+
                 try:
                     with open(
                         full_path, "r", encoding="utf-8", errors="ignore"
                     ) as f:
-                        file_content = f.read()
+                        file_content = f.read().replace("\x00", "")
                 except Exception as e:
                     logger.error(
                         "Could not read content of file %s: %s",

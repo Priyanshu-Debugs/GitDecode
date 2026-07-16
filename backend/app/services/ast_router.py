@@ -129,6 +129,21 @@ class ASTRouter:
             if file_info:
                 content = file_info.get("content", "")
                 lang = file_info.get("language", "unknown")
+                
+                if file_path.endswith(".ipynb"):
+                    try:
+                        import json
+                        nb = json.loads(content)
+                        for cell in nb.get("cells", []):
+                            if "outputs" in cell:
+                                cell["outputs"] = [{"data": {"text/plain": "[OUTPUT EXCLUDED FOR SIZE]"}}]
+                        content = json.dumps(nb, indent=2)
+                    except Exception:
+                        pass
+                
+                if len(content) > 150000:
+                    content = content[:150000] + "\n\n...[FILE CONTENT TRUNCATED DUE TO SIZE LIMIT]..."
+                
                 context_parts.append(
                     f"--- FILE: {file_path} (Language: {lang}, Size: {file_info.get('size_bytes', 0)} bytes) ---\n"
                     f"{content}\n"

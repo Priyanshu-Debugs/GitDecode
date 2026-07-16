@@ -339,6 +339,10 @@ class SupabasePGClient:
         )
         return response.data[0]
 
+    async def delete_chat_message(self, message_id: str) -> None:
+        """Delete a chat message."""
+        self._client.table("chat_messages").delete().eq("id", message_id).execute()
+
     async def get_chat_history(
         self,
         session_id: str,
@@ -365,6 +369,10 @@ class SupabasePGClient:
             .execute()
         )
         return response.data
+
+    async def delete_chat_message(self, message_id: str) -> None:
+        """Deletes a chat message by its ID."""
+        self._client.table("chat_messages").delete().eq("id", message_id).execute()
 
     async def get_user_sessions(
         self,
@@ -404,6 +412,37 @@ class SupabasePGClient:
                 )
 
         return sessions
+
+    async def insert_chat_feedback(
+        self,
+        user_id: str,
+        message_id: str,
+        feedback_type: str,
+    ) -> dict[str, Any]:
+        """Insert user feedback for a chat message.
+
+        Args:
+            user_id: The owner's user UUID.
+            message_id: The chat message UUID.
+            feedback_type: Feedback string (e.g. 'thumbs_up', 'thumbs_down', 'regenerate', 'copy').
+
+        Returns:
+            The inserted feedback row.
+        """
+        response = (
+            self._client.table("chat_feedback")
+            .insert(
+                {
+                    "user_id": user_id,
+                    "message_id": message_id,
+                    "feedback_type": feedback_type,
+                }
+            )
+            .execute()
+        )
+        row = response.data[0]
+        logger.info("Inserted %s feedback for message %s by user %s", feedback_type, message_id, user_id)
+        return row
 
     async def update_repo_diagrams(
         self,

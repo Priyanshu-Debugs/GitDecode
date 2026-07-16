@@ -495,7 +495,194 @@
 
 .repoActionDanger:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--color-white);
+}
+
+/* ── Thinking Process UI ───────────────────────────────────────────── */
+.thinkingToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  margin-bottom: 8px;
+}
+
+.thinkingToggle:hover {
+  color: var(--color-text-primary);
+}
+
+.thinkingShimmer {
+  background: linear-gradient(90deg, var(--color-text-tertiary), var(--color-white), var(--color-text-tertiary));
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.thinkingPanelOverlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  max-width: 100%;
+  background: var(--color-background);
+  border-left: 0.5px solid rgba(255, 255, 255, 0.06);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.thinkingPanelOverlayOpen {
+  transform: translateX(0);
+}
+
+.thinkingPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+
+.thinkingPanelTitle {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thinkingPanelCloseBtn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  transition: color var(--transition-fast);
+}
+
+.thinkingPanelCloseBtn:hover {
+  color: var(--color-white);
+}
+
+.thinkingPanelContent {
+  padding: 16px 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.stepperContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-left: 8px;
+}
+
+.stepperItem {
+  position: relative;
+  padding-left: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.stepperCircle {
+  position: absolute;
+  left: -4px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-text-tertiary);
+  z-index: 2;
+}
+
+.stepperItem:last-child .stepperCircle {
+  background-color: var(--color-primary);
+  box-shadow: 0 0 8px rgba(176, 30, 10, 0.5);
+}
+
+.stepperLine {
+  position: absolute;
+  left: -1px;
+  top: 14px;
+  bottom: -22px;
+  width: 2px;
+  background-color: rgba(255, 255, 255, 0.1);
+  z-index: 1;
+}
+
+.stepperItem:last-child .stepperLine {
+  display: none;
+}
+
+.stepperText {
+  margin: 0;
+}
+
+/* ── Feedback Buttons ──────────────────────────────────────────────── */
+.feedbackBar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.feedbackBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedbackBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.feedbackBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.thinkingStep {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid #b01e0a;
+  animation: fadeIn 0.3s ease-out;
 }
 
 /* ── Empty State ────────────────────────────────────────────────────── */
@@ -1185,13 +1372,13 @@
 .chatBubbleAssistant {
   align-self: flex-start;
   max-width: 98%;
-  background: rgba(10, 10, 10, 0.4);
-  border: 0.5px solid var(--color-border);
+  background: transparent;
+  border: none;
   padding: 16px 20px !important;
   border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) 4px;
   color: var(--color-text);
   font-size: 0.875rem;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+  box-shadow: none;
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: normal !important;
@@ -2574,4 +2761,249 @@
   border-radius: 3px;
   background: var(--color-primary);
   transition: width 1s ease-out;
+}
+
+.feedbackBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.feedbackBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 0.5px solid transparent;
+  border-radius: 6px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.feedbackBtn:hover {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.feedbackBtnActive {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-white);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.feedbackBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.stepperContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-left: 8px;
+}
+
+.stepperItem {
+  position: relative;
+  padding-left: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.stepperCircle {
+  position: absolute;
+  left: -4px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-text-tertiary);
+  z-index: 2;
+}
+
+.stepperItem:last-child .stepperCircle {
+  background-color: var(--color-primary);
+  box-shadow: 0 0 8px rgba(176, 30, 10, 0.5);
+}
+
+.stepperLine {
+  position: absolute;
+  left: -1px;
+  top: 14px;
+  bottom: -22px;
+  width: 2px;
+  background-color: rgba(255, 255, 255, 0.1);
+  z-index: 1;
+}
+
+.stepperItem:last-child .stepperLine {
+  display: none;
+}
+
+.stepperText {
+  margin: 0;
+}
+/* ── File Viewer Sources Dropdown ───────────────────────────────────── */
+.moreOptionsContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.moreOptionsBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.moreOptionsBtn:hover, .moreOptionsBtnActive {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.moreOptionsDropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  min-width: 200px;
+  max-width: 300px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.moreOptionsContainer:hover .moreOptionsDropdown,
+.moreOptionsContainer:focus-within .moreOptionsDropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.moreOptionsTitle {
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.sourceChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sourceChip svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.sourceChip:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+}
+
+/* ── File Viewer Sliding Panel ──────────────────────────────────────── */
+.thinkingPanelOverlay {
+  position: absolute;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100%;
+  background: var(--color-surface);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.thinkingPanelOverlayOpen {
+  right: 0;
+}
+
+.thinkingPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.thinkingPanelTitle {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.thinkingPanelCloseBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.thinkingPanelCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+}
+
+.thinkingPanelContent {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
 }

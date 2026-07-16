@@ -55,6 +55,29 @@ def parse_notebook_file(
     Returns:
         Graph data dict.
     """
+    try:
+        notebook_data = json.loads(content)
+        code_lines = []
+        for cell in notebook_data.get("cells", []):
+            if cell.get("cell_type") == "code":
+                source = cell.get("source", [])
+                if isinstance(source, list):
+                    code_lines.extend(source)
+                else:
+                    code_lines.append(source)
+                code_lines.append("\n\n")  # Separate cells with blank lines
+        
+        combined_code = "".join(code_lines)
+        
+        # If there's python code, use the actual Python AST parser
+        if combined_code.strip():
+            from app.services.parsers.python_parser import parse_python_file
+            return parse_python_file(combined_code, file_path, repo_id, user_id)
+            
+    except Exception as e:
+        logger.error("Failed to extract code from notebook %s: %s", file_path, e)
+        
+    # Fallback to generic file node if parsing fails or no code cells
     return _build_file_graph_node(repo_id, file_path, content, "python")
 
 

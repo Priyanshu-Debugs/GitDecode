@@ -94,7 +94,8 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
                 )
                 
             response = await asyncio.to_thread(call_gemini)
-            return {"messages": [AIMessage(content=response.text)]}
+            sources_list = [{"file_path": f} for f in list(depth_1)]
+            return {"messages": [AIMessage(content=response.text, additional_kwargs={"sources": sources_list})]}
         except Exception as e:
             logger.exception("Failed to query Gemini using Context Cache, falling back to full context payload: %s", str(e))
 
@@ -105,5 +106,15 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
         *state.get("messages", []),
         SystemMessage(content=f"AST Routed Context (Full details of relevant files):\n\n{dynamic_context}")
     ]
-    response = await llm.ainvoke(messages)
+    try:
+        response = await llm.ainvoke(messages)
+    except Exception as e:
+        import traceback
+        error_msg = f"ERROR IN CODE QA API: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        from langchain_core.messages import AIMessage
+        response = AIMessage(content=error_msg)
+        
+    sources_list = [{"file_path": f} for f in list(depth_1)]
+    if hasattr(response, "additional_kwargs"):
+        response.additional_kwargs["sources"] = sources_list
     return {"messages": [response]}

@@ -11,13 +11,17 @@ Endpoints:
 
 import logging
 from uuid import UUID, uuid4
+import json
+import asyncio
+from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 
 from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
-from app.schemas.requests import ChatMessageSend
+from app.schemas.requests import ChatMessageSend, ChatFeedbackRequest
 from app.schemas.responses import ChatMessageResponse, ChatHistoryResponse, ErrorResponse
 from app.agents.graph import graph as agent_graph
 
@@ -126,6 +130,106 @@ async def send_message(
     )
 
 
+@router.post(
+    "/stream",
+    summary="Stream chat message with thoughts",
+    description="Stream thought process and then the final answer.",
+)
+async def stream_message(
+    request: ChatMessageSend,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+):
+    session_id = str(request.session_id or uuid4())
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        user_msg = await pg.insert_chat_message(
+            user_id=user.id,
+            repo_id=str(request.repo_id),
+            session_id=session_id,
+            role="user",
+            content=request.message,
+        )
+
+        yield f"data: {json.dumps({'type': 'user_message_id', 'content': user_msg['id']})}\n\n"
+
+        yield f"data: {json.dumps({'type': 'thought', 'content': 'Analyzing query...'})}\n\n"
+
+        history = await pg.get_chat_history(session_id=session_id, user_id=user.id, limit=20)
+        from langchain_core.messages import HumanMessage as HM, AIMessage as AIM
+        lc_messages = []
+        for msg in history[:-1]:
+            if msg["role"] == "user":
+                lc_messages.append(HM(content=msg["content"]))
+            else:
+                lc_messages.append(AIM(content=msg["content"]))
+        lc_messages.append(HumanMessage(content=request.message))
+
+        yield f"data: {json.dumps({'type': 'thought', 'content': 'Loading context...'})}\n\n"
+
+        final_response_text = ""
+        final_sources = []
+        try:
+            # We stream states to yield thoughts for each node
+            async for event in agent_graph.astream({
+                "messages": lc_messages,
+                "user_query": request.message,
+                "repo_id": str(request.repo_id),
+                "user_id": user.id,
+                "routing_decision": None,
+            }):
+                for node_name, node_state in event.items():
+                    if node_name == "supervisor":
+                        decision = node_state.get("routing_decision", "Unknown")
+                        yield f"data: {json.dumps({'type': 'thought', 'content': f'Classified intent. Routing to {decision} engine...'})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'type': 'thought', 'content': f'Generated insights from {node_name} engine.'})}\n\n"
+                    
+                    if "messages" in node_state and len(node_state["messages"]) > 0:
+                        last_msg = node_state["messages"][-1]
+                        ai_response = last_msg.content if hasattr(last_msg, "content") else last_msg
+                        
+                        if isinstance(ai_response, list):
+                            extracted = ""
+                            for block in ai_response:
+                                if isinstance(block, dict) and "text" in block:
+                                    extracted += block["text"]
+                                elif isinstance(block, str):
+                                    extracted += block
+                            final_response_text = extracted
+                        else:
+                            final_response_text = str(ai_response)
+                        
+                        if hasattr(last_msg, "additional_kwargs") and "sources" in last_msg.additional_kwargs:
+                            final_sources = last_msg.additional_kwargs["sources"]
+                            yield f"data: {json.dumps({'type': 'sources', 'content': final_sources})}\n\n"
+                            
+        except Exception as e:
+            logger.exception("Agent pipeline failed: %s", str(e))
+            final_response_text = "I encountered an error processing your request. Please try again."
+
+        yield f"data: {json.dumps({'type': 'thought', 'content': 'Finalizing answer...'})}\n\n"
+
+        # Persist assistant msg
+        assistant_msg = await pg.insert_chat_message(
+            user_id=user.id,
+            repo_id=str(request.repo_id),
+            session_id=session_id,
+            role="assistant",
+            content=final_response_text,
+            sources=final_sources,
+        )
+
+        yield f"data: {json.dumps({'type': 'message_id', 'content': assistant_msg['id'], 'session_id': session_id})}\n\n"
+
+        # Send the full answer immediately to let the frontend handle the visual streaming effect
+        yield f"data: {json.dumps({'type': 'full_text', 'content': final_response_text})}\n\n"
+        
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
 @router.get(
     "/history",
     response_model=ChatHistoryResponse,
@@ -160,6 +264,18 @@ async def get_history(
         ],
     )
 
+@router.delete(
+    "/message/{message_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a chat message",
+)
+async def delete_message(
+    message_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> None:
+    await pg.delete_chat_message(str(message_id))
+
 
 @router.get(
     "/sessions",
@@ -177,3 +293,22 @@ async def list_sessions(
         repo_id=str(repo_id),
     )
     return sessions
+
+@router.post(
+    "/feedback",
+    status_code=status.HTTP_201_CREATED,
+    summary="Submit feedback",
+    description="Submit user feedback (thumbs up/down, etc) for a specific chat message.",
+)
+async def submit_feedback(
+    request: ChatFeedbackRequest,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> dict:
+    """Submit user feedback for an AI response."""
+    await pg.insert_chat_feedback(
+        user_id=user.id,
+        message_id=str(request.message_id),
+        feedback_type=request.feedback_type,
+    )
+    return {"status": "success"}

@@ -17,7 +17,7 @@ import {
   getRepoSummary,
   getBlastRadius,
   getRepoDiagrams,
-  sendChatMessage,
+  streamChatMessage,
   getChatHistory,
   listChatSessions,
   type RepoItem,
@@ -25,6 +25,9 @@ import {
   type ChatMessage,
   type RepoDiagrams,
   type GraphNode,
+  submitChatFeedback,
+  deleteChatMessage,
+  getRepoFileContent,
 } from "@/app/lib/api";
 import styles from "./dashboard.module.css";
 import { motion } from "framer-motion";
@@ -278,6 +281,9 @@ function DashboardContent() {
   const [activeBlastFilePath, setActiveBlastFilePath] = useState<string | null>(null);
   const [blastRadiusLoading, setBlastRadiusLoading] = useState(false);
 
+  const [activeThinkingMsgId, setActiveThinkingMsgId] = useState<string | null>(null);
+  const [isThinkingPanelOpen, setIsThinkingPanelOpen] = useState(false);
+
   // Summary & Diagrams Metrics
   const [summaryData, setSummaryData] = useState<any | null>(null);
   const [diagrams, setDiagrams] = useState<RepoDiagrams | null>(null);
@@ -288,8 +294,16 @@ function DashboardContent() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [copiedMsgIds, setCopiedMsgIds] = useState<Set<string>>(new Set());
+  const [feedbackState, setFeedbackState] = useState<Record<string, string>>({});
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const [selectedCitation, setSelectedCitation] = useState<any | null>(null);
+
+  // File viewer state
+  const [activeFileContent, setActiveFileContent] = useState<string | null>(null);
+  const [activeFileName, setActiveFileName] = useState<string>("");
+  const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
+  const [fileViewerLoading, setFileViewerLoading] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -481,29 +495,189 @@ function DashboardContent() {
 
   // ── Chat Actions ─────────────────────────────────────────────────────
 
-  const handleSendChat = async () => {
+  const handleFeedback = async (msgId: string, type: string) => {
+    if (type === "copy") {
+      const msg = messages.find(m => m.message_id === msgId);
+      if (msg) {
+        let textToCopy = msg.content;
+        if (textToCopy.includes("</think>")) {
+           const parts = textToCopy.split("</think>");
+           textToCopy = parts.length > 1 ? parts.slice(1).join("</think>").trim() : "";
+        }
+        navigator.clipboard.writeText(textToCopy);
+        setCopiedMsgIds(prev => {
+          const next = new Set(prev);
+          next.add(msgId);
+          return next;
+        });
+        setTimeout(() => {
+          setCopiedMsgIds(prev => {
+            const next = new Set(prev);
+            next.delete(msgId);
+            return next;
+          });
+        }, 2000);
+      }
+      return;
+    }
+    if (type === "regenerate") {
+      const msgIdx = messages.findIndex(m => m.message_id === msgId);
+      if (msgIdx > 0 && !chatLoading && activeRepoId) {
+          const prevMsg = messages[msgIdx - 1];
+          if (prevMsg && prevMsg.role === "user") {
+            const query = prevMsg.content;
+            setChatLoading(true);
+            
+            let deleteCount = 0;
+            // Delete old messages from DB to avoid duplicates on refresh
+            try {
+              await deleteChatMessage(msgId); // old assistant msg
+              for (let i = msgIdx - 1; i >= 0; i--) {
+                  const pMsg = messages[i];
+                  if (pMsg.role !== "user") break;
+                  deleteCount++;
+                  if (!pMsg.message_id.startsWith('temp-')) {
+                     await deleteChatMessage(pMsg.message_id);
+                  }
+              }
+            } catch (err) {
+              console.error("Failed to delete old messages", err);
+            }
+            
+            const tempUserId = `temp-user-${Date.now()}`;
+            const tempAssistantId = `temp-ast-${Date.now()}`;
+          const tempAssistantMsg: ChatMessage = {
+            message_id: tempAssistantId,
+            session_id: chatSessionId || "",
+            role: "assistant",
+            content: "",
+            created_at: new Date().toISOString(),
+            sources: [],
+            thinking: [],
+          };
+          
+          setMessages((prev) => {
+             const next = [...prev.slice(0, msgIdx - deleteCount)];
+             return [...next, { ...prevMsg, message_id: tempUserId }, tempAssistantMsg];
+          });
+          
+          let realMessageId = tempAssistantId;
+          try {
+            await streamChatMessage(activeRepoId, query, chatSessionId || undefined, (streamType, content, extra) => {
+              if (streamType === "message_id" && extra?.session_id) {
+                  setChatSessionId(extra.session_id);
+                  realMessageId = content;
+                  setMessages((prev) => prev.map(m => m.message_id === tempAssistantId ? { ...m, message_id: realMessageId, session_id: extra.session_id } : m));
+              } else if (streamType === "thought") {
+                  setMessages((prev) => prev.map(m => {
+                      if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
+                          const currentThinking = m.thinking || [];
+                          return { ...m, thinking: [...currentThinking, content] };
+                      }
+                      return m;
+                  }));
+              } else if (streamType === "token") {
+                  setMessages((prev) => prev.map(m => {
+                      if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
+                          return { ...m, content: m.content + content };
+                      }
+                      return m;
+                  }));
+              } else if (streamType === "done") {
+                  setChatLoading(false);
+              }
+            });
+          } catch (e) {
+            console.error("Chat error", e);
+            setMessages((prev) => prev.map(m => m.message_id === tempAssistantId || m.message_id === realMessageId ? { ...m, content: m.content + "\n\n**Error connecting to AI**" } : m));
+            setChatLoading(false);
+          }
+        }
+      }
+      return;
+    }
+    try {
+        await submitChatFeedback(msgId, type);
+        setFeedbackState(prev => ({ ...prev, [msgId]: type }));
+    } catch (e) {
+        console.error("Failed to submit feedback", e);
+    }
+  };
+
+  const openSourceFile = async (filePath: string) => {
+    if (!activeRepoId) return;
+    setActiveFileName(filePath);
+    setIsFileViewerOpen(true);
+    setFileViewerLoading(true);
+    try {
+       const res = await getRepoFileContent(activeRepoId, filePath);
+       setActiveFileContent(res.content);
+    } catch(e) {
+       setActiveFileContent("Error loading file content.");
+    } finally {
+       setFileViewerLoading(false);
+    }
+  };
+
+  const handleSendChat = useCallback(async () => {
     if (!chatInput.trim() || chatLoading || !activeRepoId) return;
     const query = chatInput.trim();
     setChatInput("");
     setChatLoading(true);
 
+    const tempMsgId = `temp-${Date.now()}`;
     const tempMsg: ChatMessage = {
-      message_id: `temp-${Date.now()}`,
+      message_id: tempMsgId,
       session_id: chatSessionId || "",
       role: "user",
       content: query,
       created_at: new Date().toISOString(),
       sources: [],
     };
-    setMessages((prev) => [...prev, tempMsg]);
+    
+    const tempAssistantId = `temp-ast-${Date.now()}`;
+    const tempAssistantMsg: ChatMessage = {
+      message_id: tempAssistantId,
+      session_id: chatSessionId || "",
+      role: "assistant",
+      content: "",
+      created_at: new Date().toISOString(),
+      sources: [],
+      thinking: [],
+    };
+    
+    setMessages((prev) => [...prev, tempMsg, tempAssistantMsg]);
+
+    let realMessageId = tempAssistantId;
 
     try {
-      const res = await sendChatMessage(activeRepoId, query, chatSessionId || undefined);
-      if (!chatSessionId) setChatSessionId(res.session_id);
-      setMessages((prev) => [...prev, res]);
+      await streamChatMessage(activeRepoId, query, chatSessionId || undefined, (type, content, extra) => {
+        if (type === "message_id" && extra?.session_id) {
+            setChatSessionId(extra.session_id);
+            realMessageId = content;
+            setMessages((prev) => prev.map(m => m.message_id === tempAssistantId ? { ...m, message_id: realMessageId, session_id: extra.session_id } : m));
+        } else if (type === "thought") {
+            setMessages((prev) => prev.map(m => {
+                if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
+                    const currentThinking = m.thinking || [];
+                    return { ...m, thinking: [...currentThinking, content] };
+                }
+                return m;
+            }));
+        } else if (type === "token") {
+            setMessages((prev) => prev.map(m => {
+                if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
+                    return { ...m, content: m.content + content };
+                }
+                return m;
+            }));
+        } else if (type === "done") {
+            setChatLoading(false);
+        }
+      });
     } catch {
       setMessages((prev) => [
-        ...prev.filter(m => m.message_id !== tempMsg.message_id),
+        ...prev,
         {
           message_id: `err-${Date.now()}`,
           session_id: chatSessionId || "",
@@ -513,10 +687,9 @@ function DashboardContent() {
           sources: [],
         },
       ]);
-    } finally {
       setChatLoading(false);
     }
-  };
+  }, [activeRepoId, chatInput, chatLoading, chatSessionId]);
 
   const activeRepo = repos.find((r) => r.id === activeRepoId);
 
@@ -1203,45 +1376,214 @@ function DashboardContent() {
                     </div>
                   )}
 
-                  {messages.map((msg) => (
+                  {messages.map((msg, idx) => {
+                    let mainContent = msg.content || "";
+                    let thinkContent = "";
+                    if (mainContent.includes("<think>")) {
+                      const parts = mainContent.split("</think>");
+                      thinkContent = parts[0].replace("<think>", "").trim();
+                      mainContent = parts.length > 1 ? parts.slice(1).join("</think>").trim() : "";
+                    }
+
+                    const isThinking = chatLoading && idx === messages.length - 1 && (!msg.content || (msg.content.includes("<think>") && !msg.content.includes("</think>")));
+                    const hasThoughtProcess = thinkContent.length > 0 || (msg.thinking && msg.thinking.length > 0);
+
+                    return (
                     <div
                       key={msg.message_id}
                       className={msg.role === "user" ? styles.chatBubbleUser : styles.chatBubbleAssistant}
                     >
                       {msg.role === "user" ? (
-                        <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+                        mainContent
                       ) : (
-                        <ChatMarkdown content={msg.content} />
-                      )}
-                      
-                      {/* Inline Source Citations */}
-                      {msg.sources && msg.sources.length > 0 && (
-                        <div className={styles.citationsList}>
-                          {msg.sources.map((src, i) => {
-                            const label = src.file_path.split("/").pop() || "source";
-                            const lines = src.start_line ? ` (L${src.start_line}-${src.end_line})` : "";
-                            return (
-                              <button
-                                key={i}
-                                className={styles.citationBadge}
-                                onClick={() => setSelectedCitation(src)}
-                                title={`Inspect ${src.file_path}`}
-                              >
-                                📄 {label}{lines}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <>
+                          {hasThoughtProcess && (
+                            <button 
+                              className={styles.thinkingToggle}
+                              onClick={() => {
+                                setActiveThinkingMsgId(msg.message_id);
+                                setIsThinkingPanelOpen(true);
+                              }}
+                            >
+                              {isThinking ? (
+                                <span className={styles.thinkingShimmer}>Thinking...</span>
+                              ) : (
+                                <span>✓ Thought Process</span>
+                              )}
+                            </button>
+                          )}
+                          
+                          {mainContent ? (
+                            <ChatMarkdown content={mainContent} />
+                          ) : (
+                            chatLoading && !isThinking && (
+                              <div className={styles.typingDots} style={{ padding: "12px 0" }}>
+                                <div className={styles.typingDot} />
+                                <div className={styles.typingDot} />
+                                <div className={styles.typingDot} />
+                              </div>
+                            )
+                          )}
+                          
+                          {/* Feedback Buttons */}
+                          {mainContent && (!chatLoading || idx !== messages.length - 1) && (
+                             <div className={styles.feedbackBar}>
+                                 <button className={styles.feedbackBtn} onClick={() => handleFeedback(msg.message_id, "copy")} title="Copy">
+                                   {copiedMsgIds.has(msg.message_id) ? (
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                   ) : (
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                   )}
+                                 </button>
+
+                                 <button className={`${styles.feedbackBtn} ${feedbackState[msg.message_id] === 'thumbs_up' ? styles.feedbackBtnActive : ''}`} onClick={() => handleFeedback(msg.message_id, "thumbs_up")} title="Helpful">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill={feedbackState[msg.message_id] === 'thumbs_up' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                                 </button>
+                                 <button className={`${styles.feedbackBtn} ${feedbackState[msg.message_id] === 'thumbs_down' ? styles.feedbackBtnActive : ''}`} onClick={() => handleFeedback(msg.message_id, "thumbs_down")} title="Not Helpful">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill={feedbackState[msg.message_id] === 'thumbs_down' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg>
+                                 </button>
+                                 {idx === messages.length - 1 && !chatLoading && (
+                                   <button className={styles.feedbackBtn} onClick={() => handleFeedback(msg.message_id, "regenerate")} title="Regenerate">
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
+                                   </button>
+                                 )}
+                                 <div className={styles.moreOptionsContainer}>
+                                   <button className={styles.moreOptionsBtn} title="View Sources">
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="1"></circle>
+                                        <circle cx="19" cy="12" r="1"></circle>
+                                        <circle cx="5" cy="12" r="1"></circle>
+                                      </svg>
+                                   </button>
+                                   <div className={styles.moreOptionsDropdown}>
+                                      <div className={styles.moreOptionsTitle}>Sources Used</div>
+                                      {msg.sources && msg.sources.length > 0 ? (
+                                         msg.sources.map((src: any, i: number) => (
+                                            <button key={i} className={styles.sourceChip} onClick={() => openSourceFile(src.file_path)} title={src.file_path}>
+                                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                                              {src.file_path.split('/').pop()}
+                                            </button>
+                                         ))
+                                      ) : (
+                                         <div style={{ padding: '8px 12px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                                            No sources used
+                                         </div>
+                                      )}
+                                   </div>
+                                 </div>
+                             </div>
+                          )}
+                          
+
+                        </>
                       )}
                     </div>
-                  ))}
+                  )})}
                   
-                  {chatLoading && (
-                    <div className={styles.chatBubbleAssistant}>
-                      <div className={styles.loadingSpinner} style={{ width: 14, height: 14, borderWidth: 1.5 }} />
-                    </div>
-                  )}
                   <div ref={chatEndRef} />
+                </div>
+                
+                {/* Right Sliding Panel for Thinking Process */}
+                <div className={`${styles.thinkingPanelOverlay} ${isThinkingPanelOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
+                   <div className={styles.thinkingPanelHeader}>
+                      <div className={styles.thinkingPanelTitle}>
+                        Thought Process
+                      </div>
+                      <button 
+                        className={styles.thinkingPanelCloseBtn}
+                        onClick={() => setIsThinkingPanelOpen(false)}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                   </div>
+                   <div className={styles.thinkingPanelContent}>
+                      {(() => {
+                         const activeMsg = messages.find(m => m.message_id === activeThinkingMsgId);
+                         if (!activeMsg) return null;
+                         
+                         let thinkText = "";
+                         if (activeMsg.content && activeMsg.content.includes("<think>")) {
+                             const parts = activeMsg.content.split("</think>");
+                             thinkText = parts[0].replace("<think>", "").trim();
+                         }
+                         
+                         let steps: { title: string; detail?: string }[] = [];
+                         const baseThinking = activeMsg.thinking || [];
+                         
+                         baseThinking.forEach(t => {
+                             steps.push({ title: t });
+                         });
+
+                         if (thinkText) {
+                             const paragraphs = thinkText.split(/\n\s*\n/).map(l => l.trim()).filter(l => l.length > 0);
+                             // attach paragraphs as details to the steps
+                             paragraphs.forEach((p, idx) => {
+                                 let text = p;
+                                 if (p.startsWith('- ') || p.startsWith('* ')) {
+                                     text = p.substring(2).trim();
+                                 }
+                                 
+                                 if (idx < steps.length) {
+                                     steps[idx].detail = text;
+                                 } else if (steps.length > 0) {
+                                     if (steps[steps.length - 1].detail) {
+                                         steps[steps.length - 1].detail += `\n\n${text}`;
+                                     } else {
+                                         steps[steps.length - 1].detail = text;
+                                     }
+                                 } else {
+                                     steps.push({ title: "[Analyze]", detail: text });
+                                 }
+                             });
+                         }
+                         
+                         return (
+                             <div className={styles.stepperContainer}>
+                                {steps.map((step, i) => (
+                                   <div key={i} className={styles.stepperItem}>
+                                      <div className={styles.stepperLine} />
+                                      <div className={styles.stepperCircle} />
+                                      <div className={styles.stepperText}>
+                                        <div style={{ fontWeight: 600 }}>{step.title}</div>
+                                        {step.detail && <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div>}
+                                      </div>
+                                   </div>
+                                ))}
+                             </div>
+                         )
+                      })()}
+                   </div>
+                </div>
+
+                {/* Right Sliding Panel for File Viewer */}
+                <div className={`${styles.thinkingPanelOverlay} ${isFileViewerOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
+                   <div className={styles.thinkingPanelHeader}>
+                      <div className={styles.thinkingPanelTitle} style={{ wordBreak: 'break-all', fontSize: '0.9rem' }}>
+                        {activeFileName}
+                      </div>
+                      <button 
+                        className={styles.thinkingPanelCloseBtn}
+                        onClick={() => setIsFileViewerOpen(false)}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                   </div>
+                   <div className={styles.thinkingPanelContent}>
+                      {fileViewerLoading ? (
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', color: 'var(--color-text-secondary)', padding: '20px' }}>
+                             <div className={styles.typingDot} style={{ animationDelay: '0s' }} />
+                             <div className={styles.typingDot} style={{ animationDelay: '0.2s' }} />
+                             <div className={styles.typingDot} style={{ animationDelay: '0.4s' }} />
+                             <span style={{ marginLeft: '8px' }}>Loading file...</span>
+                          </div>
+                      ) : (
+                          <ChatMarkdown content={`\`\`\`${activeFileName.split('.').pop() || 'text'}\n${activeFileContent || ''}\n\`\`\``} />
+                      )}
+                   </div>
                 </div>
 
                 {/* Inline Citations Snippet modal overlay */}

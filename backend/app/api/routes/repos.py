@@ -308,6 +308,33 @@ async def get_full_graph(
 
 
 @router.get(
+    "/{repo_id}/file",
+    summary="Get repository file content",
+    description="Returns the content of a specific file in the repository.",
+)
+async def get_file_content(
+    repo_id: UUID,
+    file_path: str = Query(..., description="Path of the file"),
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> dict:
+    """Get the content of a specific file in the repository."""
+    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found.",
+        )
+    files = await pg.get_repo_files(str(repo_id), user.id, [file_path])
+    if not files:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File {file_path} not found in repository.",
+        )
+    return {"content": files[0]["content"]}
+
+
+@router.get(
     "/{repo_id}/blast-radius",
     response_model=BlastRadiusResponse,
     summary="Get blast radius analysis",

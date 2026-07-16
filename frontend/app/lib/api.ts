@@ -159,6 +159,7 @@ export interface ChatMessage {
     snippet?: string;
     node_type?: string;
   }>;
+  thinking?: string[]; // Added for thinking process
 }
 
 export interface ChatHistory {
@@ -572,6 +573,90 @@ export async function sendChatMessage(
   });
 }
 
+/** Stream a chat message */
+export async function streamChatMessage(
+  repoId: string,
+  message: string,
+  sessionId: string | undefined,
+  onUpdate: (type: "thought" | "token" | "message_id" | "user_message_id" | "done" | "sources", content: any, extra?: any) => void
+): Promise<void> {
+  if (isDemoMode()) {
+    // Simulate streaming for Demo Mode
+    onUpdate("thought", "Analyzing query in Demo Mode...");
+    await new Promise(r => setTimeout(r, 800));
+    onUpdate("thought", "Generating mock response...");
+    await new Promise(r => setTimeout(r, 800));
+    
+    const reply = "I have loaded your custom codebase. Feel free to query file interactions or class declarations, and I will search the indexed graph.";
+    
+    const words = reply.split(" ");
+    for (let i = 0; i < words.length; i++) {
+      onUpdate("token", words[i] + (i < words.length - 1 ? " " : ""));
+      await new Promise(r => setTimeout(r, 20));
+    }
+    
+    onUpdate("message_id", `demo-${Date.now()}`, { session_id: sessionId || "demo-session-1" });
+    onUpdate("done", "");
+    return;
+  }
+
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/chat/stream`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      repo_id: repoId,
+      message,
+      session_id: sessionId,
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(errBody.detail || `API Error: ${res.status}`);
+  }
+
+  if (!res.body) throw new Error("No response body");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    
+    // Process SSE line by line
+    const lines = buffer.split("\n\n");
+    buffer = lines.pop() || ""; // Keep the incomplete line in the buffer
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === "message_id") {
+            onUpdate(data.type, data.content, { session_id: data.session_id });
+          } else if (data.type === "full_text") {
+            // Stream the text smoothly entirely within the frontend!
+            const text = data.content || "";
+            const words = text.split(" ");
+            for (let i = 0; i < words.length; i++) {
+              onUpdate("token", words[i] + (i < words.length - 1 ? " " : ""));
+              await new Promise(r => setTimeout(r, 35));
+            }
+          } else {
+            onUpdate(data.type, data.content || "");
+          }
+        } catch (e) {
+          console.warn("Failed to parse SSE JSON", e, line);
+        }
+      }
+    }
+  }
+}
+
 /** Get chat history for a session */
 export async function getChatHistory(
   sessionId: string,
@@ -716,6 +801,13 @@ export async function getRepoDiagrams(repoId: string, forceRefresh = false, diag
   return apiFetch<RepoDiagrams>(`/repos/${repoId}/diagrams?${query}`);
 }
 
+export async function getRepoFileContent(repoId: string, filePath: string): Promise<{ content: string }> {
+  if (isDemoMode()) {
+    return { content: "// Mock file content for demo mode\nconsole.log('Hello World');" };
+  }
+  return apiFetch<{ content: string }>(`/repos/${repoId}/file?file_path=${encodeURIComponent(filePath)}`);
+}
+
 export async function getSystemHealth(): Promise<{ status: string }> {
   if (isDemoMode()) {
     return { status: "healthy" };
@@ -724,4 +816,31 @@ export async function getSystemHealth(): Promise<{ status: string }> {
   const res = await fetch(`${rootBase}/health`);
   if (!res.ok) throw new Error("Health check failed");
   return res.json();
+}
+
+/** Submit chat feedback */
+export async function submitChatFeedback(
+  messageId: string,
+  feedbackType: string
+): Promise<void> {
+  if (isDemoMode()) return;
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/chat/feedback`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ message_id: messageId, feedback_type: feedbackType }),
+  });
+  if (!res.ok) throw new Error(`Feedback failed: ${res.status}`);
+  return res.json();
+}
+
+/** Delete a chat message */
+export async function deleteChatMessage(messageId: string): Promise<void> {
+  if (isDemoMode()) return;
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/chat/message/${messageId}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
 }

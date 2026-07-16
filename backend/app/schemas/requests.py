@@ -76,3 +76,13 @@ class ChatMessageSend(BaseModel):
         if isinstance(v, str):
             return v.strip()
         return v
+
+
+class ChatFeedbackRequest(BaseModel):
+    """Request body for submitting feedback on an AI response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message_id: UUID
+    feedback_type: str = Field(pattern="^(thumbs_up|thumbs_down|regenerate|copy)$")
+
