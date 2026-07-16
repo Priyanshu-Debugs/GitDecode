@@ -5,6 +5,12 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { MermaidDiagram } from "@/components/ui/MermaidDiagram";
 import { ChatMarkdown } from "@/components/ui/ChatMarkdown";
+import {
+  ChainOfThought,
+  ChainOfThoughtHeader,
+  ChainOfThoughtContent,
+  ChainOfThoughtStep
+} from "@/components/ai-elements/chain-of-thought";
 import { useAuth } from "@/app/lib/useAuth";
 import {
   listRepos,
@@ -227,6 +233,59 @@ const MOCK_REPOS = [
 /* ═════════════════════════════════════════════════════════════════════
    Dashboard Content Components (Nested under Suspense)
    ═════════════════════════════════════════════════════════════════════ */
+interface ChatInputProps {
+  onSend: (value: string) => void;
+  disabled: boolean;
+  initialValue?: string;
+}
+
+function ChatInput({ onSend, disabled, initialValue = "" }: ChatInputProps) {
+  const [value, setValue] = useState(initialValue);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const handleSubmit = () => {
+    if (!value.trim() || disabled) return;
+    onSend(value.trim());
+    setValue("");
+  };
+
+  return (
+    <div className={styles.chatInputBoxFull}>
+      <textarea
+        ref={textareaRef}
+        className={styles.chatInputArea}
+        placeholder="Ask about this codebase..."
+        rows={1}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}
+        disabled={disabled}
+        style={{ background: "transparent", border: "none", outline: "none", resize: "none", flex: 1, padding: "4px 8px", fontSize: "0.8125rem", color: "var(--color-text)", maxHeight: "120px" }}
+      />
+      <button
+        className="btn btn-primary btn-sm"
+        onClick={handleSubmit}
+        disabled={disabled || !value.trim()}
+        style={{ width: 32, height: 32, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 function DashboardContent() {
   const { user, session } = useAuth(true);
   const router = useRouter();
@@ -297,6 +356,14 @@ function DashboardContent() {
   const [blastRadiusLoading, setBlastRadiusLoading] = useState(false);
 
   const [activeThinkingMsgId, setActiveThinkingMsgId] = useState<string | null>(null);
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const threshold = 150;
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+    isNearBottomRef.current = isAtBottom;
+  };
   const [isThinkingPanelOpen, setIsThinkingPanelOpen] = useState(false);
 
   // Summary & Diagrams Metrics
@@ -483,7 +550,9 @@ function DashboardContent() {
 
   // Scroll chat
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isNearBottomRef.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }
   }, [messages]);
 
   // Node selection triggers Blast Radius scan
@@ -634,11 +703,17 @@ function DashboardContent() {
     }
   };
 
-  const handleSendChat = useCallback(async () => {
-    if (!chatInput.trim() || chatLoading || !activeRepoId) return;
-    const query = chatInput.trim();
+  const handleSendChat = useCallback(async (queryParam?: string) => {
+    const query = (queryParam || chatInput).trim();
+    if (!query || chatLoading || !activeRepoId) return;
     setChatInput("");
     setChatLoading(true);
+    
+    // Smooth scroll to bottom on new message submission
+    isNearBottomRef.current = true;
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
 
     const tempMsgId = `temp-${Date.now()}`;
     const tempMsg: ChatMessage = {
@@ -1292,11 +1367,11 @@ function DashboardContent() {
           {activeGraphTab === "chat" && (
             <div className={styles.chatFullSpace}>
               {/* Chat Messages */}
-              <div className={styles.chatMessageListFull}>
+              <div className={styles.chatMessageListFull} onScroll={handleScroll}>
                 {messages.length === 0 && (
                   <div className={styles.chatEmptyState}>
                     <h3 className={styles.chatEmptyTitle}>
-                      Let&apos;s Explore 🔍
+                      Let&apos;s Explore The Codebase 
                     </h3>
                     
                     {/* Repo Context Card */}
@@ -1344,6 +1419,37 @@ function DashboardContent() {
                   const isThinking = chatLoading && idx === messages.length - 1 && (!msg.content || (msg.content.includes("<think>") && !msg.content.includes("</think>")));
                   const hasThoughtProcess = thinkContent.length > 0 || (msg.thinking && msg.thinking.length > 0);
 
+                  // Setup ChainOfThought Steps
+                  let steps: { title: string; detail?: string }[] = [];
+                  if (hasThoughtProcess) {
+                    const baseThinking = msg.thinking || [];
+                    baseThinking.forEach(t => {
+                      steps.push({ title: t });
+                    });
+
+                    if (thinkContent) {
+                      const paragraphs = thinkContent.split(/\n\s*\n/).map(l => l.trim()).filter(l => l.length > 0);
+                      paragraphs.forEach((p, idx2) => {
+                        let text = p;
+                        if (p.startsWith('- ') || p.startsWith('* ')) {
+                          text = p.substring(2).trim();
+                        }
+                        
+                        if (idx2 < steps.length) {
+                          steps[idx2].detail = text;
+                        } else if (steps.length > 0) {
+                          if (steps[steps.length - 1].detail) {
+                            steps[steps.length - 1].detail += `\n\n${text}`;
+                          } else {
+                            steps[steps.length - 1].detail = text;
+                          }
+                        } else {
+                          steps.push({ title: "Analysis Step", detail: text });
+                        }
+                      });
+                    }
+                  }
+
                   return (
                     <div
                       key={msg.message_id}
@@ -1354,23 +1460,28 @@ function DashboardContent() {
                       ) : (
                         <>
                           {hasThoughtProcess && (
-                            <div style={{ marginBottom: 12 }}>
-                              <button
-                                onClick={() => {
-                                  setActiveThinkingMsgId(activeThinkingMsgId === msg.message_id ? null : msg.message_id);
-                                  setIsThinkingPanelOpen(true);
-                                }}
-                                className={styles.thinkingToggle}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6 }}>
-                                  <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                                </svg>
-                                {activeThinkingMsgId === msg.message_id ? "Hide thought process" : "View thought process"}
-                              </button>
+                            <div style={{ marginBottom: 14 }}>
+                              <ChainOfThought defaultOpen={false}>
+                                <ChainOfThoughtHeader className="text-xs text-muted-foreground font-medium hover:text-foreground">
+                                  View Thought Process ({steps.length} steps)
+                                </ChainOfThoughtHeader>
+                                <ChainOfThoughtContent>
+                                  <div className="space-y-4 pt-2 pl-2 border-l border-white/5">
+                                    {steps.map((step, i) => (
+                                      <ChainOfThoughtStep
+                                        key={i}
+                                        label={<div style={{ fontWeight: 600, color: "var(--color-white)" }}>{step.title}</div>}
+                                        description={step.detail ? <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div> : undefined}
+                                        status={i === steps.length - 1 && isThinking ? "active" : "complete"}
+                                      />
+                                    ))}
+                                  </div>
+                                </ChainOfThoughtContent>
+                              </ChainOfThought>
                             </div>
                           )}
 
-                          {isThinking && (
+                          {isThinking && !hasThoughtProcess && (
                             <div className={styles.thinkingStep}>
                               <span className={styles.loadingSpinner} style={{ width: 12, height: 12, display: "inline-block", marginRight: 8, verticalAlign: "middle" }} />
                               <span>Thinking...</span>
@@ -1391,34 +1502,11 @@ function DashboardContent() {
                 <div className={styles.chatRepoPill}>
                   🔗 {activeRepo?.github_url.split("/").pop()}
                 </div>
-                <div className={styles.chatInputBoxFull}>
-                  <textarea
-                    className={styles.chatInputArea}
-                    placeholder="Ask about this codebase..."
-                    rows={1}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendChat();
-                      }
-                    }}
-                    disabled={chatLoading}
-                    style={{ background: "transparent", border: "none", outline: "none", resize: "none", flex: 1, padding: "4px 8px", fontSize: "0.8125rem", color: "var(--color-text)", maxHeight: "120px" }}
-                  />
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={handleSendChat}
-                    disabled={chatLoading || !chatInput.trim()}
-                    style={{ width: 32, height: 32, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="22" y1="2" x2="11" y2="13" />
-                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                  </button>
-                </div>
+                <ChatInput
+                  onSend={(query) => handleSendChat(query)}
+                  disabled={chatLoading}
+                  initialValue={chatInput}
+                />
               </div>
             </div>
           )}

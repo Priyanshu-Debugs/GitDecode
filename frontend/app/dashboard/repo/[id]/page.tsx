@@ -5,6 +5,12 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ChatMarkdown } from "@/components/ui/ChatMarkdown";
 import {
+  ChainOfThought,
+  ChainOfThoughtHeader,
+  ChainOfThoughtContent,
+  ChainOfThoughtStep
+} from "@/components/ai-elements/chain-of-thought";
+import {
   getRepoStatus,
   getGraphStats,
   getDependencyGraph,
@@ -59,6 +65,49 @@ function extractRepoName(url: string) {
 /* ═══════════════════════════════════════════════════════════════════
    Repo Detail Page
    ═══════════════════════════════════════════════════════════════════ */
+interface ChatInputProps {
+  onSend: (value: string) => void;
+  disabled: boolean;
+  initialValue?: string;
+}
+
+function ChatInput({ onSend, disabled, initialValue = "" }: ChatInputProps) {
+  const [value, setValue] = useState(initialValue);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const handleSubmit = () => {
+    if (!value.trim() || disabled) return;
+    onSend(value.trim());
+    setValue("");
+  };
+
+  return (
+    <div className={styles.chatInputArea}>
+      <input
+        ref={inputRef}
+        className={styles.chatInput}
+        type="text"
+        placeholder="Ask about this codebase..."
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+        disabled={disabled}
+      />
+      <button
+        className={styles.chatSendBtn}
+        onClick={handleSubmit}
+        disabled={disabled || !value.trim()}
+      >
+        <SendIcon />
+      </button>
+    </div>
+  );
+}
+
 export default function RepoDetailPage() {
   const params = useParams();
   const repoId = params.id as string;
@@ -80,6 +129,14 @@ export default function RepoDetailPage() {
   
   // Thinking panel state
   const [activeThinkingMsgId, setActiveThinkingMsgId] = useState<string | null>(null);
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const threshold = 150;
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+    isNearBottomRef.current = isAtBottom;
+  };
   const [isThinkingPanelOpen, setIsThinkingPanelOpen] = useState(false);
 
   // Blast radius state
@@ -138,7 +195,9 @@ export default function RepoDetailPage() {
 
   // Auto-scroll chat
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isNearBottomRef.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }
   }, [messages]);
 
   const handleFeedback = async (msgId: string, type: string) => {
@@ -263,11 +322,16 @@ export default function RepoDetailPage() {
     }
   };
 
-  const handleSendChat = useCallback(async () => {
-    if (!chatInput.trim() || chatLoading) return;
-    const query = chatInput.trim();
+  const handleSendChat = useCallback(async (queryParam?: string) => {
+    const query = (queryParam || chatInput).trim();
+    if (!query || chatLoading) return;
     setChatInput("");
     setChatLoading(true);
+    
+    isNearBottomRef.current = true;
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
 
     const tempId = `temp-${Date.now()}`;
     const tempUserMsg: ChatMessage = {
@@ -482,7 +546,7 @@ export default function RepoDetailPage() {
       {activeTab === "chat" && (
         <div className={styles.mainChatWrapper}>
           <div className={styles.chatMainArea}>
-            <div className={styles.chatMessages}>
+            <div className={styles.chatMessages} onScroll={handleScroll}>
               {messages.length === 0 && (
                 <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--color-text-tertiary)" }}>
                   <p style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 8 }}>
@@ -505,6 +569,37 @@ export default function RepoDetailPage() {
                 const isThinking = chatLoading && idx === messages.length - 1 && (!msg.content || (msg.content.includes("<think>") && !msg.content.includes("</think>")));
                 const hasThoughtProcess = thinkContent.length > 0 || (msg.thinking && msg.thinking.length > 0);
 
+                // Setup ChainOfThought Steps
+                let steps: { title: string; detail?: string }[] = [];
+                if (hasThoughtProcess) {
+                  const baseThinking = msg.thinking || [];
+                  baseThinking.forEach(t => {
+                    steps.push({ title: t });
+                  });
+
+                  if (thinkContent) {
+                    const paragraphs = thinkContent.split(/\n\s*\n/).map(l => l.trim()).filter(l => l.length > 0);
+                    paragraphs.forEach((p, idx2) => {
+                      let text = p;
+                      if (p.startsWith('- ') || p.startsWith('* ')) {
+                        text = p.substring(2).trim();
+                      }
+                      
+                      if (idx2 < steps.length) {
+                        steps[idx2].detail = text;
+                      } else if (steps.length > 0) {
+                        if (steps[steps.length - 1].detail) {
+                          steps[steps.length - 1].detail += `\n\n${text}`;
+                        } else {
+                          steps[steps.length - 1].detail = text;
+                        }
+                      } else {
+                        steps.push({ title: "Analysis Step", detail: text });
+                      }
+                    });
+                  }
+                }
+
                 return (
                 <div
                   key={msg.message_id}
@@ -519,19 +614,25 @@ export default function RepoDetailPage() {
                   ) : (
                     <>
                       {hasThoughtProcess && (
-                        <button 
-                          className={styles.thinkingToggle}
-                          onClick={() => {
-                            setActiveThinkingMsgId(msg.message_id);
-                            setIsThinkingPanelOpen(true);
-                          }}
-                        >
-                          {isThinking ? (
-                            <span className={styles.thinkingShimmer}>Thinking...</span>
-                          ) : (
-                            <span>✓ Thought Process</span>
-                          )}
-                        </button>
+                        <div style={{ marginBottom: 14 }}>
+                          <ChainOfThought defaultOpen={false}>
+                            <ChainOfThoughtHeader className="text-xs text-muted-foreground font-medium hover:text-foreground">
+                              View Thought Process ({steps.length} steps)
+                            </ChainOfThoughtHeader>
+                            <ChainOfThoughtContent>
+                              <div className="space-y-4 pt-2 pl-2 border-l border-white/5">
+                                {steps.map((step, i) => (
+                                  <ChainOfThoughtStep
+                                    key={i}
+                                    label={<div style={{ fontWeight: 600, color: "var(--color-white)" }}>{step.title}</div>}
+                                    description={step.detail ? <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div> : undefined}
+                                    status={i === steps.length - 1 && isThinking ? "active" : "complete"}
+                                  />
+                                ))}
+                              </div>
+                            </ChainOfThoughtContent>
+                          </ChainOfThought>
+                        </div>
                       )}
                       
                       {mainContent ? (
@@ -601,24 +702,11 @@ export default function RepoDetailPage() {
               <div ref={chatEndRef} />
             </div>
 
-            <div className={styles.chatInputArea}>
-              <input
-                className={styles.chatInput}
-                type="text"
-                placeholder="Ask about this codebase..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-                disabled={chatLoading && messages[messages.length-1]?.role === "user"}
-              />
-              <button
-                className={styles.chatSendBtn}
-                onClick={handleSendChat}
-                disabled={(chatLoading && messages[messages.length-1]?.role === "user") || !chatInput.trim()}
-              >
-                <SendIcon />
-              </button>
-            </div>
+            <ChatInput
+              onSend={(query) => handleSendChat(query)}
+              disabled={chatLoading && messages[messages.length-1]?.role === "user"}
+              initialValue={chatInput}
+            />
           </div>
           
           {/* Right Sliding Panel for Thinking Process */}
