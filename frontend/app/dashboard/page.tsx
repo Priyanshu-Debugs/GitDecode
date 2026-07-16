@@ -1497,9 +1497,9 @@ function DashboardContent() {
                 </div>
               ) : diagrams ? (
                 <div style={{ border: "none", background: "transparent", minHeight: "auto", display: "block", width: "100%" }}>
-                  {activeDiagramSubTab === "arch" && <MermaidDiagram chart={diagrams.architecture} />}
-                  {activeDiagramSubTab === "flow" && <MermaidDiagram chart={diagrams.userFlow} />}
-                  {activeDiagramSubTab === "data" && <MermaidDiagram chart={diagrams.dataFlow} />}
+                  {activeDiagramSubTab === "arch" && <MermaidDiagram chart={diagrams.architecture} isDedicatedView={true} />}
+                  {activeDiagramSubTab === "flow" && <MermaidDiagram chart={diagrams.userFlow} isDedicatedView={true} />}
+                  {activeDiagramSubTab === "data" && <MermaidDiagram chart={diagrams.dataFlow} isDedicatedView={true} />}
                 </div>
               ) : (
                 <div style={{ color: "var(--color-text-tertiary)", fontSize: "0.8125rem", textAlign: "center" }}>

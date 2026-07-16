@@ -3059,8 +3059,9 @@
   composes: fullSpaceView;
   padding: 32px 40px;
   overflow-y: auto;
-  max-width: 1000px;
+  max-width: 1380px;
   margin: 0 auto;
+  width: 92%;
 }
 
 /* Chat components */
@@ -3129,8 +3130,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 800px;
-  width: 100%;
+  max-width: 1380px;
+  width: 92%;
   margin: 0 auto;
 }
 
@@ -3162,7 +3163,7 @@
   align-items: flex-end;
   gap: 8px;
   width: 100%;
-  max-width: 800px;
+  max-width: 1380px;
   background: rgba(255, 255, 255, 0.03);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
@@ -3172,4 +3173,175 @@
 
 .chatInputBoxFull:focus-within {
   border-color: rgba(200, 204, 212, 0.25);
+}
+
+/* ── Top Header Navigation Tabs and Profile Widgets ────────────────── */
+.topbarHomeLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+}
+
+.topbarHomeLink:hover {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.topbarHomeLinkActive {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(200, 204, 212, 0.2);
+}
+
+.topbarHomeLabel {
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .topbarHomeLabel {
+    display: none;
+  }
+}
+
+.topbarSeparator {
+  color: var(--color-text-tertiary);
+  opacity: 0.4;
+  font-size: 0.8125rem;
+  margin: 0 4px;
+}
+
+.topbarActiveRepo {
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  color: var(--color-white);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+/* Top bar Horizontal Nav Tabs */
+.topbarNav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.01);
+}
+
+.topbarTab {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.topbarTab:hover {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.topbarTabActive {
+  color: #0a0a0a !important;
+  background: #c8ccd4 !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Top bar Right profile widget */
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbarProfileWidget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.topbarProfileWidget:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.topbarAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #c8ccd4;
+  color: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.topbarProfileName {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .topbarProfileName {
+    display: none;
+  }
+}
+
+.topbarProfileWidget:hover .topbarProfileName {
+  color: var(--color-white);
+}
+
+.topbarSignOutBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.topbarSignOutBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--color-white);
 }

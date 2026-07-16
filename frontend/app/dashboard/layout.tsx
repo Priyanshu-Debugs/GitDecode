@@ -371,25 +371,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
         {/* Scrollable Sidebar Nav Container */}
         <nav className={styles.sidebarNav} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16, padding: "16px 12px" }}>
           
-          <Link
-            href="/dashboard"
-            className={`${styles.navItem} ${pathname === "/dashboard" && !activeRepoId ? styles.navItemActive : ""}`}
-            onClick={() => handleNavClick("/dashboard")}
-          >
-            <HomeIcon />
-            {!collapsed && <span>Workspace Home</span>}
-          </Link>
-
-          <Link
-            href="/dashboard/profile"
-            className={`${styles.navItem} ${pathname === "/dashboard/profile" ? styles.navItemActive : ""}`}
-            onClick={() => handleNavClick("/dashboard/profile")}
-          >
-            <UserIcon />
-            {!collapsed && <span>Developer Profile</span>}
-          </Link>
-
-          {/* Active Repo Shortcut */}
+          {/* Active Codebase Shortcut */}
           {!collapsed && activeRepoId && (
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6, borderBottom: "0.5px solid var(--color-border)", paddingBottom: 12, marginBottom: 12 }}>
               <div className={styles.sidebarQueueHeader} style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--color-text-secondary)" }}>
@@ -404,69 +386,6 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                   Active Workspace
                 </span>
               </div>
-            </div>
-          )}
-
-          {/* Workspace Views (only when repo is active + completed) */}
-          {activeRepoId && activeRepoStatus === "completed" && (
-            <div className={styles.workspaceNavSection}>
-              {!collapsed && <div className={styles.sidebarSectionLabel}>Workspace</div>}
-              
-              <button
-                className={`${styles.navItem} ${currentTab === "chat" ? styles.navItemActive : ""}`}
-                onClick={() => handleTabChange("chat")}
-                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
-                title={collapsed ? "Chat" : undefined}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                {!collapsed && <span style={{ marginLeft: 12 }}>Chat</span>}
-              </button>
-
-              <button
-                className={`${styles.navItem} ${currentTab === "graph" ? styles.navItemActive : ""}`}
-                onClick={() => handleTabChange("graph")}
-                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
-                title={collapsed ? "Knowledge Graph" : undefined}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <circle cx="6" cy="6" r="3" />
-                  <circle cx="18" cy="18" r="3" />
-                  <line x1="8.5" y1="8.5" x2="15.5" y2="15.5" />
-                  <circle cx="18" cy="6" r="3" />
-                  <line x1="15.5" y1="8.5" x2="8.5" y2="15.5" />
-                </svg>
-                {!collapsed && <span style={{ marginLeft: 12 }}>Knowledge Graph</span>}
-              </button>
-
-              <button
-                className={`${styles.navItem} ${currentTab === "diagrams" ? styles.navItemActive : ""}`}
-                onClick={() => handleTabChange("diagrams")}
-                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
-                title={collapsed ? "Diagrams" : undefined}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <rect x="3" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="8" y="14" width="7" height="7" rx="1" />
-                </svg>
-                {!collapsed && <span style={{ marginLeft: 12 }}>Diagrams</span>}
-              </button>
-
-              <button
-                className={`${styles.navItem} ${currentTab === "insights" ? styles.navItemActive : ""}`}
-                onClick={() => handleTabChange("insights")}
-                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
-                title={collapsed ? "Insights" : undefined}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <line x1="18" y1="20" x2="18" y2="10" />
-                  <line x1="12" y1="20" x2="12" y2="4" />
-                  <line x1="6" y1="20" x2="6" y2="14" />
-                </svg>
-                {!collapsed && <span style={{ marginLeft: 12 }}>Insights</span>}
-              </button>
             </div>
           )}
 
@@ -523,42 +442,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
         </nav>
 
-        {/* Sidebar Footer User profile */}
-        <div className={styles.sidebarFooter}>
-          {!collapsed ? (
-            <div className={styles.userSection} onClick={() => handleNavClick("/dashboard/profile")} style={{ cursor: "pointer" }}>
-              {user.user_metadata?.avatar_url ? (
-                <div className={styles.userAvatar} style={{ overflow: "hidden", padding: 0 }}>
-                  <img src={user.user_metadata.avatar_url} alt={user.email || "Profile"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-              ) : (
-                <div className={styles.userAvatar}>{initials}</div>
-              )}
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>
-                  {user.email?.split("@")[0]}
-                </span>
-                <span className={styles.userEmail}>{user.email}</span>
-              </div>
-              <SettingsIcon />
-            </div>
-          ) : (
-            <button
-              className={styles.collapseBtn}
-              onClick={() => handleNavClick("/dashboard/profile")}
-              aria-label="View Profile"
-              style={{ margin: "0 auto" }}
-            >
-              {user.user_metadata?.avatar_url ? (
-                <div className={styles.userAvatar} style={{ overflow: "hidden", padding: 0, width: 24, height: 24 }}>
-                  <img src={user.user_metadata.avatar_url} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-              ) : (
-                <SettingsIcon />
-              )}
-            </button>
-          )}
-        </div>
+        {/* Sidebar Footer empty */}
       </aside>
 
       {/* ── Main Workspace Area ── */}
@@ -575,17 +459,83 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             >
               <MenuIcon />
             </button>
-            <div className={styles.breadcrumb}>
-              <span className={styles.breadcrumbCurrent}>
-                {pathname === "/dashboard"
-                  ? activeRepoId && activeRepoName
-                    ? activeRepoName
-                    : "Overview"
-                  : pathname.includes("/repo/")
-                    ? "Repository"
-                    : "Dashboard"}
+            
+            {/* Workspace Home Link */}
+            <Link
+              href="/dashboard"
+              className={`${styles.topbarHomeLink} ${pathname === "/dashboard" && !activeRepoId ? styles.topbarHomeLinkActive : ""}`}
+              title="Workspace Home"
+            >
+              <HomeIcon />
+              <span className={styles.topbarHomeLabel}>Workspace Home</span>
+            </Link>
+
+            {activeRepoId && (
+              <>
+                <span className={styles.topbarSeparator}>/</span>
+                <div className={styles.topbarActiveRepo}>
+                  {activeRepoName || "Repository"}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Center Navigation Tabs (Only when repo is active and completed) */}
+          {activeRepoId && activeRepoStatus === "completed" && (
+            <div className={styles.topbarNav}>
+              <button
+                className={`${styles.topbarTab} ${currentTab === "chat" ? styles.topbarTabActive : ""}`}
+                onClick={() => handleTabChange("chat")}
+              >
+                Chat
+              </button>
+              <button
+                className={`${styles.topbarTab} ${currentTab === "graph" ? styles.topbarTabActive : ""}`}
+                onClick={() => handleTabChange("graph")}
+              >
+                Knowledge Graph
+              </button>
+              <button
+                className={`${styles.topbarTab} ${currentTab === "diagrams" ? styles.topbarTabActive : ""}`}
+                onClick={() => handleTabChange("diagrams")}
+              >
+                Diagrams
+              </button>
+              <button
+                className={`${styles.topbarTab} ${currentTab === "insights" ? styles.topbarTabActive : ""}`}
+                onClick={() => handleTabChange("insights")}
+              >
+                Insights
+              </button>
+            </div>
+          )}
+
+          {/* Right Profile Widget */}
+          <div className={styles.topbarRight}>
+            <div 
+              className={styles.topbarProfileWidget} 
+              onClick={() => router.push("/dashboard/profile")}
+              title="Developer Profile"
+            >
+              {user.user_metadata?.avatar_url ? (
+                <div className={styles.topbarAvatar} style={{ overflow: "hidden", padding: 0 }}>
+                  <img src={user.user_metadata.avatar_url} alt={user.email || "Profile"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ) : (
+                <div className={styles.topbarAvatar}>{initials}</div>
+              )}
+              <span className={styles.topbarProfileName}>
+                {user.email?.split("@")[0]}
               </span>
             </div>
+            
+            <button
+              onClick={() => signOut()}
+              className={styles.topbarSignOutBtn}
+              title="Sign Out"
+            >
+              <SignOutIcon />
+            </button>
           </div>
         </div>
 
