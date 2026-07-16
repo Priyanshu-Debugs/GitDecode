@@ -1576,6 +1576,116 @@ function DashboardContent() {
           )}
         </>
       )}
+          {/* Right Sliding Panel for Thinking Process */}
+          <div className={`${styles.thinkingPanelOverlay} ${isThinkingPanelOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
+             <div className={styles.thinkingPanelHeader}>
+                <div className={styles.thinkingPanelTitle}>
+                  Thought Process
+                </div>
+                <button 
+                  className={styles.thinkingPanelCloseBtn}
+                  onClick={() => setIsThinkingPanelOpen(false)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+             </div>
+             <div className={styles.thinkingPanelContent}>
+                {(() => {
+                   const activeMsg = messages.find(m => m.message_id === activeThinkingMsgId);
+                   if (!activeMsg) return null;
+                   
+                   let thinkText = "";
+                   if (activeMsg.content && activeMsg.content.includes("<think>")) {
+                       const parts = activeMsg.content.split("</think>");
+                       thinkText = parts[0].replace("<think>", "").trim();
+                   }
+                   
+                   let steps: { title: string; detail?: string }[] = [];
+                   const baseThinking = activeMsg.thinking || [];
+                   
+                   baseThinking.forEach(t => {
+                       steps.push({ title: t });
+                   });
+
+                   if (thinkText) {
+                       const paragraphs = thinkText.split(/\n\s*\n/).map(l => l.trim()).filter(l => l.length > 0);
+                       paragraphs.forEach((p, idx) => {
+                           let text = p;
+                           if (p.startsWith('- ') || p.startsWith('* ')) {
+                               text = p.substring(2).trim();
+                           }
+                           
+                           if (idx < steps.length) {
+                               steps[idx].detail = text;
+                           } else if (steps.length > 0) {
+                               if (steps[steps.length - 1].detail) {
+                                   steps[steps.length - 1].detail += `\n\n${text}`;
+                               } else {
+                                   steps[steps.length - 1].detail = text;
+                               }
+                           } else {
+                               steps.push({ title: "[Analyze]", detail: text });
+                           }
+                       });
+                   }
+                   
+                   return (
+                       <div className={styles.stepperContainer}>
+                          {steps.map((step, i) => (
+                             <div key={i} className={styles.stepperItem}>
+                                <div className={styles.stepperLine} />
+                                <div className={styles.stepperCircle} />
+                                <div className={styles.stepperText}>
+                                  <div style={{ fontWeight: 600 }}>{step.title}</div>
+                                  {step.detail && <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div>}
+                                </div>
+                             </div>
+                          ))}
+                       </div>
+                   );
+                })()}
+             </div>
+          </div>
+
+          {/* Right Sliding Panel for File Viewer */}
+          <div className={`${styles.thinkingPanelOverlay} ${isFileViewerOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
+             <div className={styles.thinkingPanelHeader}>
+                <div className={styles.thinkingPanelTitle} style={{ wordBreak: 'break-all', fontSize: '0.9rem' }}>
+                  {activeFileName}
+                </div>
+                <button 
+                  className={styles.thinkingPanelCloseBtn}
+                  onClick={() => setIsFileViewerOpen(false)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+             </div>
+             <div className={styles.thinkingPanelContent} style={{ padding: 0 }}>
+                {fileViewerLoading ? (
+                  <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+                     <div className={styles.loadingSpinner} />
+                  </div>
+                ) : (
+                  <pre style={{
+                     margin: 0,
+                     padding: 20,
+                     overflow: "auto",
+                     fontSize: "0.75rem",
+                     fontFamily: "var(--font-mono)",
+                     color: "var(--color-text)",
+                     lineHeight: 1.5,
+                     background: "transparent"
+                  }}>
+                     {activeFileContent}
+                  </pre>
+                )}
+             </div>
+          </div>
+
       {renderCustomConfirm()}
     </div>
   );
