@@ -166,17 +166,17 @@ export function ChatMarkdown({ content }: { content: string }) {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: "#b01e0a",
+                color: "#c8ccd4",
                 textDecoration: "none",
-                borderBottom: "1px solid rgba(176, 30, 10, 0.3)",
+                borderBottom: "1px solid rgba(200, 204, 212, 0.3)",
                 transition: "border-color 200ms",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.borderBottomColor = "#b01e0a")
+                (e.currentTarget.style.borderBottomColor = "#c8ccd4")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.borderBottomColor =
-                  "rgba(176, 30, 10, 0.3)")
+                  "rgba(200, 204, 212, 0.3)")
               }
             >
               {children}
@@ -186,7 +186,7 @@ export function ChatMarkdown({ content }: { content: string }) {
           blockquote: ({ children }) => (
             <blockquote
               style={{
-                borderLeft: "3px solid rgba(176, 30, 10, 0.4)",
+                borderLeft: "3px solid rgba(200, 204, 212, 0.4)",
                 paddingLeft: 14,
                 margin: "10px 0",
                 color: "var(--color-text-secondary)",

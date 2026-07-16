@@ -49,7 +49,7 @@ export default function Input({
             "outline-none",
             error
               ? "border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:shadow-[0_0_0_1px_var(--color-danger)]"
-              : "border-[var(--color-border)] focus:border-[#b01e0a] focus:shadow-[0_0_0_1px_#b01e0a]",
+              : "border-[var(--color-border)] focus:border-[#c8ccd4] focus:shadow-[0_0_0_1px_#c8ccd4]",
             icon ? "pl-10" : "",
             isPassword ? "pr-10" : "",
             className,

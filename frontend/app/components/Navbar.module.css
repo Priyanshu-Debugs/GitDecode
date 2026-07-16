@@ -148,19 +148,19 @@
   font-family: var(--font-display);
   font-size: 0.875rem;
   font-weight: 500;
-  color: #ffffff;
+  color: #0a0a0a;
   text-decoration: none;
   text-align: center;
   padding: 10px;
-  background: #b01e0a;
+  background: #c8ccd4;
   border-radius: var(--radius-full);
   margin-top: 4px;
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
   transition: background var(--transition-fast);
 }
 
 .mobileGetStarted:hover {
-  background: #cb220b;
+  background: #dde1e8;
 }
 
 /* ── Responsive ───────────────────────────────────────────── */

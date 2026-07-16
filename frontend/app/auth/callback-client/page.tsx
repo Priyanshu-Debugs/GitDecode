@@ -98,7 +98,7 @@ export default function AuthCallbackClientPage() {
             width: "24px",
             height: "24px",
             border: "2px solid rgba(255, 255, 255, 0.06)",
-            borderTopColor: "#b01e0a",
+            borderTopColor: "#c8ccd4",
             borderRadius: "50%",
             animation: "spin 0.8s linear infinite",
             margin: "0 auto 16px"

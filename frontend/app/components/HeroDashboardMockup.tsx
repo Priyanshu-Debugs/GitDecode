@@ -14,7 +14,7 @@ const FILES = [
 
 /* Simulated graph nodes */
 const NODES = [
-  { id: "main", x: 160, y: 40, label: "main.py", color: "#b01e0a" },
+  { id: "main", x: 160, y: 40, label: "main.py", color: "#c8ccd4" },
   { id: "security", x: 60, y: 100, label: "security", color: "#f59e0b" },
   { id: "neo4j", x: 260, y: 100, label: "neo4j", color: "#a78bfa" },
   { id: "ingestion", x: 100, y: 170, label: "ingestion", color: "#22c55e" },

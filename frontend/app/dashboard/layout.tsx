@@ -162,7 +162,16 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeRepoId = searchParams.get("repo_id");
-  const activeRepoName = repos.find((r) => r.id === activeRepoId)?.github_url.split("/").pop();
+  const activeRepo = repos.find((r) => r.id === activeRepoId);
+  const activeRepoName = activeRepo?.github_url.split("/").pop();
+  const activeRepoStatus = activeRepo?.status;
+  const currentTab = searchParams.get("tab") || "chat";
+
+  const handleTabChange = (tab: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.push(`/dashboard?${params.toString()}`);
+  };
 
   const completedRepos = repos.filter((r) => r.status === "completed");
 
@@ -395,6 +404,69 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                   Active Workspace
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* Workspace Views (only when repo is active + completed) */}
+          {activeRepoId && activeRepoStatus === "completed" && (
+            <div className={styles.workspaceNavSection}>
+              {!collapsed && <div className={styles.sidebarSectionLabel}>Workspace</div>}
+              
+              <button
+                className={`${styles.navItem} ${currentTab === "chat" ? styles.navItemActive : ""}`}
+                onClick={() => handleTabChange("chat")}
+                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
+                title={collapsed ? "Chat" : undefined}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                {!collapsed && <span style={{ marginLeft: 12 }}>Chat</span>}
+              </button>
+
+              <button
+                className={`${styles.navItem} ${currentTab === "graph" ? styles.navItemActive : ""}`}
+                onClick={() => handleTabChange("graph")}
+                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
+                title={collapsed ? "Knowledge Graph" : undefined}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <circle cx="6" cy="6" r="3" />
+                  <circle cx="18" cy="18" r="3" />
+                  <line x1="8.5" y1="8.5" x2="15.5" y2="15.5" />
+                  <circle cx="18" cy="6" r="3" />
+                  <line x1="15.5" y1="8.5" x2="8.5" y2="15.5" />
+                </svg>
+                {!collapsed && <span style={{ marginLeft: 12 }}>Knowledge Graph</span>}
+              </button>
+
+              <button
+                className={`${styles.navItem} ${currentTab === "diagrams" ? styles.navItemActive : ""}`}
+                onClick={() => handleTabChange("diagrams")}
+                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
+                title={collapsed ? "Diagrams" : undefined}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="8" y="14" width="7" height="7" rx="1" />
+                </svg>
+                {!collapsed && <span style={{ marginLeft: 12 }}>Diagrams</span>}
+              </button>
+
+              <button
+                className={`${styles.navItem} ${currentTab === "insights" ? styles.navItemActive : ""}`}
+                onClick={() => handleTabChange("insights")}
+                style={{ width: "100%", display: "flex", alignItems: "center", background: "none", border: "none" }}
+                title={collapsed ? "Insights" : undefined}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                {!collapsed && <span style={{ marginLeft: 12 }}>Insights</span>}
+              </button>
             </div>
           )}
 

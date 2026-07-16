@@ -9,7 +9,7 @@ import styles from "./InteractiveDiagram.module.css";
 
 /* ── Glass Card Node ──────────────────────────────────────────── */
 function CardNode({
-  x, y, w, h, label, sublabel, icon, active, color = "#b01e0a",
+  x, y, w, h, label, sublabel, icon, active, color = "#c8ccd4",
 }: {
   x: number; y: number; w: number; h: number;
   label: string; sublabel?: string; icon?: React.ReactNode;
@@ -52,7 +52,7 @@ function CardNode({
 
 /* ── Animated Connection ──────────────────────────────────────── */
 function Connection({
-  path, active, color = "#b01e0a", dotCount = 1, speed = 3,
+  path, active, color = "#c8ccd4", dotCount = 1, speed = 3,
 }: {
   path: string; active: boolean; color?: string; dotCount?: number; speed?: number;
 }) {
@@ -259,8 +259,8 @@ export default function InteractiveDiagram() {
                 ))}
 
                 <radialGradient id="glowRed" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#b01e0a" stopOpacity="0.15" />
-                  <stop offset="100%" stopColor="#b01e0a" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#c8ccd4" stopOpacity="0.15" />
+                  <stop offset="100%" stopColor="#c8ccd4" stopOpacity="0" />
                 </radialGradient>
                 <radialGradient id="glowAmber" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.12" />
@@ -295,7 +295,7 @@ export default function InteractiveDiagram() {
               {/* ═══ CONNECTIONS ══════════════════════════════ */}
 
               {/* Dev → Ingestion */}
-              <Connection path={PATHS.devToIngest} active={phase === 1} color="#b01e0a" speed={2} />
+              <Connection path={PATHS.devToIngest} active={phase === 1} color="#c8ccd4" speed={2} />
 
               {/* Ingestion → Neo4j */}
               <Connection path={PATHS.ingestToNeo} active={phase === 2} color="#a78bfa" speed={2.2} />
@@ -343,19 +343,19 @@ export default function InteractiveDiagram() {
               <g transform="translate(90, 130)">
                 {/* Laptop body */}
                 <rect x="-32" y="-24" width="64" height="36" rx="4"
-                  fill={phase >= 1 ? "rgba(176,30,10,0.05)" : "rgba(8,8,8,0.95)"}
-                  stroke={phase >= 1 ? "#b01e0a" : "rgba(255,255,255,0.05)"}
+                  fill={phase >= 1 ? "rgba(200,204,212,0.05)" : "rgba(8,8,8,0.95)"}
+                  stroke={phase >= 1 ? "#c8ccd4" : "rgba(255,255,255,0.05)"}
                   strokeWidth={phase >= 1 ? 0.8 : 0.5}
                 />
                 {/* Screen */}
                 <rect x="-28" y="-21" width="56" height="30" rx="2" fill="#0a0a0a" />
                 {/* Code lines */}
                 <g opacity={phase >= 1 ? 1 : 0.3}>
-                  <rect x="-24" y="-17" width="16" height="1.5" rx="0.75" fill="#b01e0a" opacity="0.8" />
+                  <rect x="-24" y="-17" width="16" height="1.5" rx="0.75" fill="#c8ccd4" opacity="0.8" />
                   <rect x="-24" y="-13" width="24" height="1.5" rx="0.75" fill="rgba(255,255,255,0.2)" />
                   <rect x="-24" y="-9" width="12" height="1.5" rx="0.75" fill="rgba(255,255,255,0.15)" />
                   <rect x="-24" y="-5" width="20" height="1.5" rx="0.75" fill="rgba(255,255,255,0.1)" />
-                  <rect x="-24" y="-1" width="8" height="1.5" rx="0.75" fill="#b01e0a" opacity="0.6" />
+                  <rect x="-24" y="-1" width="8" height="1.5" rx="0.75" fill="#c8ccd4" opacity="0.6" />
                   <rect x="-24" y="3" width="18" height="1.5" rx="0.75" fill="rgba(255,255,255,0.12)" />
                 </g>
                 {/* Keyboard base */}
@@ -367,7 +367,7 @@ export default function InteractiveDiagram() {
 
               {/* ── Ingestion Server ──────────────────────── */}
               <CardNode x={275} y={130} w={70} h={48} label="Ingestion" sublabel="tree-sitter · AST"
-                active={phase >= 1 && phase <= 2} color="#b01e0a"
+                active={phase >= 1 && phase <= 2} color="#c8ccd4"
                 icon={
                   <g stroke="#fafafa" strokeWidth="0.8" fill="none">
                     <rect x="-6" y="-5" width="12" height="10" rx="1.5" />
@@ -475,10 +475,10 @@ export default function InteractiveDiagram() {
                       return (
                         <>
                           <rect x={-bw} y="-11" width={bw} height="22" rx="8"
-                            fill="rgba(176,30,10,0.10)" stroke="rgba(176,30,10,0.2)" strokeWidth="0.5"
+                            fill="rgba(200,204,212,0.10)" stroke="rgba(200,204,212,0.2)" strokeWidth="0.5"
                           />
-                          <text x={-bw / 2} y="2" fontSize="6" textAnchor="middle" fill="#e8bdb8" fontFamily="var(--font-sans)">{msg}</text>
-                          {phase === 6 && <rect x={-4} y="-6" width="1.5" height="12" fill="#b01e0a" opacity="0.8">
+                          <text x={-bw / 2} y="2" fontSize="6" textAnchor="middle" fill="#c8ccd4" fontFamily="var(--font-sans)">{msg}</text>
+                          {phase === 6 && <rect x={-4} y="-6" width="1.5" height="12" fill="#c8ccd4" opacity="0.8">
                             <animate attributeName="opacity" values="0.8;0;0.8" dur="1s" repeatCount="indefinite" />
                           </rect>}
                         </>
@@ -516,9 +516,9 @@ export default function InteractiveDiagram() {
                     </text>
                     {/* Source citation */}
                     <rect x="12" y="52" width="180" height="18" rx="4"
-                      fill="rgba(176,30,10,0.04)" stroke="rgba(176,30,10,0.12)" strokeWidth="0.4"
+                      fill="rgba(200,204,212,0.04)" stroke="rgba(200,204,212,0.12)" strokeWidth="0.4"
                     />
-                    <text x="20" y="63" fontSize="5" fill="#b01e0a" fontFamily="var(--font-mono)" fontWeight="500">
+                    <text x="20" y="63" fontSize="5" fill="#c8ccd4" fontFamily="var(--font-mono)" fontWeight="500">
                       📄 security.py  L42–L67
                     </text>
                     <text x="120" y="63" fontSize="5" fill="rgba(255,255,255,0.25)" fontFamily="var(--font-mono)">

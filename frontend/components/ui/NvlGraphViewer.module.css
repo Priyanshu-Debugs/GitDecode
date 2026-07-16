@@ -131,7 +131,7 @@
 .searchInput:focus {
   width: 240px;
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(176, 30, 10, 0.4);
+  border-color: rgba(200, 204, 212, 0.4);
 }
 
 .searchIcon {
@@ -423,7 +423,7 @@
 }
 
 .customSelectItemActive {
-  background: rgba(176, 30, 10, 0.08);
-  color: #ef4444;
+  background: rgba(200, 204, 212, 0.08);
+  color: #c8ccd4;
   font-weight: 500;
 }

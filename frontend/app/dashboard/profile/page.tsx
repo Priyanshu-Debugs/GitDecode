@@ -223,7 +223,7 @@ export default function ProfilePage() {
       .map(([name, count]) => ({
         name,
         percentage: Math.round((count / total) * 100),
-        color: colorMap[name] || "#b01e0a",
+        color: colorMap[name] || "#c8ccd4",
       }))
       .sort((a, b) => b.percentage - a.percentage);
   };
@@ -235,15 +235,15 @@ export default function ProfilePage() {
       {/* repeating dot mesh grid background */}
       <div className={styles.dotMeshGrid} />
       {/* Ambient background glows */}
-      <div style={{ position: "absolute", top: "-10%", left: "30%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.08) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-      <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "300px", height: "300px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "absolute", top: "-10%", left: "30%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(200, 204, 212, 0.08) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "300px", height: "300px", background: "radial-gradient(circle, rgba(200, 204, 212, 0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
       {/* Header section */}
       <div className={styles.profileHeader} style={{ zIndex: 1, position: "relative" }}>
         <div className={styles.profileUserInfo}>
           <div className="relative flex items-center justify-center shrink-0">
             <motion.div
-              className="absolute rounded-full bg-[rgba(176,30,10,0.12)]"
+              className="absolute rounded-full bg-[rgba(200,204,212,0.12)]"
               animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
               style={{ width: 88, height: 88 }}
@@ -259,7 +259,7 @@ export default function ProfilePage() {
           <div className={styles.profileDetails}>
             <h2 className={styles.profileEmail} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {user.email}
-              <span style={{ fontSize: "0.6875rem", background: "rgba(176, 30, 10, 0.1)", border: "0.5px solid rgba(176, 30, 10, 0.3)", color: "#b01e0a", padding: "2px 8px", borderRadius: 4, fontFamily: "var(--font-mono)", fontWeight: 500 }}>
+              <span style={{ fontSize: "0.6875rem", background: "rgba(200, 204, 212, 0.1)", border: "0.5px solid rgba(200, 204, 212, 0.3)", color: "#c8ccd4", padding: "2px 8px", borderRadius: 4, fontFamily: "var(--font-mono)", fontWeight: 500 }}>
                 CORE MEMBER
               </span>
             </h2>

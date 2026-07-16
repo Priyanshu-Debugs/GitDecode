@@ -100,11 +100,11 @@
 }
 
 .userMessage .messageBubble {
-  background: #b01e0a;
-  color: #ffffff;
+  background: #c8ccd4;
+  color: #0a0a0a;
   border-bottom-right-radius: 3px;
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .assistantMessage .messageBubble {
@@ -137,7 +137,7 @@
 }
 
 .sourceTag svg {
-  color: #b01e0a;
+  color: #c8ccd4;
   stroke-width: 1.8px;
 }
 
@@ -210,19 +210,19 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #b01e0a;
-  color: #ffffff;
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  background: #c8ccd4;
+  color: #0a0a0a;
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all var(--transition-fast);
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(176, 30, 10, 0.2);
+  box-shadow: 0 4px 12px rgba(200, 204, 212, 0.15);
 }
 
 .sendBtn:hover {
-  background: #cb220b;
-  box-shadow: 0 6px 16px rgba(176, 30, 10, 0.35);
+  background: #dde1e8;
+  box-shadow: 0 6px 16px rgba(200, 204, 212, 0.25);
 }
 
 .sendBtn:disabled {

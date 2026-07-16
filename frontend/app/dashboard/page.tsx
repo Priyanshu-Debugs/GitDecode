@@ -272,7 +272,22 @@ function DashboardContent() {
   } | null>(null);
 
   // Graphs states
-  const [activeGraphTab, setActiveGraphTab] = useState<"graph" | "chat" | "diagrams" | "insights">("graph");
+  const activeGraphTab = (searchParams.get("tab") as "graph" | "chat" | "diagrams" | "insights") || "chat";
+
+  const getLangColor = (lang: string) => {
+    const colors: { [key: string]: string } = {
+      TypeScript: "#3178c6",
+      JavaScript: "#f1e05a",
+      Python: "#3572A5",
+      Go: "#00ADD8",
+      Rust: "#dea584",
+      Java: "#b07219",
+      "C++": "#f34b7d",
+      HTML: "#e34c26",
+      CSS: "#563d7c"
+    };
+    return colors[lang] || "#888888";
+  };
   const [graphData, setGraphData] = useState<DependencyGraph | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -833,8 +848,8 @@ function DashboardContent() {
         {/* repeating dot mesh grid background */}
         <div className={styles.dotMeshGrid} />
         {/* Glow Effects in Background */}
-        <div style={{ position: "absolute", top: "-10%", left: "30%", width: "450px", height: "450px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.08) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-        <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "350px", height: "350px", background: "radial-gradient(circle, rgba(176, 30, 10, 0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+        <div style={{ position: "absolute", top: "-10%", left: "30%", width: "450px", height: "450px", background: "radial-gradient(circle, rgba(200, 204, 212, 0.08) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+        <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "350px", height: "350px", background: "radial-gradient(circle, rgba(200, 204, 212, 0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
         
         {/* Hero Section */}
         <div className={styles.dashboardHero} style={{ zIndex: 1, position: "relative" }}>
@@ -1096,7 +1111,7 @@ function DashboardContent() {
             <div className={styles.confirmModalOuter} onClick={(e) => e.stopPropagation()}>
               <div className={styles.confirmModalInner}>
                 <div className={styles.confirmModalHeader}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#b01e0a" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#c8ccd4" }}>
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                   </svg>
                   <h3 className={styles.confirmModalTitle}>Connect Codebase</h3>
@@ -1272,123 +1287,64 @@ function DashboardContent() {
       {/* ═════════════════════════════════════════════════════════════════
          MAIN WORKSPACE: Knowledge Graph, Chat, Diagrams & Insights
          ═════════════════════════════════════════════════════════════════ */}
-      <aside
-        className={styles.leftPanel}
-        style={{
-          width: "100%",
-          display: activeRepo && activeRepo.status !== "completed" ? "none" : "flex",
-          flex: "1",
-        }}
-      >
-        <div className={styles.panelHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <h2 className={styles.panelTitle}>Codebase Explorer</h2>
-            {activeRepo?.status === "completed" && (
-              <span style={{ fontSize: "0.6875rem", fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)" }}>
-                {activeGraphTab.toUpperCase()}
-              </span>
-            )}
-          </div>
-        </div>
+      {activeRepo && activeRepo.status === "completed" && (
+        <>
+          {activeGraphTab === "chat" && (
+            <div className={styles.chatFullSpace}>
+              {/* Chat Messages */}
+              <div className={styles.chatMessageListFull}>
+                {messages.length === 0 && (
+                  <div className={styles.chatEmptyState}>
+                    <h3 className={styles.chatEmptyTitle}>
+                      Let&apos;s Explore 🔍
+                    </h3>
+                    
+                    {/* Repo Context Card */}
+                    <div className={styles.chatRepoCard}>
+                      <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.625rem" }}>
+                        {(activeRepo.github_url.split("/").pop() || "RM").slice(0, 2).toUpperCase()}
+                      </div>
+                      <span>
+                        {activeRepo.github_url.replace("https://github.com/", "")} [{activeRepo.branch}]
+                      </span>
+                      {summaryData?.languages?.[0] && (
+                        <span style={{ color: getLangColor(summaryData.languages[0].language) }}>
+                          ● {summaryData.languages[0].language.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
 
-        {activeRepo?.status !== "completed" ? (
-          <div className={styles.panelBody} style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", color: "var(--color-text-tertiary)" }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: 12 }}>
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="9" y1="3" x2="9" y2="21" />
-            </svg>
-            <p style={{ fontSize: "0.8125rem", maxWidth: 220 }}>
-              Select a completed repository from the sidebar to explore its codebase.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Graph Category Toggles */}
-            <div className={styles.graphTabs}>
-              <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "graph" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("graph")}
-              >
-                Knowledge Graph
-              </button>
-              <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "chat" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("chat")}
-              >
-                Chat
-              </button>
-              <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "diagrams" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("diagrams")}
-              >
-                Diagrams
-              </button>
-              <button
-                className={`${styles.graphTabButton} ${activeGraphTab === "insights" ? styles.graphTabButtonActive : ""}`}
-                onClick={() => setActiveGraphTab("insights")}
-              >
-                Insights
-              </button>
-            </div>
-
-            {activeGraphTab === "graph" ? (
-              <div className={styles.graphCanvasContainer} style={{ width: "100%", height: "100%", flex: 1, minHeight: 0 }}>
-                {graphData ? (
-                  <NvlGraphViewer
-                    nodes={graphData.nodes}
-                    edges={graphData.edges}
-                    graphType="overview"
-                    repoId={activeRepoId}
-                    blastRadiusFiles={blastRadiusFiles}
-                    searchQuery={searchQuery}
-                    onNodeSelect={handleNodeSelect}
-                  />
-                ) : (
-                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--color-text-tertiary)", fontSize: "0.8125rem" }}>
-                    Loading graph visualization...
+                    {/* Suggested Prompt Cards */}
+                    <div className={styles.chatPromptGrid}>
+                      <button className={styles.chatPromptCard} onClick={() => setChatInput("What is the project structure?")}>
+                        What is the project structure?
+                      </button>
+                      <button className={styles.chatPromptCard} onClick={() => setChatInput("How does the main entry point work?")}>
+                        How does the main entry point work?
+                      </button>
+                      <button className={styles.chatPromptCard} onClick={() => setChatInput("What are the key abstractions?")}>
+                        What are the key abstractions?
+                      </button>
+                      <button className={styles.chatPromptCard} onClick={() => setChatInput("Show me the testing patterns")}>
+                        Show me the testing patterns
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
-            ) : activeGraphTab === "chat" ? (
-              /* Chat Workspace Q&A Section inside tab */
-              <div className={styles.panelBody} style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", padding: 0 }}>
-                {/* Conversation list */}
-                <div className={styles.chatFeed}>
-                  {messages.length === 0 && (
-                    <div style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-                      <h3 style={{ fontFamily: "var(--font-display)", color: "var(--color-white)", fontSize: "1.1rem", marginBottom: 6 }}>
-                        Ask about this codebase
-                      </h3>
-                      <p style={{ fontSize: "0.8125rem", color: "var(--color-text-secondary)", maxWidth: 300, lineHeight: 1.5 }}>
-                        GitMesh parses files, imports, and methods into Neo4j. Try asking:
-                      </p>
-                      <div className={styles.chatSuggestions} style={{ justifyContent: "center", maxWidth: 400, marginTop: 12 }}>
-                        <button className={styles.chatSuggestionItem} onClick={() => setChatInput("Explain how files import each other in this repo.")}>
-                          Explain file imports
-                        </button>
-                        <button className={styles.chatSuggestionItem} onClick={() => setChatInput("List the primary functions and methods defined.")}>
-                          Show functions map
-                        </button>
-                        <button className={styles.chatSuggestionItem} onClick={() => setChatInput("Which files have class structures?")}>
-                          Find classes
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
-                  {messages.map((msg, idx) => {
-                    let mainContent = msg.content || "";
-                    let thinkContent = "";
-                    if (mainContent.includes("<think>")) {
-                      const parts = mainContent.split("</think>");
-                      thinkContent = parts[0].replace("<think>", "").trim();
-                      mainContent = parts.length > 1 ? parts.slice(1).join("</think>").trim() : "";
-                    }
+                {messages.map((msg, idx) => {
+                  let mainContent = msg.content || "";
+                  let thinkContent = "";
+                  if (mainContent.includes("<think>")) {
+                    const parts = mainContent.split("</think>");
+                    thinkContent = parts[0].replace("<think>", "").trim();
+                    mainContent = parts.length > 1 ? parts.slice(1).join("</think>").trim() : "";
+                  }
 
-                    const isThinking = chatLoading && idx === messages.length - 1 && (!msg.content || (msg.content.includes("<think>") && !msg.content.includes("</think>")));
-                    const hasThoughtProcess = thinkContent.length > 0 || (msg.thinking && msg.thinking.length > 0);
+                  const isThinking = chatLoading && idx === messages.length - 1 && (!msg.content || (msg.content.includes("<think>") && !msg.content.includes("</think>")));
+                  const hasThoughtProcess = thinkContent.length > 0 || (msg.thinking && msg.thinking.length > 0);
 
-                    return (
+                  return (
                     <div
                       key={msg.message_id}
                       className={msg.role === "user" ? styles.chatBubbleUser : styles.chatBubbleAssistant}
@@ -1398,386 +1354,228 @@ function DashboardContent() {
                       ) : (
                         <>
                           {hasThoughtProcess && (
-                            <button 
-                              className={styles.thinkingToggle}
-                              onClick={() => {
-                                setActiveThinkingMsgId(msg.message_id);
-                                setIsThinkingPanelOpen(true);
-                              }}
-                            >
-                              {isThinking ? (
-                                <span className={styles.thinkingShimmer}>Thinking...</span>
-                              ) : (
-                                <span>✓ Thought Process</span>
-                              )}
-                            </button>
+                            <div style={{ marginBottom: 12 }}>
+                              <button
+                                onClick={() => {
+                                  setActiveThinkingMsgId(activeThinkingMsgId === msg.message_id ? null : msg.message_id);
+                                  setIsThinkingPanelOpen(true);
+                                }}
+                                className={styles.thinkingToggle}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6 }}>
+                                  <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                                {activeThinkingMsgId === msg.message_id ? "Hide thought process" : "View thought process"}
+                              </button>
+                            </div>
                           )}
-                          
-                          {mainContent ? (
-                            <ChatMarkdown content={mainContent} />
-                          ) : (
-                            chatLoading && !isThinking && (
-                              <div className={styles.typingDots} style={{ padding: "12px 0" }}>
-                                <div className={styles.typingDot} />
-                                <div className={styles.typingDot} />
-                                <div className={styles.typingDot} />
-                              </div>
-                            )
-                          )}
-                          
-                          {/* Feedback Buttons */}
-                          {mainContent && (!chatLoading || idx !== messages.length - 1) && (
-                             <div className={styles.feedbackBar}>
-                                 <button className={styles.feedbackBtn} onClick={() => handleFeedback(msg.message_id, "copy")} title="Copy">
-                                   {copiedMsgIds.has(msg.message_id) ? (
-                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                   ) : (
-                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                   )}
-                                 </button>
 
-                                 <button className={`${styles.feedbackBtn} ${feedbackState[msg.message_id] === 'thumbs_up' ? styles.feedbackBtnActive : ''}`} onClick={() => handleFeedback(msg.message_id, "thumbs_up")} title="Helpful">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill={feedbackState[msg.message_id] === 'thumbs_up' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
-                                 </button>
-                                 <button className={`${styles.feedbackBtn} ${feedbackState[msg.message_id] === 'thumbs_down' ? styles.feedbackBtnActive : ''}`} onClick={() => handleFeedback(msg.message_id, "thumbs_down")} title="Not Helpful">
-                                   <svg width="14" height="14" viewBox="0 0 24 24" fill={feedbackState[msg.message_id] === 'thumbs_down' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg>
-                                 </button>
-                                 {idx === messages.length - 1 && !chatLoading && (
-                                   <button className={styles.feedbackBtn} onClick={() => handleFeedback(msg.message_id, "regenerate")} title="Regenerate">
-                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
-                                   </button>
-                                 )}
-                                 <div className={styles.moreOptionsContainer}>
-                                   <button className={styles.moreOptionsBtn} title="View Sources">
-                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="1"></circle>
-                                        <circle cx="19" cy="12" r="1"></circle>
-                                        <circle cx="5" cy="12" r="1"></circle>
-                                      </svg>
-                                   </button>
-                                   <div className={styles.moreOptionsDropdown}>
-                                      <div className={styles.moreOptionsTitle}>Sources Used</div>
-                                      {msg.sources && msg.sources.length > 0 ? (
-                                         msg.sources.map((src: any, i: number) => (
-                                            <button key={i} className={styles.sourceChip} onClick={() => openSourceFile(src.file_path)} title={src.file_path}>
-                                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-                                              {src.file_path.split('/').pop()}
-                                            </button>
-                                         ))
-                                      ) : (
-                                         <div style={{ padding: '8px 12px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
-                                            No sources used
-                                         </div>
-                                      )}
-                                   </div>
-                                 </div>
-                             </div>
+                          {isThinking && (
+                            <div className={styles.thinkingStep}>
+                              <span className={styles.loadingSpinner} style={{ width: 12, height: 12, display: "inline-block", marginRight: 8, verticalAlign: "middle" }} />
+                              <span>Thinking...</span>
+                            </div>
                           )}
-                          
 
+                          <ChatMarkdown content={mainContent} />
                         </>
                       )}
                     </div>
-                  )})}
-                  
-                  <div ref={chatEndRef} />
-                </div>
-                
-                {/* Right Sliding Panel for Thinking Process */}
-                <div className={`${styles.thinkingPanelOverlay} ${isThinkingPanelOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
-                   <div className={styles.thinkingPanelHeader}>
-                      <div className={styles.thinkingPanelTitle}>
-                        Thought Process
-                      </div>
-                      <button 
-                        className={styles.thinkingPanelCloseBtn}
-                        onClick={() => setIsThinkingPanelOpen(false)}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
-                   </div>
-                   <div className={styles.thinkingPanelContent}>
-                      {(() => {
-                         const activeMsg = messages.find(m => m.message_id === activeThinkingMsgId);
-                         if (!activeMsg) return null;
-                         
-                         let thinkText = "";
-                         if (activeMsg.content && activeMsg.content.includes("<think>")) {
-                             const parts = activeMsg.content.split("</think>");
-                             thinkText = parts[0].replace("<think>", "").trim();
-                         }
-                         
-                         let steps: { title: string; detail?: string }[] = [];
-                         const baseThinking = activeMsg.thinking || [];
-                         
-                         baseThinking.forEach(t => {
-                             steps.push({ title: t });
-                         });
-
-                         if (thinkText) {
-                             const paragraphs = thinkText.split(/\n\s*\n/).map(l => l.trim()).filter(l => l.length > 0);
-                             // attach paragraphs as details to the steps
-                             paragraphs.forEach((p, idx) => {
-                                 let text = p;
-                                 if (p.startsWith('- ') || p.startsWith('* ')) {
-                                     text = p.substring(2).trim();
-                                 }
-                                 
-                                 if (idx < steps.length) {
-                                     steps[idx].detail = text;
-                                 } else if (steps.length > 0) {
-                                     if (steps[steps.length - 1].detail) {
-                                         steps[steps.length - 1].detail += `\n\n${text}`;
-                                     } else {
-                                         steps[steps.length - 1].detail = text;
-                                     }
-                                 } else {
-                                     steps.push({ title: "[Analyze]", detail: text });
-                                 }
-                             });
-                         }
-                         
-                         return (
-                             <div className={styles.stepperContainer}>
-                                {steps.map((step, i) => (
-                                   <div key={i} className={styles.stepperItem}>
-                                      <div className={styles.stepperLine} />
-                                      <div className={styles.stepperCircle} />
-                                      <div className={styles.stepperText}>
-                                        <div style={{ fontWeight: 600 }}>{step.title}</div>
-                                        {step.detail && <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div>}
-                                      </div>
-                                   </div>
-                                ))}
-                             </div>
-                         )
-                      })()}
-                   </div>
-                </div>
-
-                {/* Right Sliding Panel for File Viewer */}
-                <div className={`${styles.thinkingPanelOverlay} ${isFileViewerOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
-                   <div className={styles.thinkingPanelHeader}>
-                      <div className={styles.thinkingPanelTitle} style={{ wordBreak: 'break-all', fontSize: '0.9rem' }}>
-                        {activeFileName}
-                      </div>
-                      <button 
-                        className={styles.thinkingPanelCloseBtn}
-                        onClick={() => setIsFileViewerOpen(false)}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                      </button>
-                   </div>
-                   <div className={styles.thinkingPanelContent}>
-                      {fileViewerLoading ? (
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', color: 'var(--color-text-secondary)', padding: '20px' }}>
-                             <div className={styles.typingDot} style={{ animationDelay: '0s' }} />
-                             <div className={styles.typingDot} style={{ animationDelay: '0.2s' }} />
-                             <div className={styles.typingDot} style={{ animationDelay: '0.4s' }} />
-                             <span style={{ marginLeft: '8px' }}>Loading file...</span>
-                          </div>
-                      ) : (
-                          <ChatMarkdown content={`\`\`\`${activeFileName.split('.').pop() || 'text'}\n${activeFileContent || ''}\n\`\`\``} />
-                      )}
-                   </div>
-                </div>
-
-                {/* Inline Citations Snippet modal overlay */}
-                {selectedCitation && (
-                  <div className={styles.modalOverlay} onClick={() => setSelectedCitation(null)}>
-                    <div className={styles.modal} style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                        <div>
-                          <h4 style={{ color: "var(--color-white)", fontSize: "0.875rem", fontFamily: "var(--font-mono)" }}>
-                            {selectedCitation.file_path}
-                          </h4>
-                          {selectedCitation.start_line && (
-                            <span style={{ fontSize: "0.6875rem", color: "var(--color-text-secondary)" }}>
-                              Lines {selectedCitation.start_line} to {selectedCitation.end_line}
-                            </span>
-                          )}
-                        </div>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedCitation(null)}>Close</button>
-                      </div>
-                      {selectedCitation.snippet ? (
-                        <pre style={{ background: "rgba(0,0,0,0.3)", padding: 16, border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-md)", overflowX: "auto", fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "#f5f5f5" }}>
-                          <code>{selectedCitation.snippet}</code>
-                        </pre>
-                      ) : (
-                        <p style={{ fontSize: "0.75rem", color: "var(--color-text-tertiary)" }}>No snippet extracted for this citation node.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Input Form */}
-                <div className={styles.chatInputWrapper}>
-                  <div className={styles.chatInputBox}>
-                    <textarea
-                      className={styles.chatInputArea}
-                      placeholder="Query codebase structures or methods..."
-                      rows={1}
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendChat();
-                        }
-                      }}
-                      disabled={chatLoading}
-                    />
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={handleSendChat}
-                      disabled={chatLoading || !chatInput.trim()}
-                      style={{ width: 32, height: 32, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                  );
+                })}
+                <div ref={chatEndRef} />
               </div>
-            ) : activeGraphTab === "diagrams" ? (
-              /* Visual Model Diagrams (Mermaid.js) */
-              <div className={styles.panelBody} style={{ padding: 16 }}>
-                <div className={styles.diagramTabContainer} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      className={`${styles.diagramTabButton} ${activeDiagramSubTab === "arch" ? styles.diagramTabButtonActive : ""}`}
-                      onClick={() => setActiveDiagramSubTab("arch")}
-                    >
-                      Architecture
-                    </button>
-                    <button
-                      className={`${styles.diagramTabButton} ${activeDiagramSubTab === "flow" ? styles.diagramTabButtonActive : ""}`}
-                      onClick={() => setActiveDiagramSubTab("flow")}
-                    >
-                      User Flow
-                    </button>
-                    <button
-                      className={`${styles.diagramTabButton} ${activeDiagramSubTab === "data" ? styles.diagramTabButtonActive : ""}`}
-                      onClick={() => setActiveDiagramSubTab("data")}
-                    >
-                      Data Flow
-                    </button>
-                  </div>
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={async () => {
-                      if (!activeRepoId) return;
-                      const currentTab = activeDiagramSubTab;
-                      setDiagramsLoading(prev => ({ ...prev, [currentTab]: true }));
-                      try {
-                        let diagramType = "architecture";
-                        if (currentTab === "flow") diagramType = "userFlow";
-                        if (currentTab === "data") diagramType = "dataFlow";
-                        const data = await getRepoDiagrams(activeRepoId, true, diagramType);
-                        setDiagrams(data);
-                      } catch (err) {
-                        console.error("Error regenerating diagrams:", err);
-                      } finally {
-                        setDiagramsLoading(prev => ({ ...prev, [currentTab]: false }));
+
+              {/* Sticky bottom input */}
+              <div className={styles.chatInputBarFull}>
+                <div className={styles.chatRepoPill}>
+                  🔗 {activeRepo?.github_url.split("/").pop()}
+                </div>
+                <div className={styles.chatInputBoxFull}>
+                  <textarea
+                    className={styles.chatInputArea}
+                    placeholder="Ask about this codebase..."
+                    rows={1}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendChat();
                       }
                     }}
-                    disabled={diagramsLoading[activeDiagramSubTab] || false}
-                    style={{ fontSize: "0.6875rem", height: 26, padding: "0 8px" }}
+                    disabled={chatLoading}
+                    style={{ background: "transparent", border: "none", outline: "none", resize: "none", flex: 1, padding: "4px 8px", fontSize: "0.8125rem", color: "var(--color-text)", maxHeight: "120px" }}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleSendChat}
+                    disabled={chatLoading || !chatInput.trim()}
+                    style={{ width: 32, height: 32, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
                   >
-                    {diagramsLoading[activeDiagramSubTab] ? "Generating..." : "Regenerate"}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
                   </button>
                 </div>
-
-                {diagramsLoading[activeDiagramSubTab] && !diagrams ? (
-                  <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-                    <div className={styles.loadingSpinner} />
-                  </div>
-                ) : diagrams ? (
-                  <div style={{ border: "none", background: "transparent", minHeight: "auto", display: "block", width: "100%" }}>
-                    {activeDiagramSubTab === "arch" && <MermaidDiagram chart={diagrams.architecture} />}
-                    {activeDiagramSubTab === "flow" && <MermaidDiagram chart={diagrams.userFlow} />}
-                    {activeDiagramSubTab === "data" && <MermaidDiagram chart={diagrams.dataFlow} />}
-                  </div>
-                ) : (
-                  <div style={{ color: "var(--color-text-tertiary)", fontSize: "0.8125rem", textAlign: "center" }}>
-                    No visual models found for this repository.
-                  </div>
-                )}
               </div>
-            ) : (
-              /* Repository Insights */
-              <div className={styles.panelBody}>
-                {summaryData ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                    
-                    <div>
-                      <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Summary Metrics</div>
-                      <div className={styles.statsGrid} style={{ gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 0 }}>
-                        <div className={styles.statCard} style={{ padding: 12, gap: 4 }}>
-                          <span style={{ fontSize: "1.25rem", fontWeight: 600 }}>{summaryData.total_classes || 0}</span>
-                          <span style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)" }}>Total Classes</span>
-                        </div>
-                        <div className={styles.statCard} style={{ padding: 12, gap: 4 }}>
-                          <span style={{ fontSize: "1.25rem", fontWeight: 600 }}>{summaryData.total_functions || 0}</span>
-                          <span style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)" }}>Functions</span>
-                        </div>
+            </div>
+          )}
+
+          {activeGraphTab === "graph" && (
+            <div className={styles.graphFullSpace}>
+              {graphData ? (
+                <NvlGraphViewer
+                  nodes={graphData.nodes}
+                  edges={graphData.edges}
+                  graphType="overview"
+                  repoId={activeRepoId}
+                  blastRadiusFiles={blastRadiusFiles}
+                  searchQuery={searchQuery}
+                  onNodeSelect={handleNodeSelect}
+                />
+              ) : (
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--color-text-tertiary)", fontSize: "0.8125rem" }}>
+                  Loading graph visualization...
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeGraphTab === "diagrams" && (
+            <div className={styles.diagramFullSpace}>
+              <div className={styles.diagramTabContainer} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    className={`${styles.diagramTabButton} ${activeDiagramSubTab === "arch" ? styles.diagramTabButtonActive : ""}`}
+                    onClick={() => setActiveDiagramSubTab("arch")}
+                  >
+                    Architecture
+                  </button>
+                  <button
+                    className={`${styles.diagramTabButton} ${activeDiagramSubTab === "flow" ? styles.diagramTabButtonActive : ""}`}
+                    onClick={() => setActiveDiagramSubTab("flow")}
+                  >
+                    User Flow
+                  </button>
+                  <button
+                    className={`${styles.diagramTabButton} ${activeDiagramSubTab === "data" ? styles.diagramTabButtonActive : ""}`}
+                    onClick={() => setActiveDiagramSubTab("data")}
+                  >
+                    Data Flow
+                  </button>
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={async () => {
+                    if (!activeRepoId) return;
+                    const currentTab = activeDiagramSubTab;
+                    setDiagramsLoading(prev => ({ ...prev, [currentTab]: true }));
+                    try {
+                      let diagramType = "architecture";
+                      if (currentTab === "flow") diagramType = "userFlow";
+                      if (currentTab === "data") diagramType = "dataFlow";
+                      const data = await getRepoDiagrams(activeRepoId, true, diagramType);
+                      setDiagrams(data);
+                    } catch (err) {
+                      console.error("Error regenerating diagrams:", err);
+                    } finally {
+                      setDiagramsLoading(prev => ({ ...prev, [currentTab]: false }));
+                    }
+                  }}
+                  disabled={diagramsLoading[activeDiagramSubTab] || false}
+                  style={{ fontSize: "0.6875rem", height: 26, padding: "0 8px" }}
+                >
+                  {diagramsLoading[activeDiagramSubTab] ? "Generating..." : "Regenerate"}
+                </button>
+              </div>
+
+              {diagramsLoading[activeDiagramSubTab] && !diagrams ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+                  <div className={styles.loadingSpinner} />
+                </div>
+              ) : diagrams ? (
+                <div style={{ border: "none", background: "transparent", minHeight: "auto", display: "block", width: "100%" }}>
+                  {activeDiagramSubTab === "arch" && <MermaidDiagram chart={diagrams.architecture} />}
+                  {activeDiagramSubTab === "flow" && <MermaidDiagram chart={diagrams.userFlow} />}
+                  {activeDiagramSubTab === "data" && <MermaidDiagram chart={diagrams.dataFlow} />}
+                </div>
+              ) : (
+                <div style={{ color: "var(--color-text-tertiary)", fontSize: "0.8125rem", textAlign: "center" }}>
+                  No visual models found for this repository.
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeGraphTab === "insights" && (
+            <div className={styles.insightsFullSpace}>
+              {summaryData ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                  
+                  <div>
+                    <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Summary Metrics</div>
+                    <div className={styles.statsGrid} style={{ gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 0 }}>
+                      <div className={styles.statCard} style={{ padding: 12, gap: 4 }}>
+                        <span style={{ fontSize: "1.25rem", fontWeight: 600 }}>{summaryData.total_classes || 0}</span>
+                        <span style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)" }}>Total Classes</span>
+                      </div>
+                      <div className={styles.statCard} style={{ padding: 12, gap: 4 }}>
+                        <span style={{ fontSize: "1.25rem", fontWeight: 600 }}>{summaryData.total_functions || 0}</span>
+                        <span style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)" }}>Functions</span>
                       </div>
                     </div>
+                  </div>
 
-                    <div>
-                      <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Languages Breakdown</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        {summaryData.languages?.map((lang: any, idx: number) => {
-                          const name = lang.language || "unknown";
-                          const count = lang.count;
-                          const total = summaryData.languages.reduce((acc: number, curr: any) => acc + curr.count, 0) || 1;
-                          const percent = ((count / total) * 100).toFixed(1);
-                          
-                          const colors = ["#b01e0a", "#8f1908", "#6e1306", "#4d0d04"];
-                          const barColor = colors[idx % colors.length];
+                  <div>
+                    <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Languages Breakdown</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {summaryData.languages?.map((lang: any, idx: number) => {
+                        const name = lang.language || "unknown";
+                        const count = lang.count;
+                        const total = summaryData.languages.reduce((acc: number, curr: any) => acc + curr.count, 0) || 1;
+                        const percent = ((count / total) * 100).toFixed(1);
+                        
+                        const colors = ["#c8ccd4", "#a0a8b8", "#7a8292", "#5b6370"];
+                        const barColor = colors[idx % colors.length];
 
-                          return (
-                            <div key={name} style={{ fontSize: "0.75rem" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-text)" }}>{name}</span>
-                                <span style={{ color: "var(--color-text-secondary)" }}>{percent}% ({count} files)</span>
-                              </div>
-                              <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 3, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: `${percent}%`, background: barColor }} />
-                              </div>
+                        return (
+                          <div key={name} style={{ fontSize: "0.75rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                              <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-text)" }}>{name}</span>
+                              <span style={{ color: "var(--color-text-secondary)" }}>{percent}% ({count} files)</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Source Map Sample</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 150, overflowY: "auto" }}>
-                        {summaryData.languages?.[0]?.sample_files?.map((file: string) => (
-                          <div key={file} style={{ fontSize: "0.6875rem", fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "4px 8px", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-sm)" }}>
-                            📄 {file}
+                            <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 3, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${percent}%`, background: barColor }} />
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
+                  </div>
 
+                  <div>
+                    <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Source Map Sample</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 150, overflowY: "auto" }}>
+                      {summaryData.languages?.[0]?.sample_files?.map((file: string) => (
+                        <div key={file} style={{ fontSize: "0.6875rem", fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "4px 8px", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-sm)" }}>
+                          📄 {file}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ color: "var(--color-text-tertiary)", fontSize: "0.8125rem", textAlign: "center" }}>
-                    Loading summary insights...
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </aside>
+
+                </div>
+              ) : (
+                <div style={{ color: "var(--color-text-tertiary)", fontSize: "0.8125rem", textAlign: "center" }}>
+                  Loading summary insights...
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
       {renderCustomConfirm()}
     </div>
   );

@@ -30,7 +30,7 @@
 
 .tabActive {
   color: var(--color-white);
-  border-bottom-color: #b01e0a;
+  border-bottom-color: #c8ccd4;
 }
 
 /* ── Repo Header ───────────────────────────────────────────────────── */
@@ -222,8 +222,8 @@
 
 .chatMessageUser {
   align-self: flex-end;
-  background: rgba(176, 30, 10, 0.12);
-  border: 0.5px solid rgba(176, 30, 10, 0.2);
+  background: rgba(200, 204, 212, 0.12);
+  border: 0.5px solid rgba(200, 204, 212, 0.2);
 }
 
 .chatMessageAssistant {
@@ -299,7 +299,7 @@
 }
 
 .chatInput:focus {
-  border-color: rgba(176, 30, 10, 0.4);
+  border-color: rgba(200, 204, 212, 0.4);
 }
 
 .chatSendBtn {
@@ -308,15 +308,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #b01e0a;
-  color: #ffffff;
+  background: #c8ccd4;
+  color: #0a0a0a;
   border-radius: 50%;
   transition: background var(--transition-fast);
   flex-shrink: 0;
 }
 
 .chatSendBtn:hover {
-  background: #cb220b;
+  background: #dde1e8;
 }
 
 .chatSendBtn:disabled {
@@ -358,7 +358,7 @@
 }
 
 .blastFileIcon {
-  color: #b01e0a;
+  color: #c8ccd4;
   flex-shrink: 0;
 }
 
@@ -369,10 +369,10 @@
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #b01e0a;
+  color: #c8ccd4;
   padding: 8px 16px;
-  background: rgba(176, 30, 10, 0.06);
-  border: 0.5px solid rgba(176, 30, 10, 0.2);
+  background: rgba(200, 204, 212, 0.06);
+  border: 0.5px solid rgba(200, 204, 212, 0.2);
   border-radius: var(--radius-md);
   margin-bottom: 16px;
 }
@@ -528,7 +528,7 @@
 
 .stepperItem:last-child .stepperCircle {
   background-color: var(--color-primary);
-  box-shadow: 0 0 8px rgba(176, 30, 10, 0.5);
+  box-shadow: 0 0 8px rgba(200, 204, 212, 0.5);
 }
 
 .stepperLine {
@@ -594,7 +594,7 @@
   background: rgba(255, 255, 255, 0.02);
   padding: 12px;
   border-radius: var(--radius-sm);
-  border-left: 2px solid #b01e0a;
+  border-left: 2px solid #c8ccd4;
   animation: fadeIn 0.3s ease-out;
 }
 
