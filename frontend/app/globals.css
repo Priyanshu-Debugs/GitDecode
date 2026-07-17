@@ -12,45 +12,53 @@
 /* ── Color Tokens ─────────────────────────────────────────────────── */
 :root {
   /* Backgrounds */
-  --color-bg: #000000;
-  --color-surface: #050505;
-  --color-surface-elevated: #0a0a0a;
+  --color-bg: #0e0d0b;
+  --color-surface: #161410;
+  --color-surface-elevated: #211f19;
 
   /* Borders */
-  --color-border: #141414;
-  --color-border-hover: #222222;
-  --color-border-active: #c8ccd4;
+  --color-border: #211f19;
+  --color-border-hover: #3a352b;
+  --color-border-active: #83c167;
 
   /* Primary */
-  --color-primary: #c8ccd4;
-  --color-primary-hover: #dde1e8;
-  --color-primary-subtle: rgba(200, 204, 212, 0.08);
-  --color-primary-text: #0a0a0a;
+  --color-primary: #83c167;
+  --color-primary-hover: #9ad67e;
+  --color-primary-subtle: rgba(131, 193, 103, 0.08);
+  --color-primary-text: #0e0d0b;
 
   /* Secondary (Amber/Gold) */
-  --color-secondary-accent: #f59e0b;
-  --color-secondary-accent-hover: #fbbf24;
-  --color-secondary-accent-subtle: rgba(245, 158, 11, 0.08);
+  --color-secondary-accent: #d8a657;
+  --color-secondary-accent-hover: #e08a4a;
+  --color-secondary-accent-subtle: rgba(216, 166, 87, 0.08);
 
   /* Tertiary (Violet) */
   --color-tertiary-accent: #a78bfa;
   --color-tertiary-accent-subtle: rgba(167, 139, 250, 0.08);
 
   /* Text */
-  --color-text: #f5f5f5;
-  --color-text-secondary: #888888;
-  --color-text-tertiary: #555555;
-  --color-white: #ffffff;
+  --color-text: #d8d3c5;
+  --color-text-secondary: #8b8270;
+  --color-text-tertiary: #3a352b;
+  --color-white: #f3eee1;
+
+  /* Editor / Terminal Accent Colors (ponytail-inspired) */
+  --color-green: #83c167;
+  --color-amber: #d8a657;
+  --color-orange: #e08a4a;
+  --color-dim: #8b8270;
+  --color-line: #211f19;
+  --color-panel: #161410;
 
   /* Semantic */
-  --color-danger: #ef4444;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
+  --color-danger: #e0705f;
+  --color-success: #83c167;
+  --color-warning: #d8a657;
 
   /* Typography */
   --font-sans: var(--font-gt-walsheim), var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-display: var(--font-gt-walsheim), var(--font-outfit), system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), "Fira Code", monospace;
+  --font-mono: var(--font-jetbrains), var(--font-geist-mono), "Fira Code", monospace;
 
   /* Spacing */
   --section-padding-y: 112px;
@@ -168,7 +176,7 @@
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
-    font-family: var(--font-sans);
+    font-family: var(--font-mono);
     line-height: 1.5;
     min-height: 100vh;
     display: flex;
@@ -239,6 +247,23 @@
 @keyframes chevron-bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(4px); }
+}
+
+/* Terminal cursor blink */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Staggered entry animation (ponytail-style) */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* ── Utility Classes ─────────────────────────────────────────────── */
@@ -496,37 +521,37 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0e0d0b;
+  --foreground: #d8d3c5;
+  --card: #161410;
+  --card-foreground: #d8d3c5;
+  --popover: #161410;
+  --popover-foreground: #d8d3c5;
+  --primary: #83c167;
+  --primary-foreground: #0e0d0b;
+  --secondary: #211f19;
+  --secondary-foreground: #d8d3c5;
+  --muted: #211f19;
+  --muted-foreground: #8b8270;
+  --accent: #211f19;
+  --accent-foreground: #d8d3c5;
+  --destructive: #e0705f;
+  --border: #211f19;
+  --input: #211f19;
+  --ring: #83c167;
+  --chart-1: #83c167;
+  --chart-2: #d8a657;
+  --chart-3: #e08a4a;
+  --chart-4: #e0705f;
+  --chart-5: #8b8270;
+  --sidebar: #161410;
+  --sidebar-foreground: #d8d3c5;
+  --sidebar-primary: #83c167;
+  --sidebar-primary-foreground: #0e0d0b;
+  --sidebar-accent: #211f19;
+  --sidebar-accent-foreground: #d8d3c5;
+  --sidebar-border: #211f19;
+  --sidebar-ring: #83c167;
 }
 
 @layer base {
@@ -537,6 +562,6 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    font-family: var(--font-mono);
   }
 }

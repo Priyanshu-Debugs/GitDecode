@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Outfit } from "next/font/google";
+import { Geist, Geist_Mono, Outfit, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 
 const outfit = Outfit({
   variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
 });
 
@@ -64,7 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} ${gtWalsheim.variable} dark`}
+      className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} ${gtWalsheim.variable} ${jetbrainsMono.variable} dark`}
     >
       <body>
         <div className="noise-overlay" />

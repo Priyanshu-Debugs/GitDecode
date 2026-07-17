@@ -1,41 +1,107 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import Button from "./Button";
+import { usePathname } from "next/navigation";
 import styles from "./Navbar.module.css";
 
-const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
+const snarkyQuotes = [
+  "Light mode? Haven't seen daylight since 2014.",
+  "No. My retinas are calibrated to #0e0d0b.",
+  "It's in the backlog, right under 'rewrite it in Rust'.",
+  "Light mode is a YAGNI. Next ticket.",
+  "You're a developer. You'll adapt.",
+  "Works on my machine. My machine is dark.",
+  "I closed that issue as 'wontfix'.",
+  "The sun is a single point of failure.",
+  "That's a v2 problem. There is no v2.",
+  "Add it yourself. PRs welcome. (They're not.)",
+  "Dark mode is the default. The default is correct.",
+  "Bold of you to assume I take feature requests.",
+  "Ask again at 3am. That's when I ship.",
+  "Light mode is one more thing to maintain. Pass."
 ];
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [lineIndex, setLineIndex] = useState(0);
+  const pathname = usePathname();
+
+  const handleLightModeClick = () => {
+    const text = snarkyQuotes[lineIndex % snarkyQuotes.length];
+    setLineIndex((prev) => prev + 1);
+
+    window.dispatchEvent(
+      new CustomEvent("show-snarky-quote", {
+        detail: { text },
+      })
+    );
+  };
 
   return (
-    <nav className={`${styles.navbar} ${mobileOpen ? styles.isOpen : ""}`}>
+    <nav className={styles.chrome}>
       <div className={styles.inner}>
-        {/* Logo */}
-        <Link href="/" className={styles.logo}>
-          <Image src="/logo.svg" alt="GitMesh Logo" width={112} height={28} priority className={styles.logoImage} />
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className={styles.desktopNav}>
-          {navLinks.map((link) => (
-            <a key={link.href} href={link.href} className={styles.navLink}>
-              {link.label}
-            </a>
-          ))}
+        {/* Traffic light dots + file breadcrumb */}
+        <div className={styles.left}>
+          <span className={styles.dots}>
+            <i className={styles.dotRed} />
+            <i className={styles.dotAmber} />
+            <i className={styles.dotGreen} />
+          </span>
+          <div className={styles.logoTabWrap}>
+            <Link href="/" className={styles.logoLink}>
+              <Image
+                src="/logo.svg"
+                alt="GitMesh"
+                width={80}
+                height={20}
+                priority
+                className={styles.logoImage}
+              />
+            </Link>
+            <span className={styles.separator}>—</span>
+            <div className={styles.tabs}>
+              <Link
+                href="/"
+                className={`${styles.tab} ${
+                  pathname === "/" ? styles.activeTab : ""
+                }`}
+              >
+                Home.md
+              </Link>
+              <Link
+                href="/developers"
+                className={`${styles.tab} ${
+                  pathname === "/developers" ? styles.activeTab : ""
+                }`}
+              >
+                developers.py
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Desktop Actions */}
         <div className={styles.desktopActions}>
-          <Button href="/auth/sign-in" variant="primary" size="sm">
-            Sign In
-          </Button>
+          <div className={styles.lightbtnWrapper}>
+            <button
+              className={styles.lightbtn}
+              onClick={handleLightModeClick}
+              type="button"
+            >
+              ☀ light mode
+            </button>
+          </div>
+          {/* <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.navLink}
+          >
+            GitHub
+          </a> */}
+          <Link href="/auth/sign-in" className={styles.bracketBtn}>
+            sign in
+          </Link>
         </div>
 
         {/* Mobile Hamburger */}
@@ -54,24 +120,31 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className={styles.mobileMenu}>
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
+          <div className={styles.lightbtnWrapperMobile}>
+            <button
               className={styles.mobileLink}
-              onClick={() => setMobileOpen(false)}
+              onClick={handleLightModeClick}
+              type="button"
+              style={{ textAlign: "left", width: "100%" }}
             >
-              {link.label}
-            </a>
-          ))}
-          <div className={styles.mobileDivider} />
+              ☀ light mode
+            </button>
+          </div>
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.mobileLink}
+            onClick={() => setMobileOpen(false)}
+          >
+            GitHub
+          </a>
           <Link
             href="/auth/sign-in"
-            className={styles.mobileGetStarted}
+            className={styles.mobileLink}
             onClick={() => setMobileOpen(false)}
-            style={{ textAlign: "center" }}
           >
-            Sign In
+            [ sign in ]
           </Link>
         </div>
       )}

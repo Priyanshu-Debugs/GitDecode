@@ -1,291 +1,342 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import SectionHeading from "./components/SectionHeading";
-import AnimatedSection from "./components/AnimatedSection";
-import ChatDemo from "./components/ChatDemo";
-import Button from "./components/Button";
-import InteractiveDiagram from "./components/InteractiveDiagram";
-import LanguageMarquee from "./components/LanguageMarquee";
-import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
 import styles from "./page.module.css";
 
-/* ── Icons (inline SVGs) ─────────────────────────────────────────── */
-function DiagramIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c8ccd4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="8" y="14" width="7" height="7" rx="1" />
-      <line x1="6.5" y1="10" x2="6.5" y2="14" />
-      <line x1="6.5" y1="14" x2="8" y2="14" />
-      <line x1="17.5" y1="10" x2="17.5" y2="14" />
-      <line x1="17.5" y1="14" x2="15" y2="14" />
-    </svg>
-  );
-}
-
-function ChatIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c8ccd4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      <line x1="8" y1="8" x2="16" y2="8" />
-      <line x1="8" y1="12" x2="13" y2="12" />
-    </svg>
-  );
-}
-
-function BlastIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c8ccd4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
-  );
-}
-
-function ChevronDown() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-function ArrowRight() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
-    </svg>
-  );
-}
-
-/* ── Features Data ───────────────────────────────────────────────── */
-const features = [
-  {
-    icon: <DiagramIcon />,
-    title: "Architecture Diagrams",
-    description:
-      "Auto-generated Mermaid diagrams showing file dependencies, class hierarchies, and call graphs.",
-  },
-  {
-    icon: <ChatIcon />,
-    title: "Chat with Your Code",
-    description:
-      "Ask questions in natural language. Get answers grounded in your actual codebase with file references.",
-  },
-  {
-    icon: <BlastIcon />,
-    title: "Blast Radius Analysis",
-    description:
-      "Understand the downstream impact of any change before touching a single line of code.",
-  },
+/* ── Language Data ───────────────────────────────────────────────── */
+const languages = [
+  { name: "TypeScript", color: "#3178c6" },
+  { name: "JavaScript", color: "#f7df1e" },
+  { name: "Python", color: "#3776ab" },
+  { name: "Go", color: "#00add8" },
+  { name: "Rust", color: "#dea584" },
+  { name: "C++", color: "#00599c" },
+  { name: "Java", color: "#e24725" },
+  { name: "Ruby", color: "#cc342d" },
+  { name: "PHP", color: "#777bb4" },
+  { name: "Swift", color: "#f05138" },
 ];
-
-/* ── Steps Data ──────────────────────────────────────────────────── */
-const steps = [
-  {
-    number: "01",
-    title: "Connect",
-    description: "Paste your GitHub repo URL. We clone and parse it automatically.",
-  },
-  {
-    number: "02",
-    title: "Analyze",
-    description:
-      "AI builds a knowledge graph — files, functions, dependencies, and vector embeddings.",
-  },
-  {
-    number: "03",
-    title: "Explore",
-    description: "Chat, visualize, and understand. Ask anything about your codebase.",
-  },
-];
-
-
 
 /* ═══════════════════════════════════════════════════════════════════
-   Landing Page
+   Landing Page — Minimal, Developer-Centric
    ═══════════════════════════════════════════════════════════════════ */
 
 export default function Home() {
+  const [repoUrl, setRepoUrl] = useState("");
+  const router = useRouter();
+
+  // State for the developer speech bubble
+  const [showBubble, setShowBubble] = useState(false);
+  const [bubbleText, setBubbleText] = useState("");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleQuoteEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text: string }>;
+      if (customEvent.detail && customEvent.detail.text) {
+        setBubbleText(customEvent.detail.text);
+        setShowBubble(true);
+
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+
+        timerRef.current = setTimeout(() => {
+          setShowBubble(false);
+        }, 4200);
+      }
+    };
+
+    window.addEventListener("show-snarky-quote", handleQuoteEvent);
+
+    return () => {
+      window.removeEventListener("show-snarky-quote", handleQuoteEvent);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  const handleRepoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Gate: redirect to sign-in first
+    router.push("/auth/sign-in");
+  };
+
   return (
     <>
       <Navbar />
       <main>
         {/* ── HERO ──────────────────────────────────────────────── */}
-        <section className={styles.hero}>
-          <div className={styles.glowBlob1} />
-          <div className={styles.glowBlob2} />
-          <div className={styles.heroInner}>
+        <header className={styles.hero}>
+          <div className={styles.wrap}>
+            <div className={styles.logoWrapper}>
+              <Image
+                src="/developer-logo-refined.svg"
+                alt="GitMesh Developer Logo"
+                width={140}
+                height={140}
+                priority
+                className={styles.heroLogo}
+              />
+              {showBubble && (
+                <div className={styles.bubble} role="status" aria-live="polite">
+                  {bubbleText}
+                </div>
+              )}
+            </div>
 
             <h1 className={styles.heroTitle}>
-              Understand{" "}
-              <span className={styles.heroAccent}>
-                any
-                <svg className={styles.heroUnderline} viewBox="0 0 100 10" fill="none" preserveAspectRatio="none">
-                  <path d="M 2 8 Q 50 2 98 8" stroke="#c8ccd4" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </span>{" "}
-              codebase
-              <br />
-              in minutes, not months
+              GitMesh<span className={styles.cursor}>▋</span>
             </h1>
 
-            <p className={styles.heroSubtitle}>
-              GitMesh parses your repository, builds a knowledge graph, and lets
-              you explore it through interactive diagrams and natural
-              conversation.
+            <p className={styles.heroTagline}>
+              Understand any <span className={styles.underlined}>codebase</span> in minutes, not <span className={styles.cut}>months</span>.
             </p>
 
-            <div className={styles.heroCtas}>
-              <Button href="/auth/sign-in" variant="primary" size="lg">
-                Sign In
-                <ArrowRight />
-              </Button>
-              <Button href="#demo-diagram" variant="ghost" size="lg">
-                See how it works
-                <ChevronDown />
-              </Button>
-            </div>
-
-            <p className={styles.heroTrust}>
-              No credit card required · Free for public repos · GitHub
-              integration
+            <p className={styles.heroSub}>
+              <span className={styles.comment}>// </span>
+              AI-powered codebase intelligence. Parse your repository, build a
+              knowledge graph, and explore it through interactive diagrams and
+              natural conversation.
             </p>
 
-            {/* Scroll hint */}
-            <div className={styles.scrollHint}>
-              <ChevronDown />
-            </div>
-          </div>
-        </section>
-
-        <LanguageMarquee />
-
-        {/* ── FEATURES ──────────────────────────────────────────── */}
-        <section id="features" className={`section-padding ${styles.section}`}>
-          <div className="container mx-auto px-4">
-            <AnimatedSection>
-              <SectionHeading
-                tag="Features"
-                title="Everything you need to understand code"
-                subtitle="Three powerful tools working together to give you complete codebase clarity."
-                centered
-              />
-            </AnimatedSection>
-
-            <div className="mt-14">
-              <AgentBentoGrid />
-            </div>
-          </div>
-        </section>
-
-        {/* ── DIAGRAM DEMO ──────────────────────────────────────── */}
-        <section id="demo-diagram" className={`section-padding ${styles.section}`}>
-          <div className="container mx-auto px-4">
-            <div className={styles.demoVerticalStack}>
-              <AnimatedSection className={styles.demoTextCentered}>
-                <SectionHeading
-                  tag="Visualization"
-                  title="See your codebase structure at a glance"
-                  subtitle="A decentralized ecosystem where background AI Agents ingest your code, map AST relationships, run verification tests, and self-heal defects autonomously."
-                  centered={true}
+            {/* Repo URL input */}
+            <form onSubmit={handleRepoSubmit} className={styles.repoForm}>
+              <div className={styles.repoInputWrap}>
+                <span className={styles.repoPrompt}>$</span>
+                <input
+                  type="text"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  placeholder="https://github.com/owner/repo"
+                  className={styles.repoInput}
+                  aria-label="GitHub repository URL"
                 />
-                <ul className={styles.demoBulletsCentered}>
-                  <li>
-                    <span className={styles.bulletDot} />
-                    AST Code Ingestion
-                  </li>
-                  <li>
-                    <span className={styles.bulletDot} />
-                    Autonomous Agent Orchestration
-                  </li>
-                  <li>
-                    <span className={styles.bulletDot} />
-                    Natural Language Code Chat
-                  </li>
-                </ul>
-              </AnimatedSection>
+                <button type="submit" className={styles.repoSubmit}>
+                  →
+                </button>
+              </div>
+            </form>
 
-              <div className={styles.demoVisualFull}>
-                <InteractiveDiagram />
+            {/* CTA buttons */}
+            <div className={styles.cta}>
+              <a href="/auth/sign-in" className={styles.btnFill}>
+                sign in
+              </a>
+              <a href="#how-it-works" className={styles.btnOutline}>
+                how it works
+              </a>
+            </div>
+
+            <p className={styles.trust}>
+              No credit card · Free for public repos · GitHub auth
+            </p>
+          </div>
+        </header>
+
+        {/* ── HOW IT WORKS ─────────────────────────────────────── */}
+        <section id="how-it-works" className={styles.section}>
+          <div className={styles.wrap}>
+            <p className={styles.label}>how_it_works</p>
+            <h2 className={styles.sectionTitle}>
+              From repo URL to full understanding.
+            </h2>
+
+            <ol className={styles.ladder}>
+              <li>
+                <span>
+                  <b>Connect</b>{" "}
+                  <span className={styles.dim}>
+                    Paste your GitHub repo URL. We clone and parse it
+                    automatically.
+                  </span>
+                </span>
+              </li>
+              <li>
+                <span>
+                  <b>Analyze</b>{" "}
+                  <span className={styles.dim}>
+                    AI builds a knowledge graph — files, functions, dependencies,
+                    and vector embeddings.
+                  </span>
+                </span>
+              </li>
+              <li>
+                <span>
+                  <b>Explore</b>{" "}
+                  <span className={styles.dim}>
+                    Chat, visualize, and understand. Ask anything about your
+                    codebase.
+                  </span>
+                </span>
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        {/* ── CAPABILITIES ─────────────────────────────────────── */}
+        <section className={styles.section}>
+          <div className={styles.wrap}>
+            <p className={styles.label}>capabilities</p>
+            <h2 className={styles.sectionTitle}>
+              Three tools. Complete clarity.
+            </h2>
+
+            <div className={styles.panelGrid}>
+              {/* Architecture Diagrams panel */}
+              <div className={styles.panel}>
+                <div className={styles.panelBar}>
+                  <span>diagrams.mmd</span>
+                  <span className={styles.panelMeta}>auto-generated</span>
+                </div>
+                <pre className={styles.panelCode}>
+                  <span className={styles.ln}>
+                    <span className={styles.codeDim}>graph TD</span>
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeGreen}>App</span> --{">"}{" "}
+                    <span className={styles.codeGreen}>Router</span>
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeGreen}>Router</span> --{">"}{" "}
+                    <span className={styles.codeGreen}>AuthProvider</span>
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeGreen}>Router</span> --{">"}{" "}
+                    <span className={styles.codeGreen}>Dashboard</span>
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeGreen}>Dashboard</span> --{">"}{" "}
+                    <span className={styles.codeGreen}>ChatView</span>
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeGreen}>Dashboard</span> --{">"}{" "}
+                    <span className={styles.codeGreen}>GraphView</span>
+                  </span>
+                </pre>
+              </div>
+
+              {/* Chat with Code panel */}
+              <div className={styles.panel}>
+                <div className={styles.panelBar}>
+                  <span>chat.log</span>
+                  <span className={styles.panelMeta}>RAG-powered</span>
+                </div>
+                <pre className={styles.panelCode}>
+                  <span className={styles.ln}>
+                    <span className={styles.codeAmber}>you:</span> Where is auth
+                    handled?
+                  </span>
+                  <span className={styles.ln}>&nbsp;</span>
+                  <span className={styles.ln}>
+                    <span className={styles.codeGreen}>gitmesh:</span>{" "}
+                    Authentication is in
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeAmber}>
+                      src/lib/auth/provider.ts
+                    </span>
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeDim}>
+                      Lines 12-48: OAuth2 flow with
+                    </span>
+                  </span>
+                  <span className={styles.ln}>
+                    {"  "}
+                    <span className={styles.codeDim}>
+                      GitHub as the identity provider.
+                    </span>
+                  </span>
+                </pre>
+              </div>
+
+              {/* Blast Radius panel */}
+              <div className={`${styles.panel} ${styles.panelWide}`}>
+                <div className={styles.panelBar}>
+                  <span>blast-radius.diff</span>
+                  <span className={styles.panelMeta}>impact analysis</span>
+                </div>
+                <pre className={styles.panelCode}>
+                  <span className={styles.ln}>
+                    <span className={styles.codeDim}>
+                      Changing <span className={styles.codeAmber}>auth/provider.ts</span> affects:
+                    </span>
+                  </span>
+                  <span className={styles.ln}>&nbsp;</span>
+                  <span className={`${styles.ln} ${styles.lnDel}`}>
+                    - 4 direct dependents
+                  </span>
+                  <span className={`${styles.ln} ${styles.lnDel}`}>
+                    - 12 transitive consumers
+                  </span>
+                  <span className={`${styles.ln} ${styles.lnAdd}`}>
+                    + 0 test files covering this path
+                  </span>
+                  <span className={`${styles.ln} ${styles.lnAdd}`}>
+                    + risk: HIGH — add tests before refactoring
+                  </span>
+                </pre>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* ── CHAT DEMO ─────────────────────────────────────────── */}
-        <section id="demo-chat" className={`section-padding ${styles.section}`}>
-          <div className="container mx-auto px-4">
-            <div className={styles.demoSplit}>
-              <AnimatedSection className={styles.demoText}>
-                <SectionHeading
-                  tag="Conversation"
-                  title="Ask anything about the code"
-                  subtitle="Natural language Q&A powered by RAG vector search. Every answer cites its source — file path, line numbers, and code snippets."
-                />
-              </AnimatedSection>
-
-              <AnimatedSection delay={200} className={styles.demoVisual}>
-                <ChatDemo />
-              </AnimatedSection>
-            </div>
-          </div>
-        </section>
-
-        {/* ── HOW IT WORKS ──────────────────────────────────────── */}
-        <section id="how-it-works" className={`section-padding ${styles.section}`}>
-          <div className="container mx-auto px-4">
-            <AnimatedSection>
-              <SectionHeading
-                tag="How It Works"
-                title="From repo URL to full understanding"
-                subtitle="Three simple steps. Under sixty seconds."
-                centered
-              />
-            </AnimatedSection>
-
-            <div className={styles.stepsPipeline}>
-              {steps.map((step, i) => (
-                <AnimatedSection key={step.number} delay={i * 150} className={styles.pipelineCol}>
-                  {/* Giant elegant step number */}
-                  <div className="font-display text-5xl font-extralight select-none bg-gradient-to-b from-[#c8ccd4] to-[#6b7280] bg-clip-text text-transparent leading-none">
-                    {step.number}
-                  </div>
-                  {/* Fine divider line */}
-                  <div className="h-[0.5px] w-full bg-gradient-to-r from-zinc-800 to-transparent my-1" />
-                  
-                  <div className="flex flex-col gap-3">
-                    <h3 className="font-display text-[1.125rem] font-semibold text-white leading-tight">
-                      {step.title}
-                    </h3>
-                    <p className="font-sans text-[14px] leading-relaxed text-zinc-400 font-light">
-                      {step.description}
-                    </p>
-                  </div>
-                </AnimatedSection>
+            {/* Language strip */}
+            <div className={styles.langStrip}>
+              <span className={styles.langLabel}>supported:</span>
+              {languages.map((lang) => (
+                <span key={lang.name} className={styles.langBadge}>
+                  <span
+                    className={styles.langDot}
+                    style={{ backgroundColor: lang.color }}
+                  />
+                  {lang.name}
+                </span>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── CTA BANNER ────────────────────────────────────────── */}
-        <section className={styles.ctaSection}>
-          <div className="container mx-auto px-4">
-            <AnimatedSection className={styles.ctaInner}>
-              <h2 className={styles.ctaTitle}>
-                Ready to understand your codebase?
-              </h2>
-              <p className={styles.ctaSubtitle}>
-                Start exploring in under 60 seconds.
-              </p>
-              <Button href="/auth/sign-in" variant="primary" size="lg">
-                Sign In
-                <ArrowRight />
-              </Button>
-            </AnimatedSection>
+        {/* ── STATS ────────────────────────────────────────────── */}
+        <section className={styles.section}>
+          <div className={styles.wrap}>
+            <p className={styles.label}>benchmarks</p>
+            <h2 className={styles.sectionTitle}>
+              Fast. Private. Comprehensive.
+            </h2>
+
+            <div className={styles.stats}>
+              <div>
+                <div className={`${styles.statNum} ${styles.statGreen}`}>
+                  {"<"}60s
+                </div>
+                <div className={styles.statLabel}>analysis time</div>
+              </div>
+              <div>
+                <div className={styles.statNum}>10+</div>
+                <div className={styles.statLabel}>languages</div>
+              </div>
+              <div>
+                <div className={styles.statNum}>100%</div>
+                <div className={styles.statLabel}>your code stays private</div>
+              </div>
+            </div>
+
+            <p className={styles.footnote}>
+              // median across repos up to 50k LOC. Code is processed in-memory;
+              we never store your repository content.
+            </p>
           </div>
         </section>
       </main>

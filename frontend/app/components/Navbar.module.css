@@ -1,77 +1,224 @@
-.navbar {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+/* ═══════════════════════════════════════════════════════════════════
+   Navbar — Editor Chrome Bar
+   ═══════════════════════════════════════════════════════════════════ */
+
+.chrome {
+  position: sticky;
+  top: 0;
   z-index: 999;
-  width: max-content;
-  max-width: 90vw;
-  background: rgba(4, 4, 4, 0.65);
-  backdrop-filter: blur(20px) saturate(190%);
-  -webkit-backdrop-filter: blur(20px) saturate(190%);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-full);
-  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.6);
-  transition: all 450ms cubic-bezier(0.32, 0.72, 0, 1);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
-  padding: 6px 12px 6px 24px;
-  height: 52px;
+  gap: 16px;
+  padding: 0 20px;
+  height: 48px;
+  width: 100%;
 }
 
-/* ── Logo ─────────────────────────────────────────────────── */
-.logo {
+/* ── Left: Dots + File Breadcrumb ────────────────────────── */
+.left {
   display: flex;
   align-items: center;
-  text-decoration: none;
-  opacity: 0.9;
-  transition: opacity var(--transition-fast);
+  gap: 14px;
 }
 
-.logo:hover {
-  opacity: 1;
+.dots {
+  display: flex;
+  gap: 7px;
 }
 
-.logoImage {
-  height: 60px;
-  width: auto;
+.dots i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
   display: block;
 }
 
-/* ── Desktop Nav ──────────────────────────────────────────── */
-.desktopNav {
+.dotRed {
+  background: #e0705f;
+}
+
+.dotAmber {
+  background: #d8a657;
+}
+
+.dotGreen {
+  background: #83c167;
+}
+
+.logoTabWrap {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 10px;
 }
 
-.navLink {
-  font-family: var(--font-display);
+.logoLink {
+  display: flex;
+  align-items: center;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tab {
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  color: var(--color-dim);
   text-decoration: none;
-  transition: color var(--transition-fast);
-  padding: 4px 8px;
+  padding: 13px 4px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-bottom-color 0.12s;
+  display: inline-block;
 }
 
-.navLink:hover {
+.tab:hover {
   color: var(--color-text);
 }
 
-/* ── Desktop Actions ──────────────────────────────────────── */
+.activeTab {
+  color: var(--color-text);
+  border-bottom-color: var(--color-green);
+}
+
+.logoImage {
+  height: auto;
+  width: 80px;
+  display: block;
+  opacity: 0.85;
+}
+
+.separator {
+  color: var(--color-dim);
+  font-weight: 300;
+  user-select: none;
+}
+
+/* ── Desktop Actions ─────────────────────────────────────── */
 .desktopActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 }
 
-/* ── Hamburger ────────────────────────────────────────────── */
+.navLink {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color 0.15s;
+  padding: 4px 0;
+}
+
+.navLink:hover {
+  color: var(--color-text-secondary);
+}
+
+.bracketBtn {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: 1px solid var(--color-green);
+  color: var(--color-green);
+  background: transparent;
+  border-radius: 0px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, transform 0.12s;
+  text-decoration: none;
+}
+
+.bracketBtn::before {
+  content: "[ ";
+}
+
+.bracketBtn::after {
+  content: " ]";
+}
+
+.bracketBtn:hover {
+  background: var(--color-green);
+  color: #0e0d0b;
+  transform: translateY(-1px);
+}
+
+.lightbtnWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.lightbtn {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-dim);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.lightbtn:hover {
+  color: var(--color-amber);
+  border-color: var(--color-amber);
+}
+
+.bubble {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  width: max-content;
+  max-width: 240px;
+  background: #f3eee1;
+  color: #1a1813;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 10px 13px;
+  border-radius: 0px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-family: var(--font-mono);
+}
+
+.bubble::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 22px;
+  border: 7px solid transparent;
+  border-bottom-color: #f3eee1;
+  border-top: 0;
+}
+
+.lightbtnWrapperMobile {
+  position: relative;
+  width: 100%;
+}
+
+.bubbleMobile {
+  display: block;
+  width: 100%;
+  background: #f3eee1;
+  color: #1a1813;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 10px 13px;
+  border-radius: 0px;
+  margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: var(--font-mono);
+}
+
+/* ── Hamburger ───────────────────────────────────────────── */
 .hamburger {
   display: none;
   flex-direction: column;
@@ -80,24 +227,23 @@
   width: 32px;
   height: 32px;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.03);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-full);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0px;
   align-items: center;
-  transition: all var(--transition-fast);
+  transition: border-color 0.15s;
 }
 
 .hamburger:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--color-border-hover);
 }
 
 .hamburgerLine {
   display: block;
   width: 14px;
   height: 1.2px;
-  background: var(--color-text);
-  transition: all var(--transition-base);
+  background: var(--color-text-secondary);
+  transition: all 0.3s ease;
 }
 
 .open1 {
@@ -113,76 +259,36 @@
   transform: translateY(-2.6px) rotate(-45deg);
 }
 
-/* ── Mobile Menu ──────────────────────────────────────────── */
+/* ── Mobile Menu ─────────────────────────────────────────── */
 .mobileMenu {
   display: none;
   flex-direction: column;
-  padding: 12px 24px 24px;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.08);
-  animation: fadeIn 300ms ease-out;
-  gap: 8px;
+  padding: 8px 20px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 4px;
 }
 
 .mobileLink {
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   text-decoration: none;
   padding: 10px 0;
-  transition: color var(--transition-fast);
-  border-bottom: 0.5px solid rgba(255, 255, 255, 0.03);
+  transition: color 0.15s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .mobileLink:hover {
-  color: var(--color-text);
+  color: var(--color-green);
 }
 
-.mobileDivider {
-  height: 0.5px;
-  background: rgba(255, 255, 255, 0.08);
-  margin: 8px 0 4px;
-}
-
-.mobileGetStarted {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #0a0a0a;
-  text-decoration: none;
-  text-align: center;
-  padding: 10px;
-  background: #c8ccd4;
-  border-radius: var(--radius-full);
-  margin-top: 4px;
-  border: 0.5px solid rgba(255, 255, 255, 0.15);
-  transition: background var(--transition-fast);
-}
-
-.mobileGetStarted:hover {
-  background: #dde1e8;
-}
-
-/* ── Responsive ───────────────────────────────────────────── */
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .navbar {
-    width: calc(100% - 32px);
-    left: 16px;
-    transform: none;
-    border-radius: 20px;
-  }
-  
-  .navbar.isOpen {
-    border-radius: 24px;
-    background: rgba(4, 4, 4, 0.9);
-  }
-
   .inner {
-    padding: 0 10px 0 16px;
-    height: 48px;
+    padding: 0 16px;
+    height: 44px;
   }
 
-  .desktopNav,
   .desktopActions {
     display: none;
   }
@@ -193,6 +299,11 @@
 
   .mobileMenu {
     display: flex;
+  }
+
+  .separator,
+  .breadcrumb {
+    display: none;
   }
 }
 

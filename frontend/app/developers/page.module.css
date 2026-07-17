@@ -1,0 +1,271 @@
+.wrap {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.header {
+  margin-bottom: 40px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: clamp(2.2rem, 8vw, 3.8rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--color-dim);
+  line-height: 1.6;
+}
+
+.comment {
+  color: var(--color-dim);
+}
+
+.section {
+  margin-bottom: 56px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 48px;
+}
+
+.sectionTitle {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 32px;
+}
+
+/* ── IDE Mockup Frame ───────────────────────────────────────── */
+.editorFrame {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.editorBar {
+  background: #100e0b;
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-dim);
+}
+
+.editorMeta {
+  opacity: 0.8;
+}
+
+.editorCode {
+  padding: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.ln {
+  display: block;
+}
+
+.codeDim {
+  color: var(--color-orange);
+}
+
+.codeClass {
+  color: var(--color-amber);
+}
+
+.codeFunc {
+  color: #88c0d0;
+}
+
+.codeVal {
+  color: var(--color-green);
+}
+
+/* ── Developer Cards Layout (3 Columns Horizontal Row) ───────── */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-radius: 0px;
+  padding: 16px 10px;
+  transition: transform 0.15s;
+  height: 100%;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.avatarWrapper {
+  position: relative;
+  flex-shrink: 0;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.avatarImage {
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+/* Downward speech bubble pointing to photo */
+.bubble {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f3eee1;
+  color: #1a1813;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 0px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  width: max-content;
+  max-width: 220px;
+  font-family: var(--font-mono);
+  text-align: left;
+  white-space: normal; /* allow text to wrap */
+}
+
+.bubble::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #f3eee1;
+  border-bottom: 0;
+}
+
+.details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.headerRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.devName {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-green);
+  border: 1px solid var(--color-green);
+  padding: 2px 8px;
+  border-radius: 0px;
+}
+
+.description {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.actionRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid #211f19;
+  padding-top: 12px;
+  margin-top: auto; /* Push to bottom of the card */
+}
+
+.githubId {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-dim);
+}
+
+.githubBtn {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  border: 1px solid var(--color-amber);
+  color: var(--color-amber);
+  background: transparent;
+  border-radius: 0px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  text-decoration: none;
+  width: max-content;
+}
+
+.githubBtn::before {
+  content: "[ ";
+}
+
+.githubBtn::after {
+  content: " ]";
+}
+
+.githubBtn:hover {
+  background: var(--color-amber);
+  color: #0e0d0b;
+}
+
+/* ── Responsive Styling ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .description {
+    min-height: auto;
+  }
+}

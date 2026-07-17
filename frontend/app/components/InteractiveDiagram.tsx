@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import styles from "./InteractiveDiagram.module.css";
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -129,6 +130,17 @@ export default function InteractiveDiagram() {
   const [typedChat, setTypedChat] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Check if mobile screen (less than 768px width)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const TOTAL_PHASES = 11;
 
   /* ── Scroll tracking ───────────────────────────────────────── */
@@ -214,18 +226,58 @@ export default function InteractiveDiagram() {
     "System synchronized — ready for next push",
   ];
 
+  let cardWidth = "80vw";
+  let cardRadius = 22;
+
+  if (isMobile) {
+    cardWidth = "100vw";
+    cardRadius = 0;
+  } else if (scrollProgress >= 0.35 && scrollProgress <= 0.70) {
+    if (scrollProgress < 0.45) {
+      const t = (scrollProgress - 0.35) / 0.10;
+      const e = t * (2 - t); // ease-out
+      cardWidth = `${80 + 20 * e}vw`;
+      cardRadius = Math.round(22 * (1 - e));
+    } else if (scrollProgress >= 0.45 && scrollProgress <= 0.60) {
+      cardWidth = "100vw";
+      cardRadius = 0;
+    } else {
+      const t = (scrollProgress - 0.60) / 0.10;
+      const e = t * t; // ease-in
+      cardWidth = `${100 - 20 * e}vw`;
+      cardRadius = Math.round(22 * e);
+    }
+  }
+
   return (
-    <div ref={containerRef} className={styles.wrapper}>
-      <div
+    <div 
+      ref={containerRef} 
+      className={styles.wrapper} 
+      style={{ 
+        width: cardWidth, 
+        maxWidth: "100vw", 
+        margin: "0 auto", 
+        transition: "width 500ms cubic-bezier(0.16, 1, 0.3, 1)" 
+      }}
+    >
+      <motion.div
         className={styles.bezelOuter}
         style={{
           opacity,
           transform: `rotateX(${rx}deg) translateY(${ty}px) scale(${sc})`,
           transformStyle: "preserve-3d",
           pointerEvents: opacity < 0.1 ? "none" : "auto",
+          borderRadius: `${cardRadius}px`,
+          transition: "transform 350ms cubic-bezier(0.16, 1, 0.3, 1), opacity 350ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 500ms cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
-        <div className={styles.bezelInner}>
+        <div 
+          className={styles.bezelInner}
+          style={{
+            borderRadius: `${Math.max(0, cardRadius - 4)}px`,
+            transition: "border-radius 500ms cubic-bezier(0.16, 1, 0.3, 1)"
+          }}
+        >
 
           {/* ── Browser Chrome ─────────────────────────────── */}
           <div className={styles.chrome}>
@@ -591,7 +643,7 @@ export default function InteractiveDiagram() {
           </div>
 
         </div>
-      </div>
+      </motion.div>
       <div className={styles.reflection} />
     </div>
   );
