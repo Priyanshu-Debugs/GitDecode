@@ -3162,19 +3162,38 @@
 
 .chatInputBoxFull {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: 8px;
   width: 100%;
   max-width: 1380px;
   background: rgba(255, 255, 255, 0.03);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
-  padding: 12px 16px;
+  padding: 12px;
   transition: border-color var(--transition-fast);
 }
 
 .chatInputBoxFull:focus-within {
   border-color: rgba(200, 204, 212, 0.25);
+}
+
+.chatToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.chatToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatToolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ── Top Header Navigation Tabs and Profile Widgets ────────────────── */

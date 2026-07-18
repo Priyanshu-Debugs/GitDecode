@@ -31,6 +31,7 @@ import {
 import styles from "./repo.module.css";
 import dashStyles from "../../dashboard.module.css";
 import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
+import ChatInput from "@/app/components/ChatInput";
 
 /* ── Icons ─────────────────────────────────────────────────────────── */
 function BackIcon() {
@@ -65,48 +66,7 @@ function extractRepoName(url: string) {
 /* ═══════════════════════════════════════════════════════════════════
    Repo Detail Page
    ═══════════════════════════════════════════════════════════════════ */
-interface ChatInputProps {
-  onSend: (value: string) => void;
-  disabled: boolean;
-  initialValue?: string;
-}
 
-function ChatInput({ onSend, disabled, initialValue = "" }: ChatInputProps) {
-  const [value, setValue] = useState(initialValue);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
-  const handleSubmit = () => {
-    if (!value.trim() || disabled) return;
-    onSend(value.trim());
-    setValue("");
-  };
-
-  return (
-    <div className={styles.chatInputArea}>
-      <input
-        ref={inputRef}
-        className={styles.chatInput}
-        type="text"
-        placeholder="Ask about this codebase..."
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-        disabled={disabled}
-      />
-      <button
-        className={styles.chatSendBtn}
-        onClick={handleSubmit}
-        disabled={disabled || !value.trim()}
-      >
-        <SendIcon />
-      </button>
-    </div>
-  );
-}
 
 export default function RepoDetailPage() {
   const params = useParams();
@@ -665,11 +625,13 @@ export default function RepoDetailPage() {
               <div ref={chatEndRef} />
             </div>
 
-            <ChatInput
-              onSend={(query) => handleSendChat(query)}
-              disabled={chatLoading && messages[messages.length-1]?.role === "user"}
-              initialValue={chatInput}
-            />
+            <div style={{ width: "100%", maxWidth: "900px", margin: "0 auto", padding: "0 20px 24px 20px" }}>
+              <ChatInput
+                onSend={(query) => handleSendChat(query)}
+                disabled={chatLoading && messages[messages.length-1]?.role === "user"}
+                initialValue={chatInput}
+              />
+            </div>
           </div>
           
           {/* Right Sliding Panel for Thinking Process */}

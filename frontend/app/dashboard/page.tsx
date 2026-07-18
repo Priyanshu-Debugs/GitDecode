@@ -42,6 +42,7 @@ import ModelSelector from "@/app/components/ModelSelector";
 import { useLocalKeys } from "@/app/lib/useLocalKeys";
 import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
 import DashboardLoader from "@/app/components/DashboardLoader";
+import ChatInput from "@/app/components/ChatInput";
 
 /* ── Inline SVG Icons ────────────────────────────────────────────────── */
 function SearchIcon() {
@@ -235,58 +236,7 @@ const MOCK_REPOS = [
 /* ═════════════════════════════════════════════════════════════════════
    Dashboard Content Components (Nested under Suspense)
    ═════════════════════════════════════════════════════════════════════ */
-interface ChatInputProps {
-  onSend: (value: string) => void;
-  disabled: boolean;
-  initialValue?: string;
-}
 
-function ChatInput({ onSend, disabled, initialValue = "" }: ChatInputProps) {
-  const [value, setValue] = useState(initialValue);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
-  const handleSubmit = () => {
-    if (!value.trim() || disabled) return;
-    onSend(value.trim());
-    setValue("");
-  };
-
-  return (
-    <div className={styles.chatInputBoxFull}>
-      <textarea
-        ref={textareaRef}
-        className={styles.chatInputArea}
-        placeholder="Ask about this codebase..."
-        rows={1}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit();
-          }
-        }}
-        disabled={disabled}
-        style={{ background: "transparent", border: "none", outline: "none", resize: "none", flex: 1, padding: "4px 8px", fontSize: "0.8125rem", color: "var(--color-text)", maxHeight: "120px" }}
-      />
-      <button
-        className="btn btn-primary btn-sm"
-        onClick={handleSubmit}
-        disabled={disabled || !value.trim()}
-        style={{ width: 32, height: 32, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="22" y1="2" x2="11" y2="13" />
-          <polygon points="22 2 15 22 11 13 2 9 22 2" />
-        </svg>
-      </button>
-    </div>
-  );
-}
 
 function DashboardContent() {
   const { user, session } = useAuth(true);
@@ -1495,15 +1445,7 @@ function DashboardContent() {
               </div>
 
               {/* Sticky bottom input */}
-              <div className={styles.chatInputBarFull}>
-                <div className={styles.chatRepoPill}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                  </svg>
-                  {activeRepo?.github_url.split("/").pop()}
-                </div>
-                <ModelSelector />
+              <div style={{ width: "100%", maxWidth: "900px", margin: "0 auto", padding: "0 20px 24px 20px" }}>
                 <ChatInput
                   onSend={(query) => handleSendChat(query)}
                   disabled={chatLoading}
