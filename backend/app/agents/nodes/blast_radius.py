@@ -8,19 +8,20 @@ from ..state import AgentState
 from ..prompts import IMPACT_PROMPT
 from app.api.dependencies import get_pg
 
+from app.services.llm_factory import resolve_llm_from_state
+
 logger = logging.getLogger(__name__)
 
 class TargetExtraction(BaseModel):
     function_name: str = Field(description="Name of the target function to analyze.")
     file_path: str = Field(description="File path of the target function to analyze.")
 
-llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
-
 async def blast_radius_node(state: AgentState) -> Dict[str, Any]:
     """
     Agent that analyzes downstream impacts using in-memory JSON graph traversal.
     """
     pg_client = get_pg()
+    llm = resolve_llm_from_state(state)
     
     user_query = state.get("user_query", "")
     if not user_query and state.get("messages"):
@@ -29,12 +30,23 @@ async def blast_radius_node(state: AgentState) -> Dict[str, Any]:
             user_query = user_query.content
     
     # 1. Extract target function using structured output
-    extraction_llm = llm.with_structured_output(TargetExtraction)
-    extraction = None
     try:
+        extraction_llm = llm.with_structured_output(TargetExtraction)
         extraction = await extraction_llm.ainvoke(f"Extract the target function and file from this query: {user_query}")
     except Exception as e:
         logger.error("Failed function extraction for blast radius: %s", str(e))
+        # Fallback: Ask LLM for JSON directly and parse it
+        try:
+            fallback_prompt = f"Extract the target function and file from this query: {user_query}\n\nYou MUST return ONLY valid JSON matching this schema: {{\"function_name\": \"str\", \"file_path\": \"str\"}}. Do not include markdown code blocks or any other text."
+            fallback_res = await llm.ainvoke(fallback_prompt)
+            content = fallback_res.content
+            if isinstance(content, str):
+                content = content.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(content)
+                if "function_name" in parsed and "file_path" in parsed:
+                    extraction = TargetExtraction(function_name=parsed["function_name"], file_path=parsed["file_path"])
+        except Exception as e2:
+            logger.error("JSON fallback for blast radius failed: %s", str(e2))
         
     if not extraction:
         return {"messages": [AIMessage(content="Could not determine the target function and file path from the query.")]}
@@ -93,6 +105,13 @@ async def blast_radius_node(state: AgentState) -> Dict[str, Any]:
     }
     
     context = f"Impact Graph JSON:\n{json.dumps(impact_data, indent=2)}"
+    
+    # Truncate context if necessary to fit context window
+    context_window = state.get("llm_config", {}).get("context_window", 1_000_000)
+    max_chars = int(context_window * 3)
+    if len(context) > max_chars:
+        logger.warning(f"Blast radius context exceeds model limits ({len(context)} chars > {max_chars} chars). Truncating.")
+        context = context[:max_chars - 100] + "\n\n[CONTEXT TRUNCATED TO FIT MODEL LIMITS]"
     
     messages = [
         SystemMessage(content=IMPACT_PROMPT),

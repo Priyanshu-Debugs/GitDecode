@@ -35,15 +35,6 @@ function ChevronRightIcon() {
   );
 }
 
-function SignOutIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
 
 function PlusIcon() {
   return (
@@ -116,7 +107,7 @@ function MenuIcon() {
 
 /* ── Sidebar Layout Inner ───────────────────────────────────────────── */
 function SidebarContent({ children }: { children: React.ReactNode }) {
-  const { user, session, loading, signOut } = useAuth(true);
+  const { user, session, loading } = useAuth(true);
   const [collapsed, setCollapsed] = useState(false);
   
   const [repos, setRepos] = useState<RepoItem[]>(() => {
@@ -510,6 +501,15 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
           {/* Right Profile Widget */}
           <div className={styles.topbarRight}>
+            <button
+              onClick={() => router.push("/dashboard/settings")}
+              className={styles.topbarSignOutBtn}
+              title="Settings & API Keys"
+              style={{ marginRight: 4 }}
+            >
+              <SettingsIcon />
+            </button>
+
             <div 
               className={styles.topbarProfileWidget} 
               onClick={() => router.push("/dashboard/profile")}
@@ -526,14 +526,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 {githubName}
               </span>
             </div>
-            
-            <button
-              onClick={() => signOut()}
-              className={styles.topbarSignOutBtn}
-              title="Sign Out"
-            >
-              <SignOutIcon />
-            </button>
+
           </div>
         </div>
 

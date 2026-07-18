@@ -486,7 +486,8 @@ export async function getBlastRadius(
 export async function sendChatMessage(
   repoId: string,
   message: string,
-  sessionId?: string
+  sessionId?: string,
+  llmConfig?: { provider: string; model: string; api_key: string | null; context_window?: number }
 ): Promise<ChatMessage> {
   if (isDemoMode()) {
     const list = getMockRepos();
@@ -571,6 +572,7 @@ export async function sendChatMessage(
       repo_id: repoId,
       message,
       session_id: sessionId,
+      llm_config: llmConfig || null,
     }),
   });
 }
@@ -580,7 +582,8 @@ export async function streamChatMessage(
   repoId: string,
   message: string,
   sessionId: string | undefined,
-  onUpdate: (type: "thought" | "token" | "message_id" | "user_message_id" | "done" | "sources", content: any, extra?: any) => void
+  onUpdate: (type: "thought" | "token" | "message_id" | "user_message_id" | "done" | "sources", content: any, extra?: any) => void,
+  llmConfig?: { provider: string; model: string; api_key: string | null; context_window?: number }
 ): Promise<void> {
   if (isDemoMode()) {
     // Simulate streaming for Demo Mode
@@ -610,8 +613,10 @@ export async function streamChatMessage(
       repo_id: repoId,
       message,
       session_id: sessionId,
+      llm_config: llmConfig || null,
     }),
   });
+
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({ detail: res.statusText }));

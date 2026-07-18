@@ -13,6 +13,8 @@ from app.api.dependencies import get_pg
 from app.services.ast_router import ASTRouter
 from app.services.context_caching import ContextCacheManager
 
+from app.services.llm_factory import resolve_llm_from_state
+
 logger = logging.getLogger(__name__)
 
 async def code_qa_node(state: AgentState) -> Dict[str, Any]:
@@ -21,6 +23,8 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
     and Gemini Context Caching if available.
     """
     pg_client = get_pg()
+    llm = resolve_llm_from_state(state)
+    provider = (state.get("llm_config") or {}).get("provider", "google")
     
     user_query = state.get("user_query", "")
     if not user_query and state.get("messages"):
@@ -39,7 +43,7 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
     graph_data = graph["graph_data"]
 
     # 2. Extract target files and symbols
-    router = ASTRouter()
+    router = ASTRouter(llm=llm)
     all_files = [node["id"] for node in graph_data.get("nodes", []) if node.get("type") == "file"]
     
     logger.info("AST Router analyzing user query: '%s'", user_query)
@@ -63,12 +67,11 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
     # 5. Build dynamic context (contains full content for depth-1, outlines for depth-2)
     dynamic_context = router.build_hybrid_context(depth_1, depth_2, file_contents_map, graph_data)
 
-    # 6. Check/get Gemini Context Cache
-    cache_mgr = ContextCacheManager(pg_client)
-    cache_name = await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
-
-    # 7. Generate response using Gemini
-    llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
+    # 6. Check/get Gemini Context Cache (Only for Google provider)
+    cache_name = None
+    if provider == "google":
+        cache_mgr = ContextCacheManager(pg_client)
+        cache_name = await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
     
     if cache_name:
         logger.info("Cache hit! Querying model using cache name: %s", cache_name)
@@ -99,8 +102,22 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
         except Exception as e:
             logger.exception("Failed to query Gemini using Context Cache, falling back to full context payload: %s", str(e))
 
-    # Fallback/Default path (no cache or cache call failed)
+    # Fallback/Default path (non-Google provider, no cache or cache call failed)
     logger.info("Caching not used. Running standard full context query.")
+    
+    # NEW: Truncate context if necessary to fit context window
+    context_window = state.get("llm_config", {}).get("context_window", 1_000_000)
+    max_chars = int(context_window * 3) # Approx 1 token = 4 chars, reserving ~25% for safety
+    
+    if len(dynamic_context) > max_chars:
+        logger.warning(f"Context exceeds model limits ({len(dynamic_context)} chars > {max_chars} chars). Truncating.")
+        # Rebuild context without depth 2
+        dynamic_context = router.build_hybrid_context(depth_1, set(), file_contents_map, graph_data)
+        
+        # If still too big, truncate the string itself
+        if len(dynamic_context) > max_chars:
+            dynamic_context = dynamic_context[:max_chars - 100] + "\n\n[CONTEXT TRUNCATED TO FIT MODEL LIMITS]"
+            
     messages = [
         SystemMessage(content=CODE_QA_PROMPT),
         *state.get("messages", []),

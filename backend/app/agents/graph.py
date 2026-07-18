@@ -13,7 +13,7 @@ from .nodes.guardrail import guardrail_node
 from .nodes.repo_summary import repo_summary_node
 from .prompts import SUPERVISOR_PROMPT
 
-llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
+from app.services.llm_factory import resolve_llm_from_state
 
 class RouteEnum(str, enum.Enum):
     VISUALIZE = "VISUALIZE"
@@ -27,8 +27,9 @@ class RouteDecision(BaseModel):
 
 async def supervisor_node(state: AgentState) -> dict:
     """
-    Supervisor node that classifies intent using Gemini and routes the query.
+    Supervisor node that classifies intent using Gemini/dynamic LLM and routes the query.
     """
+    llm = resolve_llm_from_state(state)
     user_query = state.get("user_query", "")
     if not user_query and state.get("messages"):
         user_query = state["messages"][-1].content
@@ -39,14 +40,25 @@ async def supervisor_node(state: AgentState) -> dict:
     classification_prompt = f"User Query: {user_query}"
     
     # Bind the structured output Pydantic model for reliable routing
-    router_llm = llm.with_structured_output(RouteDecision)
-    
     try:
+        router_llm = llm.with_structured_output(RouteDecision)
         response = await router_llm.ainvoke([system_msg, classification_prompt])
         decision = response.decision.value
     except Exception:
-        # Fallback logic in case LLM routing fails
-        decision = "GUARDRAIL"
+        # Fallback: Ask LLM for JSON directly and parse it
+        try:
+            import json
+            fallback_prompt = "You MUST return ONLY valid JSON matching this schema: {\"decision\": \"VISUALIZE\" | \"QA\" | \"IMPACT\" | \"GUARDRAIL\" | \"REPO_SUMMARY\"}. Do not include markdown code blocks or any other text."
+            fallback_res = await llm.ainvoke([system_msg, SystemMessage(content=fallback_prompt), classification_prompt])
+            content = fallback_res.content
+            if isinstance(content, str):
+                content = content.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(content)
+                decision = parsed.get("decision", "GUARDRAIL")
+            else:
+                decision = "GUARDRAIL"
+        except Exception:
+            decision = "GUARDRAIL"
         
     return {"routing_decision": decision}
 

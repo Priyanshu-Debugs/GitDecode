@@ -11,3 +11,4 @@ class AgentState(TypedDict):
     repo_id: str
     user_id: str
     routing_decision: Optional[Literal["VISUALIZE", "QA", "IMPACT", "GUARDRAIL", "REPO_SUMMARY"]]
+    llm_config: Optional[dict]

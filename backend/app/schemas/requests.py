@@ -53,6 +53,8 @@ class RepoSyncRequest(BaseModel):
         return v
 
 
+from app.schemas.llm_config import UserLLMConfig
+
 class ChatMessageSend(BaseModel):
     """Request body for sending a chat message to the AI code assistant.
 
@@ -61,13 +63,15 @@ class ChatMessageSend(BaseModel):
         message: The user's message text (1–4000 characters).
         session_id: Optional chat session UUID. Auto-generated if not provided,
             which starts a new conversation thread.
+        llm_config: User LLM configuration for BYOK / model choice.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     repo_id: UUID
     message: str = Field(min_length=1, max_length=4000)
     session_id: UUID | None = Field(default_factory=uuid4)
+    llm_config: UserLLMConfig | None = None
 
     @field_validator("message", mode="before")
     @classmethod

@@ -6,14 +6,16 @@ from ..state import AgentState
 from ..prompts import VISUALIZER_PROMPT
 from app.api.dependencies import get_pg
 
+from app.services.llm_factory import resolve_llm_from_state
+
 logger = logging.getLogger(__name__)
-llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
 
 async def visualizer_node(state: AgentState) -> Dict[str, Any]:
     """
     Agent that reads JSON graph from Supabase and outputs Mermaid.js syntax for graph visualization.
     """
     pg_client = get_pg()
+    llm = resolve_llm_from_state(state)
     
     # 1. Fetch JSON dependency graph
     graph = await pg_client.get_repo_graph(state["repo_id"], state["user_id"])
@@ -34,6 +36,13 @@ async def visualizer_node(state: AgentState) -> Dict[str, Any]:
     for e in edges:
         if e.get("type") == "IMPORTS":
             context += f"- {e['source']} -> {e['target']}\n"
+    
+    # Truncate context if necessary to fit context window
+    context_window = state.get("llm_config", {}).get("context_window", 1_000_000)
+    max_chars = int(context_window * 3)
+    if len(context) > max_chars:
+        logger.warning(f"Visualizer context exceeds model limits ({len(context)} chars > {max_chars} chars). Truncating.")
+        context = context[:max_chars - 100] + "\n\n[CONTEXT TRUNCATED TO FIT MODEL LIMITS]"
     
     messages = [
         SystemMessage(content=VISUALIZER_PROMPT),

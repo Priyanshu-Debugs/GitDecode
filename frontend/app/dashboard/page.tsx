@@ -38,6 +38,8 @@ import {
 import styles from "./dashboard.module.css";
 import { motion } from "framer-motion";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
+import ModelSelector from "@/app/components/ModelSelector";
+import { useLocalKeys } from "@/app/lib/useLocalKeys";
 import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
 import DashboardLoader from "@/app/components/DashboardLoader";
 
@@ -318,6 +320,7 @@ function DashboardContent() {
   const [syncBranch, setSyncBranch] = useState("main");
   const [syncError, setSyncError] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
+  const { getActiveLLMConfig } = useLocalKeys();
 
   // Premium Alert / Confirmation dialog states
   const [customConfirm, setCustomConfirm] = useState<{
@@ -667,6 +670,7 @@ function DashboardContent() {
     setMessages((prev) => [...prev, tempMsg, tempAssistantMsg]);
 
     let realMessageId = tempAssistantId;
+    const llmConfig = getActiveLLMConfig();
 
     try {
       await streamChatMessage(activeRepoId, query, chatSessionId || undefined, (type, content, extra) => {
@@ -693,7 +697,7 @@ function DashboardContent() {
             setChatLoading(false);
             isSubmittingRef.current = false;
         }
-      });
+      }, llmConfig);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -1493,8 +1497,13 @@ function DashboardContent() {
               {/* Sticky bottom input */}
               <div className={styles.chatInputBarFull}>
                 <div className={styles.chatRepoPill}>
-                  🔗 {activeRepo?.github_url.split("/").pop()}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                  {activeRepo?.github_url.split("/").pop()}
                 </div>
+                <ModelSelector />
                 <ChatInput
                   onSend={(query) => handleSendChat(query)}
                   disabled={chatLoading}

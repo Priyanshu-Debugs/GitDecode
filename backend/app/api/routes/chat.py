@@ -89,6 +89,7 @@ async def send_message(
             "repo_id": str(request.repo_id),
             "user_id": user.id,
             "routing_decision": None,
+            "llm_config": request.llm_config.model_dump() if request.llm_config else None,
         })
 
         # Extract the assistant's response (last message)
@@ -177,6 +178,7 @@ async def stream_message(
                 "repo_id": str(request.repo_id),
                 "user_id": user.id,
                 "routing_decision": None,
+                "llm_config": request.llm_config.model_dump() if request.llm_config else None,
             }):
                 for node_name, node_state in event.items():
                     if node_name == "supervisor":

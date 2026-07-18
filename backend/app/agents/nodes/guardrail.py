@@ -5,6 +5,8 @@ from ..state import AgentState
 from ..prompts import GUARDRAIL_PROMPT
 import logging
 
+from app.services.llm_factory import resolve_llm_from_state
+
 logger = logging.getLogger(__name__)
 
 async def guardrail_node(state: AgentState) -> Dict[str, Any]:
@@ -12,7 +14,7 @@ async def guardrail_node(state: AgentState) -> Dict[str, Any]:
     Fast-response agent for greetings or out-of-scope queries.
     Bypasses RAG entirely and uses an LLM for a polite refusal.
     """
-    llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
+    llm = resolve_llm_from_state(state)
     
     messages = [
         SystemMessage(content=GUARDRAIL_PROMPT),

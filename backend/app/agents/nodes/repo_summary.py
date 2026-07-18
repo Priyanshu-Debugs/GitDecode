@@ -7,14 +7,16 @@ from ..state import AgentState
 from ..prompts import REPO_SUMMARY_PROMPT
 from app.api.dependencies import get_pg
 
+from app.services.llm_factory import resolve_llm_from_state
+
 logger = logging.getLogger(__name__)
-llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
 
 async def repo_summary_node(state: AgentState) -> Dict[str, Any]:
     """
     Agent that reads JSON graph stats from Supabase and summarizes the codebase structure.
     """
     pg_client = get_pg()
+    llm = resolve_llm_from_state(state)
     repo_id = state.get("repo_id")
     user_id = state.get("user_id")
     

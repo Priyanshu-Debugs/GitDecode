@@ -474,3 +474,33 @@ class SupabasePGClient:
         logger.info("Updated repo %s diagrams", repo_id)
         return row
 
+    # ══════════════════════════════════════════════════════════════════════
+    #  User Preferences
+    # ══════════════════════════════════════════════════════════════════════
+
+    async def get_user_preferences(self, user_id: str) -> dict[str, Any] | None:
+        """Get user's preferred LLM provider and model."""
+        response = (
+            self._client.table("user_preferences")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+
+    async def upsert_user_preferences(
+        self, user_id: str, provider: str, model: str
+    ) -> dict[str, Any]:
+        """Upsert user's preferred provider/model choice."""
+        response = (
+            self._client.table("user_preferences")
+            .upsert({
+                "user_id": user_id,
+                "preferred_provider": provider,
+                "preferred_model": model,
+                "updated_at": "now()",
+            }, on_conflict="user_id")
+            .execute()
+        )
+        return response.data[0] if response.data else {}
+

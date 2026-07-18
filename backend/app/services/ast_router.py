@@ -21,8 +21,11 @@ class ASTRouter:
     - Depth-2 (indirect dependencies/dependents): AST signatures only.
     """
 
-    def __init__(self, model_name: str = "gemini-3.1-flash-lite") -> None:
-        self.llm = ChatGoogleGenerativeAI(model=model_name)
+    def __init__(self, llm: Any = None) -> None:
+        if llm is None:
+            from app.services.llm_factory import get_default_llm
+            llm = get_default_llm()
+        self.llm = llm
 
     async def route_query(
         self,
@@ -44,8 +47,8 @@ class ASTRouter:
             "Respond strictly with a JSON object containing 'files' and 'symbols'."
         )
         
-        router_llm = self.llm.with_structured_output(TargetEntities)
         try:
+            router_llm = self.llm.with_structured_output(TargetEntities)
             res = await router_llm.ainvoke([
                 SystemMessage(content=system_prompt),
                 f"Query: {query}"
@@ -53,6 +56,21 @@ class ASTRouter:
             return {"files": res.files, "symbols": res.symbols}
         except Exception as e:
             logger.error("Failed to extract target entities using LLM structured output: %s", str(e))
+            # Fallback: Ask LLM for JSON directly and parse it
+            try:
+                import json
+                fallback_prompt = system_prompt + "\n\nYou MUST return ONLY valid JSON matching this schema: {\"files\": [\"path1\"], \"symbols\": [\"func1\"]}. Do not include markdown code blocks or any other text."
+                fallback_res = await self.llm.ainvoke([
+                    SystemMessage(content=fallback_prompt),
+                    f"Query: {query}"
+                ])
+                content = fallback_res.content
+                if isinstance(content, str):
+                    content = content.replace("```json", "").replace("```", "").strip()
+                    parsed = json.loads(content)
+                    return {"files": parsed.get("files", []), "symbols": parsed.get("symbols", [])}
+            except Exception as e2:
+                logger.error("JSON fallback failed: %s", str(e2))
             # Fallback: simple text parsing or substring matching
             matched_files = []
             for f in all_files_list:

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import HowItWorksSection from "./components/HowItWorksSection";
 import styles from "./page.module.css";
 
 /* ── Language Data ───────────────────────────────────────────────── */
@@ -140,44 +141,7 @@ export default function Home() {
         </header>
 
         {/* ── HOW IT WORKS ─────────────────────────────────────── */}
-        <section id="how-it-works" className={styles.section}>
-          <div className={styles.wrap}>
-            <p className={styles.label}>how_it_works</p>
-            <h2 className={styles.sectionTitle}>
-              From repo URL to full understanding.
-            </h2>
-
-            <ol className={styles.ladder}>
-              <li>
-                <span>
-                  <b>Connect</b>{" "}
-                  <span className={styles.dim}>
-                    Paste your GitHub repo URL. We clone and parse it
-                    automatically.
-                  </span>
-                </span>
-              </li>
-              <li>
-                <span>
-                  <b>Analyze</b>{" "}
-                  <span className={styles.dim}>
-                    AI builds a knowledge graph — files, functions, dependencies,
-                    and vector embeddings.
-                  </span>
-                </span>
-              </li>
-              <li>
-                <span>
-                  <b>Explore</b>{" "}
-                  <span className={styles.dim}>
-                    Chat, visualize, and understand. Ask anything about your
-                    codebase.
-                  </span>
-                </span>
-              </li>
-            </ol>
-          </div>
-        </section>
+        <HowItWorksSection />
 
         {/* ── CAPABILITIES ─────────────────────────────────────── */}
         <section className={styles.section}>
