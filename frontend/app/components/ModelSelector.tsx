@@ -145,16 +145,16 @@ export default function ModelSelector() {
           gap: 6,
           padding: "5px 10px",
           borderRadius: 6,
-          background: "rgba(255, 255, 255, 0.05)",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
-          color: "#e2e8f0",
+          background: "var(--color-surface-elevated)",
+          border: "1px solid var(--color-border)",
+          color: "var(--color-text)",
           fontSize: "0.78rem",
           fontWeight: 500,
           cursor: "pointer",
           transition: "all 0.15s ease",
         }}
       >
-        <span style={{ color: "#3b82f6", display: "flex" }}>
+        <span style={{ color: "var(--color-text)", display: "flex" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
           </svg>
@@ -178,9 +178,9 @@ export default function ModelSelector() {
             width: 280,
             maxHeight: 360,
             overflowY: "auto",
-            background: "rgba(15, 17, 26, 0.75)",
+            background: "rgba(22, 20, 16, 0.85)", /* Matches var(--color-surface) but transparent for blur */
             backdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            border: "1px solid var(--color-border)",
             borderRadius: 10,
             boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
             zIndex: 1000,
@@ -196,10 +196,10 @@ export default function ModelSelector() {
               width: "100%",
               padding: "6px 10px",
               marginBottom: 8,
-              background: "rgba(0, 0, 0, 0.3)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              background: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
               borderRadius: 6,
-              color: "#f8fafc",
+              color: "var(--color-text)",
               fontSize: "0.78rem",
               outline: "none",
             }}
@@ -223,7 +223,7 @@ export default function ModelSelector() {
                     fontWeight: 600,
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
-                    color: "#64748b",
+                    color: "var(--color-text-secondary)",
                     padding: "4px 8px",
                     display: "flex",
                     justifyContent: "space-between",
@@ -252,7 +252,7 @@ export default function ModelSelector() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {info.has_server_key && (
-                      <span style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", padding: "2px 6px", borderRadius: 4, fontSize: "0.6rem", fontWeight: 700 }}>FREE</span>
+                      <span style={{ background: "var(--color-surface-elevated)", color: "var(--color-text)", padding: "2px 6px", borderRadius: 4, fontSize: "0.6rem", fontWeight: 700 }}>FREE</span>
                     )}
                     {!isUnlocked && (
                       <span title="API key required in Settings" style={{ display: "flex" }}>
@@ -281,9 +281,9 @@ export default function ModelSelector() {
                         justifyContent: "space-between",
                         padding: "6px 10px",
                         borderRadius: 6,
-                        background: isSelected ? "rgba(59, 130, 246, 0.15)" : "transparent",
-                        border: isSelected ? "1px solid rgba(59, 130, 246, 0.3)" : "none",
-                        color: !isUnlocked ? "#475569" : isSelected ? "#60a5fa" : "#cbd5e1",
+                        background: isSelected ? "var(--color-surface-elevated)" : "transparent",
+                        border: isSelected ? "1px solid var(--color-border-hover)" : "none",
+                        color: !isUnlocked ? "var(--color-text-tertiary)" : isSelected ? "var(--color-white)" : "var(--color-text-secondary)",
                         fontSize: "0.8rem",
                         cursor: !isUnlocked ? "not-allowed" : "pointer",
                         textAlign: "left",
@@ -291,7 +291,7 @@ export default function ModelSelector() {
                     >
                       <span>{m.name}</span>
                       {isSelected && (
-                        <span style={{ color: "#3b82f6", display: "flex" }}>
+                        <span style={{ color: "var(--color-text)", display: "flex" }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12"></polyline>
                           </svg>
@@ -306,7 +306,7 @@ export default function ModelSelector() {
 
           <div
             style={{
-              borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+              borderTop: "1px solid var(--color-border)",
               marginTop: 6,
               paddingTop: 6,
             }}
@@ -317,7 +317,7 @@ export default function ModelSelector() {
               style={{
                 display: "block",
                 padding: "6px 10px",
-                color: "#3b82f6",
+                color: "var(--color-text-secondary)",
                 fontSize: "0.78rem",
                 fontWeight: 500,
                 textDecoration: "none",
