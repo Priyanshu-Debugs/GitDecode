@@ -120,6 +120,8 @@ export interface GraphNode {
   type?: string;
   file_path?: string | null;
   signature?: string | null;
+  checksum?: string | null;
+  symbols?: any[];
 }
 
 export interface GraphEdge {

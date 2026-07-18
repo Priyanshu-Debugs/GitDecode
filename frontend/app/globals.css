@@ -561,7 +561,11 @@
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    font-family: var(--font-mono);
-  }
+}
+
+/* NVL Graph SVG Overrides */
+.nvl-svg-container text,
+svg text {
+  fill: #ffffff !important;
+  font-family: var(--font-sans) !important;
 }

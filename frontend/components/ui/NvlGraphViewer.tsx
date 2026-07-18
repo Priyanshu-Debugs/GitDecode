@@ -257,9 +257,6 @@ export default function NvlGraphViewer({
 
       // Color selection logic (keep native type color, only color by blast if active)
       let nodeColor = colors[type as keyof typeof colors] || colors.default;
-      if (isBlastAffected) {
-        nodeColor = isBlastTarget ? colors.highlight : colors.blastAffected;
-      }
 
       // Search match outline
       const isSearchMatch =
@@ -291,14 +288,12 @@ export default function NvlGraphViewer({
         size: computeNodeSize(node),
         color: nodeColor,
         caption: getCleanLabel(node.label, type),
-        captionColor: "#ffffff", // high-contrast white name on the node
-        captionSize: isSelected || isHovered ? 11 : 9,
         strokeColor,
         strokeWidth,
         pinned: pinnedNodeIds.has(node.id),
         x: initialX,
         y: initialY,
-        captionAlign: "center", // Align centered inside the node circle
+        captionAlign: "bottom", // Align below the node circle for visibility
       };
     });
 
@@ -343,7 +338,10 @@ export default function NvlGraphViewer({
     nvlRef.current?.fit();
   }, []);
 
+  const lastNodeClickTime = useRef<number>(0);
+
   const handleNodeClick = useCallback((node: any) => {
+    lastNodeClickTime.current = Date.now();
     const rawNode = nodes.find((n) => n.id === node.id);
     if (rawNode) {
       setSelectedNode(rawNode);
@@ -354,6 +352,7 @@ export default function NvlGraphViewer({
   }, [nodes, onNodeSelect]);
 
   const handleRelationshipClick = useCallback((rel: any) => {
+    lastNodeClickTime.current = Date.now();
     const edge = edges.find((e) => `${e.source}-${e.target}` === rel.id);
     if (edge) {
       setSelectedEdge(edge);
@@ -363,7 +362,8 @@ export default function NvlGraphViewer({
   }, [edges]);
 
   const handleCanvasClick = useCallback(() => {
-    setIsInspectorOpen(false);
+    // We intentionally don't close the inspector on canvas click to prevent accidental closures,
+    // especially on smaller inline graph views. The user can use the 'X' button to close it.
     setSelectedNode(null);
     setSelectedEdge(null);
     setContextMenu(null);
@@ -451,7 +451,7 @@ export default function NvlGraphViewer({
     layout: currentLayout,
     disableWebWorkers: true,
     initialZoom: 1,
-    renderer: "canvas" as const, // Explicitly use canvas renderer to show captions
+    renderer: "svg" as const, // Use SVG renderer for robust caption support
   }), [currentLayout]);
 
   const perspectiveOptions = useMemo(() => [
@@ -656,12 +656,82 @@ export default function NvlGraphViewer({
                   </span>
                 </div>
               )}
+              {selectedNode.checksum && (
+                <div className={styles.propertyGroup}>
+                  <span className={styles.propertyName}>Checksum</span>
+                  <span className={styles.propertyValue} style={{ fontSize: '0.7rem', wordBreak: 'break-all', opacity: 0.8 }}>
+                    {selectedNode.checksum}
+                  </span>
+                </div>
+              )}
               {selectedNode.signature && (
                 <div className={styles.propertyGroup}>
                   <span className={styles.propertyName}>Signature</span>
                   <pre className={styles.codeSnippet}>{selectedNode.signature}</pre>
                 </div>
               )}
+              {selectedNode.symbols && selectedNode.symbols.length > 0 && (
+                <div className={styles.propertyGroup}>
+                  <span className={styles.propertyName}>Contained Symbols ({selectedNode.symbols.length})</span>
+                  <div className={styles.propertyValue} style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                    {selectedNode.symbols.slice(0, 8).map((sym: any, idx: number) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ color: sym.type === 'class' ? colors.class : colors.function, fontWeight: 500, fontFamily: 'var(--font-mono)' }}>{sym.name}</span>
+                        <span style={{ color: 'var(--color-dim)', fontSize: '0.65rem', textTransform: 'uppercase' }}>{sym.type}</span>
+                      </div>
+                    ))}
+                    {selectedNode.symbols.length > 8 && (
+                      <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', textAlign: 'center', marginTop: '4px', fontStyle: 'italic' }}>
+                        + {selectedNode.symbols.length - 8} more...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* Dependency Stats */}
+              {(() => {
+                const incoming = edges.filter(e => e.target === selectedNode.id);
+                const outgoing = edges.filter(e => e.source === selectedNode.id);
+                const incomingNodes = incoming.map(e => nodes.find(n => n.id === e.source)).filter(Boolean) as any[];
+                const outgoingNodes = outgoing.map(e => nodes.find(n => n.id === e.target)).filter(Boolean) as any[];
+                
+                return (
+                  <>
+                    <div className={styles.propertyGroup}>
+                      <span className={styles.propertyName}>Incoming Dependencies</span>
+                      <span className={styles.propertyValue} style={{ color: "#38bdf8", fontWeight: 500, marginBottom: "4px" }}>
+                        {incoming.length} {incoming.length === 1 ? "node" : "nodes"} depend on this
+                      </span>
+                      {incomingNodes.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
+                          {incomingNodes.map((n, idx) => (
+                            <div key={idx} style={{ fontSize: '0.7rem', padding: '4px 6px', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '4px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#38bdf8' }} />
+                              {n.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.propertyGroup}>
+                      <span className={styles.propertyName}>Outgoing Dependencies</span>
+                      <span className={styles.propertyValue} style={{ color: "#f59e0b", fontWeight: 500, marginBottom: "4px" }}>
+                        Depends on {outgoing.length} {outgoing.length === 1 ? "node" : "nodes"}
+                      </span>
+                      {outgoingNodes.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
+                          {outgoingNodes.map((n, idx) => (
+                            <div key={idx} style={{ fontSize: '0.7rem', padding: '4px 6px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '4px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }} />
+                              {n.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </>
           )}
 

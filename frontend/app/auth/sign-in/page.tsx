@@ -1,19 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getSupabase } from "@/app/lib/supabase";
-import Button from "@/app/components/Button";
 import styles from "./page.module.css";
 
-/* ── Design Read ───────────────────────────────────────────────────
-   Reading this as: Premium developer SaaS split-screen login page
-   for software engineers, with a minimalist dark tech theme, leaning
-   toward flat border-based structures and interactive mock previews.
+/* ── Developer-Centric Sign In ──────────────────────────────────────
+   A minimalist, terminal-themed split screen that perfectly aligns
+   with the landing page aesthetic.
    ────────────────────────────────────────────────────────────────── */
-
-import { useEffect } from "react";
 
 function TerminalConsole() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -54,12 +50,8 @@ function TerminalConsole() {
   return (
     <div className={styles.terminalContainer}>
       <div className={styles.terminalHeader}>
-        <div className={styles.terminalDots}>
-          <span className={styles.terminalDot} style={{ background: "#ef4444" }} />
-          <span className={styles.terminalDot} style={{ background: "#f59e0b" }} />
-          <span className={styles.terminalDot} style={{ background: "#22c55e" }} />
-        </div>
-        <span className={styles.terminalTitle}>indexing_agent@gitmesh: ~</span>
+        <span>indexing_agent.sh</span>
+        <span className={styles.terminalTitle}>terminal logs</span>
       </div>
       <div className={styles.terminalBody}>
         {logs.map((log, i) => (
@@ -146,18 +138,13 @@ export default function SignInPage() {
 
   return (
     <div className={styles.splitLayout}>
-      {/* ── Left Side: Premium Interactive Visual Chat Mockup ───── */}
+      {/* ── Left Side: Developer Visuals ───── */}
       <div className={styles.visualPanel}>
-        <div className={styles.gridOverlay} />
-        <div className={styles.glowSpot} />
-        
         <div className={styles.infoWrapper}>
           <div className={styles.infoBrand}>
-            <span className={styles.infoBrandGit}>Git</span>
-            <span className={styles.infoBrandMesh}>Mesh</span>
-            <span className={styles.infoBrandSub}>Agentic AI</span>
+            GitMesh
           </div>
-          <h2 className={styles.infoTitle}>Analyze codebases with context graph intelligence</h2>
+          <h2 className={styles.infoTitle}>Analyze codebases with context graph intelligence.</h2>
           
           <TerminalConsole />
 
@@ -167,7 +154,7 @@ export default function SignInPage() {
               <div className={styles.featureContent}>
                 <h4 className={styles.featureTitle}>Interactive Dependency Graphs</h4>
                 <p className={styles.featureDescription}>
-                  GitMesh automatically constructs file-level and class-level dependency networks to expose repository relationships visually.
+                  Automatically construct file-level and class-level dependency networks to expose repository relationships visually.
                 </p>
               </div>
             </div>
@@ -177,7 +164,7 @@ export default function SignInPage() {
               <div className={styles.featureContent}>
                 <h4 className={styles.featureTitle}>Context-Aware Code Q&A</h4>
                 <p className={styles.featureDescription}>
-                  Ask direct questions about functions or API pipelines. Receive grounded explanations complete with exact code citations and line ranges.
+                  Ask direct questions about functions or API pipelines. Receive grounded explanations complete with exact code citations.
                 </p>
               </div>
             </div>
@@ -185,77 +172,56 @@ export default function SignInPage() {
         </div>
       </div>
 
-      {/* ── Right Side: Minimalist Unified Login Panel ───────────── */}
+      {/* ── Right Side: Minimalist Login Panel ───────────── */}
       <div className={styles.loginPanel}>
         <Link href="/" className={styles.backBtn}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
-          </svg>
-          Back to landing page
+          ← home.md
         </Link>
 
         <div className={styles.loginCenter}>
           <div className={styles.logo}>
-            <Image src="/logo.svg" alt="GitMesh Logo" width={128} height={32} priority className={styles.logoImage} />
+            <Image src="/logo.svg" alt="GitMesh Logo" width={384} height={96} priority className={styles.logoImage} />
           </div>
 
           <div className={styles.intro}>
             <h2 className={styles.heading}>Codebase intelligence starts here</h2>
             <p className={styles.subtitle}>
-              Connect with GitHub to visualize dependencies, chat with your files,
+              // Connect with GitHub to visualize dependencies, chat with your files,
               and analyze downstream blast radius instantly.
             </p>
           </div>
 
           {error && (
             <div className={styles.errorBanner}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-              </svg>
-              <span>{error}</span>
+              [!] {error}
             </div>
           )}
 
           <div className={styles.actionContainer}>
-            <Button
+            <button
               onClick={handleGitHubSignIn}
-              loading={loading}
-              size="lg"
-              fullWidth
-              className={styles.githubBtn}
+              disabled={loading}
+              className={styles.btnFill}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-              </svg>
-              Continue with GitHub
-            </Button>
+              {loading ? "authenticating..." : "continue with github"}
+            </button>
             
             <div className={styles.divider}>
-              <span className={styles.dividerText}>or test-drive the platform</span>
+              <span className={styles.dividerText}>or test-drive</span>
             </div>
 
-            <Button
+            <button
               onClick={handleDevBypass}
-              variant="primary"
-              size="lg"
-              fullWidth
-              className={styles.demoModeBtn}
+              className={styles.btnOutline}
             >
-              Enter Demo Mode
-            </Button>
+              enter demo mode
+            </button>
           </div>
 
           <div className={styles.securityDisclaimer}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <span>
-              Secure authorization powered by Supabase Auth. We only request read access to public repositories.
-            </span>
+            // Secure authorization powered by Supabase Auth.
+            <br />
+            // We only request read access to public repositories.
           </div>
         </div>
       </div>

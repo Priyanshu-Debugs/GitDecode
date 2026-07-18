@@ -375,6 +375,7 @@ function DashboardContent() {
   // Chat states
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const isSubmittingRef = useRef(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [copiedMsgIds, setCopiedMsgIds] = useState<Set<string>>(new Set());
   const [feedbackState, setFeedbackState] = useState<Record<string, string>>({});
@@ -604,82 +605,7 @@ function DashboardContent() {
       }
       return;
     }
-    if (type === "regenerate") {
-      const msgIdx = messages.findIndex(m => m.message_id === msgId);
-      if (msgIdx > 0 && !chatLoading && activeRepoId) {
-          const prevMsg = messages[msgIdx - 1];
-          if (prevMsg && prevMsg.role === "user") {
-            const query = prevMsg.content;
-            setChatLoading(true);
-            
-            let deleteCount = 0;
-            // Delete old messages from DB to avoid duplicates on refresh
-            try {
-              await deleteChatMessage(msgId); // old assistant msg
-              for (let i = msgIdx - 1; i >= 0; i--) {
-                  const pMsg = messages[i];
-                  if (pMsg.role !== "user") break;
-                  deleteCount++;
-                  if (!pMsg.message_id.startsWith('temp-')) {
-                     await deleteChatMessage(pMsg.message_id);
-                  }
-              }
-            } catch (err) {
-              console.error("Failed to delete old messages", err);
-            }
-            
-            const tempUserId = `temp-user-${Date.now()}`;
-            const tempAssistantId = `temp-ast-${Date.now()}`;
-          const tempAssistantMsg: ChatMessage = {
-            message_id: tempAssistantId,
-            session_id: chatSessionId || "",
-            role: "assistant",
-            content: "",
-            created_at: new Date().toISOString(),
-            sources: [],
-            thinking: [],
-          };
-          
-          setMessages((prev) => {
-             const next = [...prev.slice(0, msgIdx - deleteCount)];
-             return [...next, { ...prevMsg, message_id: tempUserId }, tempAssistantMsg];
-          });
-          
-          let realMessageId = tempAssistantId;
-          try {
-            await streamChatMessage(activeRepoId, query, chatSessionId || undefined, (streamType, content, extra) => {
-              if (streamType === "message_id" && extra?.session_id) {
-                  setChatSessionId(extra.session_id);
-                  realMessageId = content;
-                  setMessages((prev) => prev.map(m => m.message_id === tempAssistantId ? { ...m, message_id: realMessageId, session_id: extra.session_id } : m));
-              } else if (streamType === "thought") {
-                  setMessages((prev) => prev.map(m => {
-                      if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
-                          const currentThinking = m.thinking || [];
-                          return { ...m, thinking: [...currentThinking, content] };
-                      }
-                      return m;
-                  }));
-              } else if (streamType === "token") {
-                  setMessages((prev) => prev.map(m => {
-                      if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
-                          return { ...m, content: m.content + content };
-                      }
-                      return m;
-                  }));
-              } else if (streamType === "done") {
-                  setChatLoading(false);
-              }
-            });
-          } catch (e) {
-            console.error("Chat error", e);
-            setMessages((prev) => prev.map(m => m.message_id === tempAssistantId || m.message_id === realMessageId ? { ...m, content: m.content + "\n\n**Error connecting to AI**" } : m));
-            setChatLoading(false);
-          }
-        }
-      }
-      return;
-    }
+
     try {
         await submitChatFeedback(msgId, type);
         setFeedbackState(prev => ({ ...prev, [msgId]: type }));
@@ -704,10 +630,12 @@ function DashboardContent() {
   };
 
   const handleSendChat = useCallback(async (queryParam?: string) => {
-    const query = (queryParam || chatInput).trim();
-    if (!query || chatLoading || !activeRepoId) return;
-    setChatInput("");
+    const query = queryParam || chatInput;
+    if (!query.trim() || chatLoading || !activeRepoId || isSubmittingRef.current) return;
+    
+    isSubmittingRef.current = true;
     setChatLoading(true);
+    setChatInput("");
     
     // Smooth scroll to bottom on new message submission
     isNearBottomRef.current = true;
@@ -763,6 +691,7 @@ function DashboardContent() {
             }));
         } else if (type === "done") {
             setChatLoading(false);
+            isSubmittingRef.current = false;
         }
       });
     } catch {
@@ -778,6 +707,7 @@ function DashboardContent() {
         },
       ]);
       setChatLoading(false);
+      isSubmittingRef.current = false;
     }
   }, [activeRepoId, chatInput, chatLoading, chatSessionId]);
 
@@ -1459,36 +1389,99 @@ function DashboardContent() {
                         mainContent
                       ) : (
                         <>
-                          {hasThoughtProcess && (
-                            <div style={{ marginBottom: 14 }}>
-                              <ChainOfThought defaultOpen={false}>
-                                <ChainOfThoughtHeader className="text-xs text-muted-foreground font-medium hover:text-foreground">
-                                  View Thought Process ({steps.length} steps)
-                                </ChainOfThoughtHeader>
-                                <ChainOfThoughtContent>
-                                  <div className="space-y-4 pt-2 pl-2 border-l border-white/5">
-                                    {steps.map((step, i) => (
-                                      <ChainOfThoughtStep
-                                        key={i}
-                                        label={<div style={{ fontWeight: 600, color: "var(--color-white)" }}>{step.title}</div>}
-                                        description={step.detail ? <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div> : undefined}
-                                        status={i === steps.length - 1 && isThinking ? "active" : "complete"}
-                                      />
-                                    ))}
-                                  </div>
-                                </ChainOfThoughtContent>
-                              </ChainOfThought>
+                          {isThinking && (
+                            <div className={styles.shiningTextContainer}>
+                              <span className={styles.shiningText}>Thinking...</span>
                             </div>
                           )}
-
-                          {isThinking && !hasThoughtProcess && (
-                            <div className={styles.thinkingStep}>
-                              <span className={styles.loadingSpinner} style={{ width: 12, height: 12, display: "inline-block", marginRight: 8, verticalAlign: "middle" }} />
-                              <span>Thinking...</span>
+                          
+                          {!isThinking && hasThoughtProcess && (
+                            <div style={{ marginBottom: 14 }}>
+                              <button 
+                                onClick={() => {
+                                  setActiveThinkingMsgId(msg.message_id);
+                                  setIsThinkingPanelOpen(true);
+                                }}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  padding: 0,
+                                  fontSize: "0.75rem",
+                                  fontFamily: "var(--font-sans)",
+                                  color: "var(--color-text-secondary)",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  transition: "color var(--transition-fast)",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = "var(--color-white)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = "var(--color-text-secondary)";
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+                                  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+                                  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+                                  <path d="M17.599 6.5A3 3 0 0 0 14 6" />
+                                  <path d="M6.401 6.5A3 3 0 0 1 10 6" />
+                                  <path d="M3.4 10.5A3 3 0 0 0 5 11" />
+                                  <path d="M20.6 10.5A3 3 0 0 1 19 11" />
+                                </svg>
+                                View Thought Process
+                              </button>
                             </div>
                           )}
 
                           <ChatMarkdown content={mainContent} />
+
+                          {/* Feedback Buttons */}
+                          {mainContent && (!chatLoading || idx !== messages.length - 1) && (
+                             <div className={styles.feedbackBar}>
+                                 <button className={styles.feedbackBtn} onClick={() => handleFeedback(msg.message_id, "copy")} title="Copy">
+                                   {copiedMsgIds.has(msg.message_id) ? (
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                   ) : (
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                   )}
+                                 </button>
+
+                                 <button className={`${styles.feedbackBtn} ${feedbackState[msg.message_id] === 'thumbs_up' ? styles.feedbackBtnActive : ''}`} onClick={() => handleFeedback(msg.message_id, "thumbs_up")} title="Helpful">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill={feedbackState[msg.message_id] === 'thumbs_up' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                                 </button>
+                                 <button className={`${styles.feedbackBtn} ${feedbackState[msg.message_id] === 'thumbs_down' ? styles.feedbackBtnActive : ''}`} onClick={() => handleFeedback(msg.message_id, "thumbs_down")} title="Not Helpful">
+                                   <svg width="14" height="14" viewBox="0 0 24 24" fill={feedbackState[msg.message_id] === 'thumbs_down' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg>
+                                 </button>
+
+                                 <div className={styles.moreOptionsContainer}>
+                                   <button className={styles.moreOptionsBtn} title="View Sources">
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="1"></circle>
+                                        <circle cx="19" cy="12" r="1"></circle>
+                                        <circle cx="5" cy="12" r="1"></circle>
+                                      </svg>
+                                   </button>
+                                   <div className={styles.moreOptionsDropdown}>
+                                      <div className={styles.moreOptionsTitle}>Sources Used</div>
+                                      {msg.sources && msg.sources.length > 0 ? (
+                                         msg.sources.map((src: any, i: number) => (
+                                            <button key={i} className={styles.sourceChip} onClick={() => openSourceFile(src.file_path)} title={src.file_path}>
+                                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                                              {src.file_path.split('/').pop()}
+                                            </button>
+                                         ))
+                                      ) : (
+                                         <div style={{ padding: '8px 12px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                                            No sources used
+                                         </div>
+                                      )}
+                                   </div>
+                                 </div>
+                             </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -1665,21 +1658,21 @@ function DashboardContent() {
         </>
       )}
           {/* Right Sliding Panel for Thinking Process */}
-          <div className={`${styles.thinkingPanelOverlay} ${isThinkingPanelOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
-             <div className={styles.thinkingPanelHeader}>
-                <div className={styles.thinkingPanelTitle}>
+          <div className={`${styles.thoughtOverlay} ${isThinkingPanelOpen ? styles.thoughtOverlayOpen : ""}`}>
+             <div className={styles.thoughtOverlayHeader}>
+                <div>
                   Thought Process
                 </div>
                 <button 
-                  className={styles.thinkingPanelCloseBtn}
+                  className={styles.thoughtOverlayClose}
                   onClick={() => setIsThinkingPanelOpen(false)}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
              </div>
-             <div className={styles.thinkingPanelContent}>
+             <div className={styles.thoughtOverlayContent}>
                 {(() => {
                    const activeMsg = messages.find(m => m.message_id === activeThinkingMsgId);
                    if (!activeMsg) return null;
@@ -1698,40 +1691,45 @@ function DashboardContent() {
                    });
 
                    if (thinkText) {
-                       const paragraphs = thinkText.split(/\n\s*\n/).map(l => l.trim()).filter(l => l.length > 0);
-                       paragraphs.forEach((p, idx) => {
-                           let text = p;
-                           if (p.startsWith('- ') || p.startsWith('* ')) {
-                               text = p.substring(2).trim();
+                       const lines = thinkText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+                       lines.forEach((line, idx) => {
+                           let text = line;
+                           if (line.startsWith('- ') || line.startsWith('* ')) {
+                               text = line.substring(2).trim();
                            }
                            
                            if (idx < steps.length) {
-                               steps[idx].detail = text;
-                           } else if (steps.length > 0) {
-                               if (steps[steps.length - 1].detail) {
-                                   steps[steps.length - 1].detail += `\n\n${text}`;
+                               if (steps[idx].detail) {
+                                   steps[idx].detail += `\n${text}`;
                                } else {
-                                   steps[steps.length - 1].detail = text;
+                                   steps[idx].detail = text;
                                }
+                           } else if (steps.length > 0) {
+                               steps[steps.length - 1].detail = steps[steps.length - 1].detail 
+                                   ? steps[steps.length - 1].detail + `\n${text}` 
+                                   : text;
                            } else {
-                               steps.push({ title: "[Analyze]", detail: text });
+                               steps.push({ title: "Analysis", detail: text });
                            }
                        });
                    }
                    
                    return (
-                       <div className={styles.stepperContainer}>
+                       <>
                           {steps.map((step, i) => (
-                             <div key={i} className={styles.stepperItem}>
-                                <div className={styles.stepperLine} />
-                                <div className={styles.stepperCircle} />
-                                <div className={styles.stepperText}>
-                                  <div style={{ fontWeight: 600 }}>{step.title}</div>
-                                  {step.detail && <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div>}
+                             <div key={i} className={styles.thoughtStage}>
+                                <div className={styles.thoughtStageTitle}>
+                                  <div className={styles.thoughtStageIcon} />
+                                  {step.title}
                                 </div>
+                                {step.detail && (
+                                  <div className={styles.thoughtRawBlock}>
+                                    {step.detail}
+                                  </div>
+                                )}
                              </div>
                           ))}
-                       </div>
+                       </>
                    );
                 })()}
              </div>

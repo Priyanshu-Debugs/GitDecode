@@ -121,6 +121,7 @@ export default function RepoDetailPage() {
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const isSubmittingRef = useRef(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [copiedMsgIds, setCopiedMsgIds] = useState<Set<string>>(new Set());
   const [feedbackState, setFeedbackState] = useState<Record<string, string>>({});
@@ -193,12 +194,22 @@ export default function RepoDetailPage() {
     }
   }, [activeTab, sessionId, repoId]);
 
-  // Auto-scroll chat
+  // Auto-scroll chat on new messages
   useEffect(() => {
     if (isNearBottomRef.current) {
       chatEndRef.current?.scrollIntoView({ behavior: "auto" });
     }
   }, [messages]);
+
+  // Force scroll to bottom when explicitly opening the chat tab
+  useEffect(() => {
+    if (activeTab === "chat") {
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "auto" });
+        isNearBottomRef.current = true;
+      }, 50);
+    }
+  }, [activeTab]);
 
   const handleFeedback = async (msgId: string, type: string) => {
     if (type === "copy") {
@@ -225,81 +236,7 @@ export default function RepoDetailPage() {
       }
       return;
     }
-    if (type === "regenerate") {
-      const msgIdx = messages.findIndex(m => m.message_id === msgId);
-      if (msgIdx > 0 && !chatLoading) {
-        const prevMsg = messages[msgIdx - 1];
-        if (prevMsg && prevMsg.role === "user") {
-          const query = prevMsg.content;
-          setChatLoading(true);
-          
-          let deleteCount = 0;
-          try {
-            await deleteChatMessage(msgId);
-            
-            // Delete all contiguous user messages preceding this assistant message
-            for (let i = msgIdx - 1; i >= 0; i--) {
-                const pMsg = messages[i];
-                if (pMsg.role !== "user") break;
-                deleteCount++;
-                if (!pMsg.message_id.startsWith('temp-')) {
-                   await deleteChatMessage(pMsg.message_id);
-                }
-            }
-          } catch (err) {
-            console.error("Failed to delete old messages", err);
-          }
-          
-          const tempUserId = `temp-user-${Date.now()}`;
-          const tempAssistantId = `temp-ast-${Date.now()}`;
-          const tempAssistantMsg: ChatMessage = {
-            message_id: tempAssistantId,
-            session_id: sessionId || "",
-            role: "assistant",
-            content: "",
-            created_at: new Date().toISOString(),
-            sources: [],
-            thinking: [],
-          };
-          
-          setMessages((prev) => {
-             const next = [...prev.slice(0, msgIdx - deleteCount)];
-             return [...next, { ...prevMsg, message_id: tempUserId }, tempAssistantMsg];
-          });
-          
-          let realMessageId = tempAssistantId;
-          try {
-            await streamChatMessage(repoId, query, sessionId || undefined, (streamType, content, extra) => {
-              if (streamType === "message_id" && extra?.session_id) {
-                  setSessionId(extra.session_id);
-                  realMessageId = content;
-                  setMessages((prev) => prev.map(m => m.message_id === tempAssistantId ? { ...m, message_id: realMessageId, session_id: extra.session_id } : m));
-              } else if (streamType === "user_message_id") {
-                  setMessages((prev) => prev.map(m => m.message_id === tempUserId ? { ...m, message_id: content } : m));
-              } else if (streamType === "sources") {
-                  setMessages((prev) => prev.map(m => m.message_id === tempAssistantId || m.message_id === realMessageId ? { ...m, sources: content } : m));
-              } else if (streamType === "thought") {
-                  setMessages((prev) => prev.map(m => {
-                      if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
-                          const currentThinking = m.thinking || [];
-                          return { ...m, thinking: [...currentThinking, content] };
-                      }
-                      return m;
-                  }));
-              } else if (streamType === "token") {
-                  setMessages((prev) => prev.map(m => m.message_id === tempAssistantId || m.message_id === realMessageId ? { ...m, content: m.content + content } : m));
-              }
-            });
-          } catch (e) {
-            console.error("Chat error", e);
-            setMessages((prev) => prev.map(m => m.message_id === tempAssistantId || m.message_id === realMessageId ? { ...m, content: m.content + "\n\n**Error connecting to AI**" } : m));
-          } finally {
-            setChatLoading(false);
-          }
-        }
-      }
-      return;
-    }
+
     try {
         await submitChatFeedback(msgId, type);
         setFeedbackState(prev => ({ ...prev, [msgId]: type }));
@@ -323,10 +260,12 @@ export default function RepoDetailPage() {
   };
 
   const handleSendChat = useCallback(async (queryParam?: string) => {
-    const query = (queryParam || chatInput).trim();
-    if (!query || chatLoading) return;
-    setChatInput("");
+    const q = queryParam || chatInput;
+    if (!q.trim() || chatLoading || isSubmittingRef.current) return;
+    
+    isSubmittingRef.current = true;
     setChatLoading(true);
+    setChatInput("");
     
     isNearBottomRef.current = true;
     setTimeout(() => {
@@ -338,7 +277,7 @@ export default function RepoDetailPage() {
       message_id: tempId,
       session_id: sessionId || "",
       role: "user",
-      content: query,
+      content: q,
       created_at: new Date().toISOString(),
       sources: [],
     };
@@ -359,7 +298,7 @@ export default function RepoDetailPage() {
     let realMessageId = tempAssistantId;
 
     try {
-      await streamChatMessage(repoId, query, sessionId || undefined, (type, content, extra) => {
+      await streamChatMessage(repoId, q, sessionId || undefined, (type, content, extra) => {
         if (type === "message_id" && extra?.session_id) {
             setSessionId(extra.session_id);
             realMessageId = content;
@@ -385,6 +324,7 @@ export default function RepoDetailPage() {
             }));
         } else if (type === "done") {
             setChatLoading(false);
+            isSubmittingRef.current = false;
         }
       });
     } catch {
@@ -400,6 +340,7 @@ export default function RepoDetailPage() {
         },
       ]);
       setChatLoading(false);
+      isSubmittingRef.current = false;
     }
   }, [chatInput, chatLoading, repoId, sessionId]);
 
@@ -613,27 +554,52 @@ export default function RepoDetailPage() {
                     msg.content
                   ) : (
                     <>
-                      {hasThoughtProcess && (
-                        <div style={{ marginBottom: 14 }}>
-                          <ChainOfThought defaultOpen={false}>
-                            <ChainOfThoughtHeader className="text-xs text-muted-foreground font-medium hover:text-foreground">
-                              View Thought Process ({steps.length} steps)
-                            </ChainOfThoughtHeader>
-                            <ChainOfThoughtContent>
-                              <div className="space-y-4 pt-2 pl-2 border-l border-white/5">
-                                {steps.map((step, i) => (
-                                  <ChainOfThoughtStep
-                                    key={i}
-                                    label={<div style={{ fontWeight: 600, color: "var(--color-white)" }}>{step.title}</div>}
-                                    description={step.detail ? <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div> : undefined}
-                                    status={i === steps.length - 1 && isThinking ? "active" : "complete"}
-                                  />
-                                ))}
-                              </div>
-                            </ChainOfThoughtContent>
-                          </ChainOfThought>
-                        </div>
-                      )}
+                          {isThinking && (
+                            <div className={styles.shiningTextContainer}>
+                              <span className={styles.shiningText}>Thinking...</span>
+                            </div>
+                          )}
+                          
+                          {!isThinking && hasThoughtProcess && (
+                            <div style={{ marginBottom: 14 }}>
+                              <button 
+                                onClick={() => {
+                                  setActiveThinkingMsgId(msg.message_id);
+                                  setIsThinkingPanelOpen(true);
+                                }}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  padding: 0,
+                                  fontSize: "0.75rem",
+                                  fontFamily: "var(--font-sans)",
+                                  color: "var(--color-text-secondary)",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  transition: "color var(--transition-fast)",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = "var(--color-white)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = "var(--color-text-secondary)";
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+                                  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+                                  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+                                  <path d="M17.599 6.5A3 3 0 0 0 14 6" />
+                                  <path d="M6.401 6.5A3 3 0 0 1 10 6" />
+                                  <path d="M3.4 10.5A3 3 0 0 0 5 11" />
+                                  <path d="M20.6 10.5A3 3 0 0 1 19 11" />
+                                </svg>
+                                View Thought Process
+                              </button>
+                            </div>
+                          )}
                       
                       {mainContent ? (
                         <ChatMarkdown content={mainContent} />
@@ -646,6 +612,7 @@ export default function RepoDetailPage() {
                           </div>
                         )
                       )}
+
                       
                       {/* Feedback Buttons */}
                       {mainContent && (!chatLoading || idx !== messages.length - 1) && (
@@ -664,11 +631,7 @@ export default function RepoDetailPage() {
                              <button className={`${styles.feedbackBtn} ${feedbackState[msg.message_id] === 'thumbs_down' ? styles.feedbackBtnActive : ''}`} onClick={() => handleFeedback(msg.message_id, "thumbs_down")} title="Not Helpful">
                                <svg width="14" height="14" viewBox="0 0 24 24" fill={feedbackState[msg.message_id] === 'thumbs_down' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg>
                              </button>
-                             {idx === messages.length - 1 && !chatLoading && (
-                               <button className={styles.feedbackBtn} onClick={() => handleFeedback(msg.message_id, "regenerate")} title="Regenerate">
-                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
-                               </button>
-                             )}
+
                              <div className={styles.moreOptionsContainer}>
                                <button className={styles.moreOptionsBtn} title="View Sources">
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -710,21 +673,21 @@ export default function RepoDetailPage() {
           </div>
           
           {/* Right Sliding Panel for Thinking Process */}
-          <div className={`${styles.thinkingPanelOverlay} ${isThinkingPanelOpen ? styles.thinkingPanelOverlayOpen : ""}`}>
-             <div className={styles.thinkingPanelHeader}>
-                <div className={styles.thinkingPanelTitle}>
+          <div className={`${styles.thoughtOverlay} ${isThinkingPanelOpen ? styles.thoughtOverlayOpen : ""}`}>
+             <div className={styles.thoughtOverlayHeader}>
+                <div>
                   Thought Process
                 </div>
                 <button 
-                  className={styles.thinkingPanelCloseBtn}
+                  className={styles.thoughtOverlayClose}
                   onClick={() => setIsThinkingPanelOpen(false)}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
              </div>
-             <div className={styles.thinkingPanelContent}>
+             <div className={styles.thoughtOverlayContent}>
                 {(() => {
                    const activeMsg = messages.find(m => m.message_id === activeThinkingMsgId);
                    if (!activeMsg) return null;
@@ -743,40 +706,45 @@ export default function RepoDetailPage() {
                    });
 
                    if (thinkText) {
-                       const paragraphs = thinkText.split(/\n\s*\n/).map(l => l.trim()).filter(l => l.length > 0);
-                       paragraphs.forEach((p, idx) => {
-                           let text = p;
-                           if (p.startsWith('- ') || p.startsWith('* ')) {
-                               text = p.substring(2).trim();
+                       const lines = thinkText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
+                       lines.forEach((line, idx) => {
+                           let text = line;
+                           if (line.startsWith('- ') || line.startsWith('* ')) {
+                               text = line.substring(2).trim();
                            }
                            
                            if (idx < steps.length) {
-                               steps[idx].detail = text;
-                           } else if (steps.length > 0) {
-                               if (steps[steps.length - 1].detail) {
-                                   steps[steps.length - 1].detail += `\n\n${text}`;
+                               if (steps[idx].detail) {
+                                   steps[idx].detail += `\n${text}`;
                                } else {
-                                   steps[steps.length - 1].detail = text;
+                                   steps[idx].detail = text;
                                }
+                           } else if (steps.length > 0) {
+                               steps[steps.length - 1].detail = steps[steps.length - 1].detail 
+                                   ? steps[steps.length - 1].detail + `\n${text}` 
+                                   : text;
                            } else {
-                               steps.push({ title: "[Analyze]", detail: text });
+                               steps.push({ title: "Analysis", detail: text });
                            }
                        });
                    }
                    
                    return (
-                       <div className={styles.stepperContainer}>
+                       <>
                           {steps.map((step, i) => (
-                             <div key={i} className={styles.stepperItem}>
-                                <div className={styles.stepperLine} />
-                                <div className={styles.stepperCircle} />
-                                <div className={styles.stepperText}>
-                                  <div style={{ fontWeight: 600 }}>{step.title}</div>
-                                  {step.detail && <div style={{ marginTop: 4 }}><ChatMarkdown content={step.detail} /></div>}
+                             <div key={i} className={styles.thoughtStage}>
+                                <div className={styles.thoughtStageTitle}>
+                                  <div className={styles.thoughtStageIcon} />
+                                  {step.title}
                                 </div>
+                                {step.detail && (
+                                  <div className={styles.thoughtRawBlock}>
+                                    {step.detail}
+                                  </div>
+                                )}
                              </div>
                           ))}
-                       </div>
+                       </>
                    );
                 })()}
              </div>

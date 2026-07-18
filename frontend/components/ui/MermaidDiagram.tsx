@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 interface MermaidDiagramProps {
   chart: string;
   isDedicatedView?: boolean;
+  isGenerating?: boolean;
 }
 
 /**
@@ -13,7 +14,7 @@ interface MermaidDiagramProps {
  * Dynamically imports mermaid to keep the bundle lightweight.
  * Supports dedicated full-size panel layout or inline expandable preview cards.
  */
-export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagramProps) {
+export function MermaidDiagram({ chart, isDedicatedView = false, isGenerating = false }: MermaidDiagramProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [svg, setSvg] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -27,12 +28,43 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const LOADING_PHRASES = [
+    "Analyzing architecture...",
+    "Mapping code dependencies...",
+    "Rendering nodes...",
+    "Generating diagram..."
+  ];
+  
+  const [loadingText, setLoadingText] = useState(LOADING_PHRASES[0]);
+  const [delayedIsGenerating, setDelayedIsGenerating] = useState(isGenerating);
+
+  useEffect(() => {
+    if (isGenerating) {
+      setDelayedIsGenerating(true);
+    } else {
+      const timeout = setTimeout(() => {
+        setDelayedIsGenerating(false);
+      }, 6000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isGenerating]);
+
+  useEffect(() => {
+    if (!delayedIsGenerating) return;
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % LOADING_PHRASES.length;
+      setLoadingText(LOADING_PHRASES[idx]);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [delayedIsGenerating]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!chart || typeof window === "undefined") return;
+    if (!chart || typeof window === "undefined" || delayedIsGenerating) return;
 
     let isMounted = true;
     setError("");
@@ -46,18 +78,33 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
           startOnLoad: false,
           theme: "dark",
           securityLevel: "loose",
+          suppressErrorRendering: true,
         });
 
         const id = `mermaid-${Math.floor(Math.random() * 100000)}`;
-        const { svg: renderedSvg } = await mermaid.render(id, chart);
+        
+        // Silence console.error temporarily because Mermaid spams it on incomplete syntax during streaming
+        const originalConsoleError = console.error;
+        console.error = () => {};
+        
+        let renderedSvg;
+        try {
+          const result = await mermaid.render(id, chart);
+          renderedSvg = result.svg;
+        } catch (renderError) {
+          // It's expected to fail while streaming incomplete syntax, so we fail silently
+          return;
+        } finally {
+          console.error = originalConsoleError;
+        }
 
-        if (isMounted) {
+        if (isMounted && renderedSvg) {
           setSvg(renderedSvg);
+          setError("");
         }
       } catch (err) {
-        console.error("Mermaid render error:", err);
         if (isMounted) {
-          setError("Failed to parse diagram.");
+          setError("Failed to initialize Mermaid.");
         }
       }
     }
@@ -66,7 +113,7 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
     return () => {
       isMounted = false;
     };
-  }, [chart]);
+  }, [chart, delayedIsGenerating]);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -91,6 +138,62 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
   const handleMouseUp = () => {
     setIsPanning(false);
   };
+
+  if (delayedIsGenerating) {
+    return (
+      <div
+        style={{
+          width: "480px",
+          maxWidth: "100%",
+          aspectRatio: "1 / 1",
+          margin: "0 auto",
+          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(255, 255, 255, 0.02)",
+          borderRadius: "var(--radius-lg)",
+          border: "1px dashed rgba(255, 255, 255, 0.1)",
+          color: "var(--color-text-dim)",
+          gap: "12px",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        <div
+          className="animate-spin"
+          style={{
+            width: "24px",
+            height: "24px",
+            border: "2.5px solid rgba(255,255,255,0.1)",
+            borderTop: "2.5px solid #a8b1ff",
+            borderRadius: "50%"
+          }}
+        />
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes textSlideUp {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+        `}} />
+        <div style={{ position: "relative", width: "100%", height: "20px" }}>
+          <div 
+            key={loadingText}
+            style={{ 
+              position: "absolute",
+              width: "100%",
+              textAlign: "center",
+              fontSize: "0.85rem", 
+              letterSpacing: "0.02em",
+              animation: "textSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+            }}
+          >
+            {loadingText}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -148,8 +251,12 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
       <>
         <style dangerouslySetInnerHTML={{ __html: `
           .mermaid-diagram-container svg {
-            max-width: none !important;
+            max-width: 100% !important;
             height: auto !important;
+          }
+          @keyframes diagramReveal {
+            0% { opacity: 0; transform: scale(0.97) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
           }
         `}} />
         <div
@@ -163,6 +270,7 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
             borderRadius: "var(--radius-xl)",
             boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.04), 0 4px 24px rgba(0,0,0,0.4)",
             cursor: isPanning ? "grabbing" : "grab",
+            animation: "diagramReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
           }}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
@@ -377,9 +485,9 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
           max-width: none !important;
           height: auto !important;
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        @keyframes diagramReveal {
+          0% { opacity: 0; transform: scale(0.97) translateY(10px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}} />
 
@@ -392,8 +500,10 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
           setIsModalOpen(true);
         }}
         style={{
-          width: "100%",
-          height: "320px",
+          width: "480px",
+          maxWidth: "100%",
+          aspectRatio: "1 / 1",
+          margin: "0 auto",
           position: "relative",
           overflow: "hidden",
           cursor: "pointer",
@@ -471,9 +581,9 @@ export function MermaidDiagram({ chart, isDedicatedView = false }: MermaidDiagra
             justifyContent: "center",
             alignItems: "center",
             overflow: "hidden",
-            transform: "scale(0.85)",
             transformOrigin: "center center",
             pointerEvents: "none",
+            animation: "diagramReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
           }}
         />
       </div>

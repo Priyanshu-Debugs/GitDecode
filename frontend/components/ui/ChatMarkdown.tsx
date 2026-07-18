@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MermaidDiagram } from "@/components/ui/MermaidDiagram";
 import {
@@ -14,24 +14,21 @@ import {
  * Handles Mermaid diagrams, syntax-highlighted code blocks,
  * tables, lists, and inline formatting with refined styling.
  */
-export function ChatMarkdown({ content }: { content: string }) {
-  const processed = preprocessMermaidContent(content);
 
-  return (
-    <div className="chat-markdown-prose">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          code({ className, children, ...props }: any) {
-            const codeString = String(children).replace(/\n$/, "");
+const ChatMarkdownContext = React.createContext({ isUnclosedCodeBlock: false });
+
+const SHARED_COMPONENTS: Components = {
+    code({ className, children, ...props }: any) {
+      const { isUnclosedCodeBlock } = React.useContext(ChatMarkdownContext);
+      const codeString = String(children).replace(/\n$/, "");
             const langMatch = /language-(\w+)/.exec(className || "");
             const lang = langMatch ? langMatch[1] : undefined;
-
+            
             // Mermaid detection: fenced ```mermaid or content-based heuristic
             if (lang === "mermaid" || (!lang && isMermaidContent(codeString))) {
               return (
                 <div style={{ margin: "12px 0", width: "100%" }}>
-                  <MermaidDiagram chart={codeString} />
+                  <MermaidDiagram chart={codeString} isGenerating={isUnclosedCodeBlock} />
                 </div>
               );
             }
@@ -260,11 +257,26 @@ export function ChatMarkdown({ content }: { content: string }) {
               }}
             />
           ),
-        }}
-      >
-        {processed}
-      </ReactMarkdown>
-    </div>
+};
+
+export function ChatMarkdown({ content }: { content: string }) {
+  const processed = preprocessMermaidContent(content);
+  const memoizedPlugins = React.useMemo(() => [remarkGfm], []);
+  
+  const tickMatches = content.match(/```/g) || [];
+  const isUnclosedCodeBlock = tickMatches.length % 2 !== 0;
+
+  return (
+    <ChatMarkdownContext.Provider value={{ isUnclosedCodeBlock }}>
+      <div className="chat-markdown-prose">
+        <ReactMarkdown
+          remarkPlugins={memoizedPlugins}
+          components={SHARED_COMPONENTS}
+        >
+          {processed}
+        </ReactMarkdown>
+      </div>
+    </ChatMarkdownContext.Provider>
   );
 }
 
