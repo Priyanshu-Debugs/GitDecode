@@ -180,7 +180,7 @@ export default function SignInPage() {
 
         <div className={styles.loginCenter}>
           <div className={styles.logo}>
-            <Image src="/logo.svg" alt="GitMesh Logo" width={384} height={96} priority className={styles.logoImage} />
+            <Image src="/developer-logo.svg" alt="GitMesh Logo" width={240} height={240} priority className={styles.logoImage} />
           </div>
 
           <div className={styles.intro}>

@@ -212,14 +212,14 @@
   gap: clamp(20px, 4vh, 32px);
 }
 
-/* Logo */
 .logo {
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .logoImage {
-  height: clamp(64px, 10vh, 96px);
+  height: clamp(180px, 24vh, 240px);
   width: auto;
   display: block;
 }

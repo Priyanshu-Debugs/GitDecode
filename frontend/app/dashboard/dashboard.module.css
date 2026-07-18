@@ -49,9 +49,9 @@
   top: 0;
   bottom: 0;
   width: 260px;
-  background: rgba(4, 4, 4, 0.8) radial-gradient(ellipse at bottom, rgba(200, 204, 212, 0.03) 0%, transparent 60%);
+  background: rgba(4, 4, 4, 0.8) radial-gradient(ellipse at bottom, rgba(131, 193, 103, 0.02) 0%, transparent 60%);
   backdrop-filter: blur(24px) saturate(200%);
-  border-right: 0.5px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   z-index: 100;
@@ -68,7 +68,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 20px 16px;
-  border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sidebarLogoImage {
@@ -88,7 +88,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
+  border-radius: 0px;
   color: var(--color-text-tertiary);
   transition: all var(--transition-fast);
   cursor: pointer;
@@ -112,8 +112,8 @@
   align-items: center;
   gap: 12px;
   padding: 11px 14px;
-  border-radius: var(--radius-md);
-  font-family: var(--font-sans);
+  border-radius: 0px;
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   font-weight: 400;
   color: var(--color-text-secondary);
@@ -131,11 +131,11 @@
 }
 
 .navItemActive {
-  background: rgba(200, 204, 212, 0.06);
+  background: rgba(131, 193, 103, 0.06);
   color: var(--color-white);
-  border-color: rgba(200, 204, 212, 0.15);
+  border-color: rgba(131, 193, 103, 0.15);
   font-weight: 500;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.01), 0 4px 12px rgba(200, 204, 212, 0.04);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.01), 0 4px 12px rgba(131, 193, 103, 0.04);
 }
 
 .navItemActive::before {
@@ -146,8 +146,8 @@
   transform: translateY(-50%);
   width: 3px;
   height: 16px;
-  background: #c8ccd4;
-  border-radius: var(--radius-full);
+  background: var(--color-green);
+  border-radius: 0px;
 }
 
 .navIcon {
@@ -159,12 +159,12 @@
 
 .navItemActive .navIcon {
   opacity: 1;
-  color: #c8ccd4;
+  color: var(--color-green);
 }
 
 .sidebarFooter {
   padding: 16px;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid var(--color-border);
 }
 
 .userSection {
@@ -172,7 +172,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px;
-  border-radius: var(--radius-md);
+  border-radius: 0px;
   transition: background var(--transition-fast);
   cursor: pointer;
 }
@@ -185,15 +185,15 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(200, 204, 212, 0.15);
-  border: 0.5px solid rgba(200, 204, 212, 0.3);
+  background: rgba(131, 193, 103, 0.15);
+  border: 0.5px solid rgba(131, 193, 103, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
-  color: #c8ccd4;
+  color: var(--color-green);
   flex-shrink: 0;
 }
 
@@ -228,9 +228,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 40px;
-  border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
 }
 
 .breadcrumb {
@@ -401,9 +400,9 @@
 }
 
 .statusProcessing {
-  background: rgba(200, 204, 212, 0.1);
-  color: #dde1e8;
-  border: 0.5px solid rgba(200, 204, 212, 0.2);
+  background: rgba(131, 193, 103, 0.1);
+  color: #9ad67e;
+  border: 0.5px solid rgba(131, 193, 103, 0.2);
 }
 
 .statusCompleted {
@@ -430,7 +429,7 @@
 }
 
 .statusDotProcessing {
-  background: #c8ccd4;
+  background: var(--color-green);
   animation: pulse 1.5s infinite;
 }
 
@@ -680,8 +679,8 @@
   color: var(--color-text-secondary);
   background: rgba(255, 255, 255, 0.02);
   padding: 12px;
-  border-radius: var(--radius-sm);
-  border-left: 2px solid #c8ccd4;
+  border-radius: 0px;
+  border-left: 2px solid var(--color-green);
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -693,7 +692,7 @@
   text-align: center;
   padding: 80px 40px;
   border: 0.5px dashed rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-xl);
+  border-radius: 0px;
   background: rgba(255, 255, 255, 0.01);
 }
 
@@ -703,15 +702,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(200, 204, 212, 0.06);
-  border: 0.5px solid rgba(200, 204, 212, 0.15);
-  border-radius: var(--radius-xl);
-  color: #c8ccd4;
+  background: rgba(131, 193, 103, 0.06);
+  border: 0.5px solid rgba(131, 193, 103, 0.15);
+  border-radius: 0px;
+  color: var(--color-green);
   margin-bottom: 24px;
 }
 
 .emptyTitle {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--color-white);
@@ -719,7 +718,7 @@
 }
 
 .emptyDesc {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   max-width: 420px;
@@ -744,7 +743,7 @@
 .modal {
   background: var(--color-surface-elevated);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-xl);
+  border-radius: 0px;
   padding: 32px;
   width: 100%;
   max-width: 480px;
@@ -753,7 +752,7 @@
 }
 
 .modalTitle {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--color-white);
@@ -761,7 +760,7 @@
 }
 
 .modalDesc {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   color: var(--color-text-secondary);
   margin-bottom: 24px;
@@ -773,7 +772,7 @@
 }
 
 .formLabel {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-text-secondary);
@@ -786,7 +785,7 @@
   padding: 10px 14px;
   background: var(--color-surface);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-md);
+  border-radius: 0px;
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
@@ -799,7 +798,7 @@
 }
 
 .formInput:focus {
-  border-color: rgba(200, 204, 212, 0.4);
+  border-color: var(--color-green);
 }
 
 .modalActions {
@@ -810,7 +809,7 @@
 }
 
 .formError {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--color-danger);
   margin-top: 8px;
@@ -910,15 +909,15 @@
 }
 
 .gitmeshNodeOuterRect {
-  fill: rgba(200, 204, 212, 0.04);
-  stroke: rgba(200, 204, 212, 0.25);
+  fill: rgba(131, 193, 103, 0.04);
+  stroke: rgba(131, 193, 103, 0.25);
   stroke-width: 1.5px;
   animation: glowPulseRect 2s ease-in-out infinite alternate;
 }
 
 .gitmeshNodeInnerRect {
   fill: #050505;
-  stroke: #c8ccd4;
+  stroke: var(--color-green);
   stroke-width: 1px;
 }
 
@@ -980,7 +979,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  border: 1px solid rgba(200, 204, 212, 0.3);
+  border: 1px solid rgba(131, 193, 103, 0.3);
   animation: radarSpread 2.5s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
   pointer-events: none;
 }
@@ -1007,7 +1006,7 @@
 }
 
 .quoteText {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.875rem;
   line-height: 1.6;
   color: var(--color-text);
@@ -1035,7 +1034,7 @@
 .loaderProgressBar {
   width: 100%;
   height: 100%;
-  background: #c8ccd4;
+  background: var(--color-green);
   transform: translateX(-100%);
   animation: fillProgress 3.8s linear infinite;
 }
@@ -1351,13 +1350,13 @@
 .chatBubbleUser {
   align-self: flex-end;
   max-width: 80%;
-  background: rgba(200, 204, 212, 0.08);
-  border: 0.5px solid rgba(200, 204, 212, 0.2);
+  background: rgba(131, 193, 103, 0.08);
+  border: 0.5px solid rgba(131, 193, 103, 0.2);
   padding: 12px 18px !important;
-  border-radius: var(--radius-xl) var(--radius-xl) 4px var(--radius-xl);
+  border-radius: 0px;
   color: var(--color-text);
   font-size: 0.875rem;
-  box-shadow: 0 4px 12px rgba(200, 204, 212, 0.06);
+  box-shadow: 0 4px 12px rgba(131, 193, 103, 0.05);
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: pre-wrap !important;
@@ -1375,7 +1374,7 @@
   background: transparent;
   border: none;
   padding: 16px 20px !important;
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) 4px;
+  border-radius: 0px;
   color: var(--color-text);
   font-size: 0.875rem;
   box-shadow: none;
@@ -1399,7 +1398,7 @@
   display: flex;
   background: var(--color-surface-elevated);
   border: 0.5px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: 0px;
   padding: 8px 16px;
   align-items: center;
   gap: 12px;
@@ -1407,8 +1406,8 @@
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .chatInputBox:focus-within {
-  border-color: rgba(200, 204, 212, 0.5);
-  box-shadow: 0 0 0 3px rgba(200, 204, 212, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.02);
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(131, 193, 103, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.02);
 }
 .chatInputArea {
   flex: 1;
@@ -1416,6 +1415,7 @@
   border: none;
   outline: none;
   resize: none;
+  font-family: var(--font-mono);
   font-size: 0.875rem;
   color: var(--color-text);
   max-height: 120px;
@@ -1431,7 +1431,8 @@
   padding: 4px 10px;
   background: rgba(255, 255, 255, 0.02);
   border: 0.5px solid var(--color-border);
-  border-radius: var(--radius-full);
+  border-radius: 0px;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -1439,8 +1440,8 @@
 }
 .chatSuggestionItem:hover {
   background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text);
-  border-color: var(--color-border-hover);
+  color: var(--color-green);
+  border-color: var(--color-green);
 }
 
 /* Citations & Source Overlay */
@@ -1458,17 +1459,17 @@
   gap: 4px;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  color: #c8ccd4;
-  background: rgba(200, 204, 212, 0.08);
-  border: 0.5px solid rgba(200, 204, 212, 0.15);
+  color: var(--color-green);
+  background: rgba(131, 193, 103, 0.08);
+  border: 0.5px solid rgba(131, 193, 103, 0.15);
   padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: 0px;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 .citationBadge:hover {
-  background: rgba(200, 204, 212, 0.15);
-  color: #dde1e8;
+  background: rgba(131, 193, 103, 0.15);
+  color: #9ad67e;
 }
 
 /* ── Right Panel Sources & Connections ── */
@@ -1660,8 +1661,8 @@
 }
 .resizeDivider:hover,
 .resizeDividerActive {
-  background: rgba(200, 204, 212, 0.12);
-  border-color: rgba(200, 204, 212, 0.3);
+  background: rgba(131, 193, 103, 0.12);
+  border-color: rgba(131, 193, 103, 0.3);
 }
 
 /* Sidebar Progress Queue */
@@ -1693,7 +1694,7 @@
   padding: 8px;
   background: rgba(255, 255, 255, 0.01);
   border: 0.5px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 0px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1705,8 +1706,8 @@
   background: rgba(255, 255, 255, 0.02);
 }
 .sidebarQueueCardActive {
-  border-color: rgba(200, 204, 212, 0.5) !important;
-  background: rgba(200, 204, 212, 0.02) !important;
+  border-color: rgba(131, 193, 103, 0.5) !important;
+  background: rgba(131, 193, 103, 0.02) !important;
 }
 .sidebarQueueName {
   font-size: 0.75rem;
@@ -1836,7 +1837,7 @@
 }
 
 .dashboardHeroTitle {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 2.25rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -1846,6 +1847,7 @@
 }
 
 .dashboardHeroSubtitle {
+  font-family: var(--font-mono);
   font-size: 0.9375rem;
   font-weight: 300;
   color: var(--color-text-secondary);
@@ -1876,7 +1878,7 @@
 .dashboardStatCard {
   background: rgba(255, 255, 255, 0.01);
   border: 0.5px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-lg);
+  border-radius: 0px;
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
@@ -1886,7 +1888,7 @@
 }
 
 .dashboardStatCard:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-green);
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -1894,7 +1896,7 @@
   font-size: 1.75rem;
   font-weight: 600;
   color: var(--color-white);
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   letter-spacing: -0.02em;
 }
 
@@ -1933,7 +1935,7 @@
   height: 38px;
   background: rgba(255, 255, 255, 0.02);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-full);
+  border-radius: 0px;
   padding: 0 16px 0 38px;
   font-size: 0.8125rem;
   color: var(--color-text);
@@ -1942,9 +1944,9 @@
 }
 
 .searchInput:focus {
-  border-color: rgba(200, 204, 212, 0.5);
+  border-color: var(--color-green);
   background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 0 12px rgba(200, 204, 212, 0.1);
+  box-shadow: 0 0 12px rgba(131, 193, 103, 0.15);
 }
 
 .searchIconWrapper {
@@ -1966,11 +1968,11 @@
 }
 
 .filterTabBtn {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 500;
   padding: 6px 14px;
-  border-radius: var(--radius-full);
+  border-radius: 0px;
   background: transparent;
   color: var(--color-text-secondary);
   border: 0.5px solid rgba(255, 255, 255, 0.04);
@@ -1985,8 +1987,8 @@
 }
 
 .filterTabBtnActive {
-  background: rgba(200, 204, 212, 0.08);
-  border-color: rgba(200, 204, 212, 0.4);
+  background: rgba(131, 193, 103, 0.08);
+  border-color: rgba(131, 193, 103, 0.4);
   color: var(--color-white);
 }
 
@@ -2007,7 +2009,7 @@
   background: rgba(255, 255, 255, 0.01);
   border: 0.5px solid rgba(255, 255, 255, 0.05);
   padding: 6px;
-  border-radius: 20px;
+  border-radius: 0px;
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
   transition: border-color var(--transition-base), box-shadow var(--transition-base);
   height: 100%;
@@ -2020,8 +2022,8 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 20px;
-  background: radial-gradient(300px circle at 50% 0%, rgba(200, 204, 212, 0.045), transparent 60%);
+  border-radius: 0px;
+  background: radial-gradient(300px circle at 50% 0%, rgba(131, 193, 103, 0.045), transparent 60%);
   opacity: 0;
   transition: opacity var(--transition-base);
   pointer-events: none;
@@ -2029,8 +2031,8 @@
 }
 
 .repoCardOuter:hover {
-  border-color: rgba(200, 204, 212, 0.35);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(200, 204, 212, 0.03);
+  border-color: var(--color-green);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(131, 193, 103, 0.05);
 }
 
 .repoCardOuter:hover::after {
@@ -2040,7 +2042,7 @@
 .repoCardInner {
   background: #050505;
   border: 0.5px solid rgba(255, 255, 255, 0.03);
-  border-radius: calc(20px - 6px);
+  border-radius: 0px;
   box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.01);
   height: 100%;
   display: flex;
@@ -2052,7 +2054,7 @@
 .repoCardCover {
   height: 80px;
   position: relative;
-  background: linear-gradient(135deg, rgba(200, 204, 212, 0.15) 0%, rgba(5, 5, 5, 1) 100%);
+  background: linear-gradient(135deg, rgba(131, 193, 103, 0.15) 0%, rgba(5, 5, 5, 1) 100%);
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -2075,7 +2077,7 @@
 }
 
 .repoCardOuter:hover .repoCardCoverOctocat {
-  color: rgba(200, 204, 212, 0.3);
+  color: rgba(131, 193, 103, 0.3);
 }
 
 .repoCardAvatarContainer {
@@ -2103,14 +2105,14 @@
 .repoCardAvatarPlaceholder {
   width: 100%;
   height: 100%;
-  background: rgba(200, 204, 212, 0.1);
+  background: rgba(131, 193, 103, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-size: 1.1rem;
   font-weight: 600;
-  color: #c8ccd4;
+  color: var(--color-green);
 }
 
 .repoCardContent {
@@ -2125,7 +2127,7 @@
 }
 
 .repoCardTitle {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--color-white);
@@ -3240,37 +3242,40 @@
 .topbarNav {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.01);
-  border: 0.5px solid rgba(255, 255, 255, 0.04);
-  padding: 4px;
-  border-radius: var(--radius-lg);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.01);
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0px;
+  box-shadow: none;
 }
 
 .topbarTab {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--color-text-secondary);
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-md);
+  color: var(--color-dim);
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-bottom: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0px;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .topbarTab:hover {
-  color: var(--color-white);
-  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-green);
+  border-color: var(--color-green);
 }
 
 .topbarTabActive {
-  color: #0a0a0a !important;
-  background: #c8ccd4 !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+  border-bottom-color: var(--color-green) !important;
+  background: rgba(131, 193, 103, 0.06) !important;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: none !important;
 }
 
 /* Top bar Right profile widget */
@@ -3286,7 +3291,7 @@
   gap: 8px;
   cursor: pointer;
   padding: 4px 10px;
-  border-radius: var(--radius-md);
+  border-radius: 0px;
   border: 0.5px solid transparent;
   transition: all var(--transition-fast);
 }
@@ -3300,8 +3305,8 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #c8ccd4;
-  color: #0a0a0a;
+  background: var(--color-green);
+  color: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3329,7 +3334,7 @@
 .topbarSignOutBtn {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 0px;
   border: 0.5px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
   color: var(--color-text-secondary);
@@ -3341,9 +3346,9 @@
 }
 
 .topbarSignOutBtn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: var(--color-white);
+  background: rgba(131, 193, 103, 0.1);
+  border-color: var(--color-green);
+  color: var(--color-green);
 }
 
 /* Thought Process Overlay */
