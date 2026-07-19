@@ -321,11 +321,19 @@ function DashboardContent() {
         else if (type === "section_complete") setReportSectionProgress(content);
         else if (type === "report") setReport({ repo_id: activeRepoId, report_markdown: content, plan: reportPlan, created_at: new Date().toISOString() });
         else if (type === "error") setReportError(content);
-        else if (type === "done") setReportGenerating(false);
+        else if (type === "done") {
+          setReportGenerating(false);
+          getReportRateLimitStatus(activeRepoId)
+            .then((res) => setReportRateLimit(res))
+            .catch(() => {});
+        }
       });
     } catch (e: any) {
       setReportError(e.message || "Failed to generate report");
       setReportGenerating(false);
+      getReportRateLimitStatus(activeRepoId)
+        .then((res) => setReportRateLimit(res))
+        .catch(() => {});
     }
   };
 
@@ -1682,6 +1690,17 @@ function DashboardContent() {
                     </div>
                   </div>
 
+                  {reportRateLimit?.can_generate === false && (
+                    <div className={styles.upgradeNoticeBox}>
+                      <span className={styles.upgradeNoticeText}>
+                        Monthly report limit reached (2 generations per repository per month). Upgrade your plan for unlimited deep analysis.
+                      </span>
+                      <button className={styles.upgradeNoticeBtn} onClick={() => router.push("/pricing")}>
+                        Upgrade Plan
+                      </button>
+                    </div>
+                  )}
+
                   {/* ── REPORT CONTENT CONTAINER ── */}
                   <div id="codebase-report-content" className={styles.reportContentPaper}>
                     <div className={styles.reportPdfHeader}>
@@ -1729,9 +1748,20 @@ function DashboardContent() {
                   </button>
                   <span className={styles.reportRateNotice}>
                     {reportRateLimit?.can_generate === false
-                      ? "Monthly report limit reached (1 report per repository per month)."
-                      : "Limit: 1 report per repository per month"}
+                      ? "Monthly report limit reached (2 generations per repository per month)."
+                      : "Limit: 2 generations (1 initial + 1 regeneration) per repository per month"}
                   </span>
+
+                  {reportRateLimit?.can_generate === false && (
+                    <div className={styles.upgradeNoticeBox}>
+                      <span className={styles.upgradeNoticeText}>
+                        Monthly report limit reached (2 generations per repository per month). Upgrade your plan for unlimited deep analysis.
+                      </span>
+                      <button className={styles.upgradeNoticeBtn} onClick={() => router.push("/pricing")}>
+                        Upgrade Plan
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

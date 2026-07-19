@@ -55,14 +55,12 @@ async def generate_report(
     settings = get_settings()
 
     # 1. Rate Limit Enforcement
-    is_developer = user.github_username in settings.DEVELOPERS
-    if not is_developer:
-        allowed = await pg.check_report_rate_limit(user.id, repo_str)
-        if not allowed:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Report generation limit reached (1 report per repository per month).",
-            )
+    allowed = await pg.check_report_rate_limit(user.id, repo_str)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Report generation limit reached (2 reports per repository per month).",
+        )
 
     # 2. Verify repository exists and is completed
     repo_row = await pg.get_repo(repo_str, user.id)
@@ -142,9 +140,8 @@ async def generate_report(
                 logger.info("Saving generated report for repo_id %s to Supabase", repo_str)
                 await pg.save_report(repo_str, user.id, final_report_md, plan_data)
 
-                # Record rate limit increment if not developer
-                if not is_developer:
-                    await pg.increment_report_rate_limit(user.id, repo_str)
+                # Record rate limit increment
+                await pg.increment_report_rate_limit(user.id, repo_str)
 
                 yield sse_event("report", final_report_md)
                 yield sse_event("stage", "Codebase Report complete!")
@@ -216,10 +213,8 @@ async def get_report_rate_limit_status(
 ) -> dict[str, Any]:
     """Get report generation rate limit status for the current repository."""
     settings = get_settings()
-    if user.github_username in settings.DEVELOPERS:
-        return {"can_generate": True, "next_available": None, "is_developer": True}
     status_dict = await pg.get_report_rate_limit_status(user.id, str(repo_id))
-    status_dict["is_developer"] = False
+    status_dict["is_developer"] = user.github_username in settings.DEVELOPERS
     return status_dict
 
 
