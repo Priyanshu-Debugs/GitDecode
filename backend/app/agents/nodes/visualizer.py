@@ -52,10 +52,4 @@ async def visualizer_node(state: AgentState) -> Dict[str, Any]:
     
     response = await llm.ainvoke(messages)
     
-    # Strip markdown backticks if the LLM hallucinated them
-    content = response.content
-    if isinstance(content, str):
-        content = content.replace("```mermaid", "").replace("```", "").strip()
-        response.content = f"```mermaid\n{content}\n```"
-    
     return {"messages": [response]}

@@ -8,7 +8,7 @@
 import { getSupabase } from "@/app/lib/supabase";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
 // Helper to check if currently in Demo Mode
 export function isDemoMode(): boolean {
@@ -69,6 +69,7 @@ async function apiFetch<T>(
 ): Promise<T> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}${path}`, {
+    cache: "no-store",
     ...options,
     headers: { ...headers, ...(options.headers || {}) },
   });
@@ -93,6 +94,7 @@ export interface RepoItem {
   detailed_status?: string;
   error_message?: string;
   created_at: string;
+  is_active?: boolean;
 }
 
 export interface RepoSyncResponse {
@@ -235,6 +237,30 @@ export async function listRepos(): Promise<RepoItem[]> {
     return getMockRepos();
   }
   return apiFetch<RepoItem[]>("/repos");
+}
+
+export async function toggleRepoStatus(repoId: string, isActive: boolean): Promise<RepoItem> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find(r => r.id === repoId);
+    if (repo) {
+      repo.is_active = isActive;
+      localStorage.setItem("gitmesh_mock_repos", JSON.stringify(list));
+      return repo;
+    }
+    throw new Error("Repo not found in demo mode");
+  }
+  return apiFetch<RepoItem>(`/repos/${repoId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_active: isActive })
+  });
+}
+
+export async function getRateLimitStatus(repoId: string): Promise<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean }> {
+  if (isDemoMode()) {
+    return { remaining_daily: 999, remaining_monthly: 999, is_developer: true };
+  }
+  return apiFetch<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean }>(`/chat/rate-limit-status?repo_id=${repoId}`);
 }
 
 /** Initiate a repo sync */

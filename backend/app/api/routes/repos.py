@@ -22,7 +22,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
-from app.schemas.requests import RepoSyncRequest
+from app.core.config import settings
+from app.schemas.requests import RepoSyncRequest, RepoStatusUpdate
 from app.schemas.responses import (
     RepoSyncResponse,
     RepoListItem,
@@ -112,6 +113,15 @@ async def sync_repo(
     2. Dispatches an Inngest event to trigger the background ingestion pipeline.
     3. Returns the repo ID and status to the caller.
     """
+    
+    if user.github_username not in settings.DEVELOPERS:
+        active_count = await pg.get_active_repo_count(user.id)
+        if active_count >= 2:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You have reached the maximum limit of 2 active repositories. Please deactivate one before adding a new repository."
+            )
+
     # Insert repo record
     repo_row = await pg.insert_repo(
         user_id=user.id,
@@ -189,6 +199,47 @@ async def get_repo_status(
         error_message=repo_row.get("error_message"),
         queued_at=repo_row["created_at"],
     )
+
+
+@router.patch(
+    "/{repo_id}/status",
+    response_model=RepoListItem,
+    summary="Update repository active status",
+    description="Toggle whether a repository is active for chatting.",
+)
+async def update_repo_status_toggle(
+    repo_id: UUID,
+    request: RepoStatusUpdate,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> RepoListItem:
+    """Toggle repository active status."""
+    import logging
+    logging.error(f"DEBUG REPO TOGGLE: repo_id={repo_id}, request={request.dict()}, type(is_active)={type(request.is_active)}")
+    
+    with open("debug_repo_toggle.txt", "a") as f:
+        f.write(f"repo_id={repo_id}, is_active={request.is_active}, type={type(request.is_active)}\n")
+    if request.is_active is True and user.github_username not in settings.DEVELOPERS:
+        active_count = await pg.get_active_repo_count(user.id)
+        if active_count >= 2:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You have reached the maximum limit of 2 active repositories. Please deactivate one before activating another."
+            )
+            
+    updated = await pg.toggle_repo_active_status(
+        repo_id=str(repo_id),
+        user_id=user.id,
+        is_active=request.is_active,
+    )
+    
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository {repo_id} not found."
+        )
+        
+    return RepoListItem(**updated)
 
 
 @router.get(

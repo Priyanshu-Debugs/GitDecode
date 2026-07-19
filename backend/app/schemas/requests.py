@@ -52,6 +52,15 @@ class RepoSyncRequest(BaseModel):
             )
         return v
 
+class RepoStatusUpdate(BaseModel):
+    """Request body for updating the active status of a repository.
+    
+    Attributes:
+        is_active: Whether the repository should be active for chats.
+    """
+    model_config = ConfigDict(extra="forbid")
+    is_active: bool
+
 
 from app.schemas.llm_config import UserLLMConfig
 

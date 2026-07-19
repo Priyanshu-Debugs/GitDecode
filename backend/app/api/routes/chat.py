@@ -24,6 +24,7 @@ from app.db.pg_client import SupabasePGClient
 from app.schemas.requests import ChatMessageSend, ChatFeedbackRequest
 from app.schemas.responses import ChatMessageResponse, ChatHistoryResponse, ErrorResponse
 from app.agents.graph import graph as agent_graph
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,21 @@ async def send_message(
 ) -> ChatMessageResponse:
     """Send a chat message and receive an AI-generated response."""
     session_id = str(request.session_id or uuid4())
+
+    # Check rate limits for default model
+    is_default = not request.llm_config or not request.llm_config.api_key
+    if is_default and user.github_username not in settings.DEVELOPERS:
+        allowed = await pg.check_and_increment_rate_limit(
+            user_id=user.id,
+            repo_id=str(request.repo_id),
+            daily_limit=settings.DAILY_MSG_LIMIT,
+            monthly_limit=settings.MONTHLY_MSG_LIMIT,
+        )
+        if not allowed:
+            raise HTTPException(
+                status_code=429,
+                detail="You have reached your free message limit for this repository."
+            )
 
     # 1. Persist the user message
     user_msg = await pg.insert_chat_message(
@@ -142,6 +158,21 @@ async def stream_message(
     pg: SupabasePGClient = Depends(get_pg),
 ):
     session_id = str(request.session_id or uuid4())
+
+    # Check rate limits for default model
+    is_default = not request.llm_config or not request.llm_config.api_key
+    if is_default and user.github_username not in settings.DEVELOPERS:
+        allowed = await pg.check_and_increment_rate_limit(
+            user_id=user.id,
+            repo_id=str(request.repo_id),
+            daily_limit=settings.DAILY_MSG_LIMIT,
+            monthly_limit=settings.MONTHLY_MSG_LIMIT,
+        )
+        if not allowed:
+            raise HTTPException(
+                status_code=429,
+                detail="You have reached your free message limit for this repository."
+            )
 
     async def event_generator() -> AsyncGenerator[str, None]:
         user_msg = await pg.insert_chat_message(
@@ -314,3 +345,27 @@ async def submit_feedback(
         feedback_type=request.feedback_type,
     )
     return {"status": "success"}
+
+@router.get(
+    "/rate-limit-status",
+    summary="Get rate limit status",
+    description="Get the remaining messages for the user on the default model.",
+)
+async def get_rate_limit_status(
+    repo_id: UUID = Query(..., description="The repository UUID"),
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> dict:
+    if user.github_username in settings.DEVELOPERS:
+        return {
+            "remaining_daily": settings.DAILY_MSG_LIMIT,
+            "remaining_monthly": settings.MONTHLY_MSG_LIMIT,
+            "is_developer": True,
+        }
+        
+    return await pg.get_rate_limit_status(
+        user_id=user.id,
+        repo_id=str(repo_id),
+        daily_limit=settings.DAILY_MSG_LIMIT,
+        monthly_limit=settings.MONTHLY_MSG_LIMIT,
+    )

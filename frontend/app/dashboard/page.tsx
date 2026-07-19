@@ -802,6 +802,9 @@ function DashboardContent() {
       return colors[lang] || "#888888";
     };
 
+    const activeReposCount = repos.filter(r => (r.is_active ?? true) === true).length;
+    const isAtLimit = activeReposCount >= 2;
+
     return (
       <div className={styles.repoDashboardContainer} style={{ padding: "40px 48px", overflowY: "auto", width: "100%", height: "100%", background: "var(--color-bg)", position: "relative" }}>
         {/* repeating dot mesh grid background */}
@@ -958,14 +961,61 @@ function DashboardContent() {
                     <div className={styles.repoCardFooter}>
                       {repo.status === "completed" && (
                         <>
-                          <span className={`${styles.repoCardBadge} ${styles.badgeCompleted}`}>
-                            <span className={`${styles.pulseLightDot} ${styles.pulseDotGreen}`} />
-                            Active
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className={`${styles.repoCardBadge} ${(repo.is_active ?? true) !== false ? styles.badgeCompleted : styles.badgeNotConnected}`}>
+                              <span className={`${styles.pulseLightDot} ${(repo.is_active ?? true) !== false ? styles.pulseDotGreen : styles.pulseDotGray}`} />
+                              {(repo.is_active ?? true) !== false ? 'Active' : 'Inactive'}
+                            </span>
+                            
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={(repo.is_active ?? true) !== false}
+                                onChange={async (e) => {
+                                  const newStatus = e.target.checked;
+                                  
+                                  // Optimistically update the UI
+                                  setRepos(prev => prev.map(r => r.id === repo.id ? { ...r, is_active: newStatus } : r));
+                                  
+                                  try {
+                                    const { toggleRepoStatus } = await import('@/app/lib/api');
+                                    await toggleRepoStatus(repo.id, newStatus);
+                                    // Removed fetchRepos() to prevent aggressive Next.js fetch cache from reverting the optimistic update
+                                  } catch (err: any) {
+                                    // Revert on error
+                                    setRepos(prev => prev.map(r => r.id === repo.id ? { ...r, is_active: !newStatus } : r));
+                                    
+                                    alert(`Toggle Failed: ${err.message || "Could not update repository status."}`);
+                                  }
+                                }}
+                                style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }} 
+                              />
+                              <div style={{ 
+                                width: '36px', height: '20px', 
+                                background: (repo.is_active ?? true) !== false ? 'var(--color-primary)' : 'var(--color-surface-elevated)', 
+                                borderRadius: '10px', 
+                                position: 'relative', 
+                                transition: 'background 0.2s',
+                                border: '1px solid var(--color-border)'
+                              }}>
+                                <div style={{ 
+                                  width: '14px', height: '14px', 
+                                  background: '#fff', 
+                                  borderRadius: '50%', 
+                                  position: 'absolute', 
+                                  top: '2px', 
+                                  left: (repo.is_active ?? true) !== false ? '18px' : '3px', 
+                                  transition: 'left 0.2s' 
+                                }} />
+                              </div>
+                            </label>
+                          </div>
+                          
                           <button
                             className="btn btn-ghost btn-sm"
                             onClick={() => router.push(`/dashboard?repo_id=${repo.id}`)}
-                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                            disabled={repo.is_active === false}
+                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem", opacity: repo.is_active === false ? 0.5 : 1 }}
                           >
                             Explore Workspace
                           </button>
@@ -1019,7 +1069,15 @@ function DashboardContent() {
                               setSelectedRepoForSync({ ...repo, isCustom: false });
                               setSyncBranch(repo.branch || "main");
                             }}
-                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                            disabled={isAtLimit}
+                            title={isAtLimit ? "Maximum 2 active repos reached. Deactivate one first." : ""}
+                            style={{ 
+                              height: 28, 
+                              padding: "0 12px", 
+                              fontSize: "0.75rem",
+                              opacity: isAtLimit ? 0.5 : 1,
+                              cursor: isAtLimit ? "not-allowed" : "pointer"
+                            }}
                           >
                             Connect
                           </button>
@@ -1048,9 +1106,15 @@ function DashboardContent() {
             <div
               className={styles.customConnectCardInner}
               onClick={() => {
+                if (isAtLimit) return;
                 setSelectedRepoForSync({ name: "Custom Repository", html_url: "", isCustom: true });
                 setSyncBranch("main");
               }}
+              style={{
+                opacity: isAtLimit ? 0.5 : 1,
+                cursor: isAtLimit ? "not-allowed" : "pointer"
+              }}
+              title={isAtLimit ? "Maximum 2 active repos reached. Deactivate one first." : ""}
             >
               <div className={styles.customConnectIconWrapper}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -1447,6 +1511,7 @@ function DashboardContent() {
               {/* Sticky bottom input */}
               <div style={{ width: "100%", maxWidth: "900px", margin: "0 auto", padding: "0 20px 24px 20px" }}>
                 <ChatInput
+                  repoId={activeRepoId}
                   onSend={(query) => handleSendChat(query)}
                   disabled={chatLoading}
                   initialValue={chatInput}

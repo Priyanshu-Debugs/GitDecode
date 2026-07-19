@@ -182,6 +182,133 @@ class SupabasePGClient:
         )
         logger.info("Deleted repo %s for user %s", repo_id, user_id)
 
+    async def toggle_repo_active_status(
+        self,
+        repo_id: str,
+        user_id: str,
+        is_active: bool,
+    ) -> dict[str, Any]:
+        """Update the active status of a repository."""
+        response = (
+            self._client.table("repos")
+            .update({"is_active": is_active})
+            .eq("id", repo_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        repo = await self.get_repo(repo_id, user_id)
+        if not repo:
+            logger.error("Failed to update repo active status: repository %s not found for user %s", repo_id, user_id)
+            return {}
+        logger.info("Updated repo %s active status to '%s'", repo_id, is_active)
+        return repo
+
+    async def get_active_repo_count(self, user_id: str) -> int:
+        """Get the number of active repositories for a user."""
+        response = (
+            self._client.table("repos")
+            .select("id", count="exact")
+            .eq("user_id", user_id)
+            .eq("is_active", True)
+            .execute()
+        )
+        return response.count if response.count is not None else 0
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  Rate Limiting
+    # ══════════════════════════════════════════════════════════════════════
+
+    async def check_and_increment_rate_limit(self, user_id: str, repo_id: str, daily_limit: int, monthly_limit: int) -> bool:
+        from datetime import datetime, date
+        
+        # 1. Query current limits
+        response = (
+            self._client.table("repo_rate_limits")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("repo_id", repo_id)
+            .maybe_single()
+            .execute()
+        )
+        
+        today_date = date.today().isoformat()
+        first_of_month = date.today().replace(day=1).isoformat()
+        
+        if not response.data:
+            # Insert first record
+            self._client.table("repo_rate_limits").insert({
+                "user_id": user_id,
+                "repo_id": repo_id,
+                "daily_count": 1,
+                "monthly_count": 1,
+                "last_message_date": today_date,
+                "last_message_month": first_of_month
+            }).execute()
+            return True
+
+        row = response.data
+        daily_count = row["daily_count"]
+        monthly_count = row["monthly_count"]
+        last_date = row["last_message_date"]
+        last_month = row["last_message_month"]
+
+        # Reset counters if calendar day/month has changed
+        if last_date < today_date:
+            daily_count = 0
+            
+        if last_month < first_of_month:
+            monthly_count = 0
+
+        # Check limits
+        if daily_count >= daily_limit or monthly_count >= monthly_limit:
+            return False
+
+        # Increment and update
+        self._client.table("repo_rate_limits").update({
+            "daily_count": daily_count + 1,
+            "monthly_count": monthly_count + 1,
+            "last_message_date": today_date,
+            "last_message_month": first_of_month
+        }).eq("user_id", user_id).eq("repo_id", repo_id).execute()
+        
+        return True
+
+    async def get_rate_limit_status(self, user_id: str, repo_id: str, daily_limit: int, monthly_limit: int) -> dict[str, Any]:
+        from datetime import datetime, date
+        response = (
+            self._client.table("repo_rate_limits")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("repo_id", repo_id)
+            .maybe_single()
+            .execute()
+        )
+        
+        if not response.data:
+            return {
+                "remaining_daily": daily_limit,
+                "remaining_monthly": monthly_limit,
+                "is_developer": False
+            }
+            
+        row = response.data
+        today_date = date.today().isoformat()
+        first_of_month = date.today().replace(day=1).isoformat()
+        
+        daily_count = row["daily_count"]
+        monthly_count = row["monthly_count"]
+        
+        if row["last_message_date"] < today_date:
+            daily_count = 0
+        if row["last_message_month"] < first_of_month:
+            monthly_count = 0
+            
+        return {
+            "remaining_daily": max(0, daily_limit - daily_count),
+            "remaining_monthly": max(0, monthly_limit - monthly_count),
+            "is_developer": False
+        }
+
     # ══════════════════════════════════════════════════════════════════════
     #  Repo Files & Code Graph (Vectorless RAG)
     # ══════════════════════════════════════════════════════════════════════
@@ -504,3 +631,86 @@ class SupabasePGClient:
         )
         return response.data[0] if response.data else {}
 
+    # ══════════════════════════════════════════════════════════════════════
+    #  Rate Limiting
+    # ══════════════════════════════════════════════════════════════════════
+
+    async def get_rate_limit_status(
+        self, user_id: str, repo_id: str, daily_limit: int, monthly_limit: int
+    ) -> dict[str, Any]:
+        from datetime import date
+        today = date.today()
+        
+        response = self._client.table("repo_rate_limits").select("*").eq("user_id", user_id).eq("repo_id", repo_id).execute()
+        
+        if not response.data:
+            return {
+                "remaining_daily": daily_limit,
+                "remaining_monthly": monthly_limit,
+                "is_developer": False
+            }
+            
+        row = response.data[0]
+        
+        last_date = row.get("last_message_date")
+        last_month = row.get("last_message_month")
+        daily_count = row.get("daily_count", 0)
+        monthly_count = row.get("monthly_count", 0)
+        
+        today_str = today.isoformat()
+        month_str = today.strftime("%Y-%m-01")
+        
+        if last_date != today_str:
+            daily_count = 0
+        if last_month != month_str:
+            monthly_count = 0
+            
+        return {
+            "remaining_daily": max(0, daily_limit - daily_count),
+            "remaining_monthly": max(0, monthly_limit - monthly_count),
+            "is_developer": False
+        }
+
+    async def check_and_increment_rate_limit(
+        self, user_id: str, repo_id: str, daily_limit: int, monthly_limit: int
+    ) -> bool:
+        from datetime import date
+        today = date.today()
+        today_str = today.isoformat()
+        month_str = today.strftime("%Y-%m-01")
+        
+        response = self._client.table("repo_rate_limits").select("*").eq("user_id", user_id).eq("repo_id", repo_id).execute()
+        
+        if not response.data:
+            self._client.table("repo_rate_limits").insert({
+                "user_id": user_id,
+                "repo_id": repo_id,
+                "daily_count": 1,
+                "monthly_count": 1,
+                "last_message_date": today_str,
+                "last_message_month": month_str
+            }).execute()
+            return True
+            
+        row = response.data[0]
+        row_id = row["id"]
+        
+        daily_count = row.get("daily_count", 0)
+        monthly_count = row.get("monthly_count", 0)
+        
+        if row.get("last_message_date") != today_str:
+            daily_count = 0
+        if row.get("last_message_month") != month_str:
+            monthly_count = 0
+            
+        if daily_count >= daily_limit or monthly_count >= monthly_limit:
+            return False
+            
+        self._client.table("repo_rate_limits").update({
+            "daily_count": daily_count + 1,
+            "monthly_count": monthly_count + 1,
+            "last_message_date": today_str,
+            "last_message_month": month_str
+        }).eq("id", row_id).execute()
+        
+        return True

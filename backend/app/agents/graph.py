@@ -44,7 +44,10 @@ async def supervisor_node(state: AgentState) -> dict:
         router_llm = llm.with_structured_output(RouteDecision)
         response = await router_llm.ainvoke([system_msg, classification_prompt])
         decision = response.decision.value
-    except Exception:
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Structured output failed for routing, attempting fallback: {e}")
         # Fallback: Ask LLM for JSON directly and parse it
         try:
             import json
@@ -55,9 +58,12 @@ async def supervisor_node(state: AgentState) -> dict:
                 content = content.replace("```json", "").replace("```", "").strip()
                 parsed = json.loads(content)
                 decision = parsed.get("decision", "GUARDRAIL")
+                if decision not in [e.value for e in RouteEnum]:
+                    decision = "GUARDRAIL"
             else:
                 decision = "GUARDRAIL"
-        except Exception:
+        except Exception as fallback_e:
+            logger.warning(f"Fallback routing failed: {fallback_e}")
             decision = "GUARDRAIL"
         
     return {"routing_decision": decision}

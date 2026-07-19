@@ -27,11 +27,13 @@ class AuthenticatedUser(BaseModel):
         id: The Supabase user UUID (from the ``sub`` claim).
         email: The user's email address.
         role: The Supabase role (typically ``"authenticated"``).
+        github_username: The GitHub username from OAuth metadata.
     """
 
     id: str
     email: str
     role: str
+    github_username: str = ""
 
 
 def verify_supabase_token(token: str) -> dict:
@@ -124,8 +126,13 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Extract GitHub username from OAuth user_metadata
+    user_metadata = payload.get("user_metadata", {})
+    github_username = user_metadata.get("user_name", "") or user_metadata.get("preferred_username", "")
+
     return AuthenticatedUser(
         id=user_id,
         email=email,
         role=role or "authenticated",
+        github_username=github_username,
     )

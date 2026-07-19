@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "GitMesh"
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # ── Supabase / PostgreSQL ────────────────────────────────────────────
     SUPABASE_URL: str
@@ -42,6 +42,13 @@ class Settings(BaseSettings):
 
     # ── Gemini Context Cache settings ──────────────────────────────────────
     GEMINI_CONTEXT_MODEL: str = "gemini-3.1-flash-lite"
+
+    # ── Developer Bypass ─────────────────────────────────────────────────
+    DEVELOPERS: list[str] = ["mihirpatel204", "Priyanshu-Debugs", "Sameer-0904"]
+
+    # ── Rate Limits (default model only) ─────────────────────────────────
+    DAILY_MSG_LIMIT: int = 3
+    MONTHLY_MSG_LIMIT: int = 15
 
 
     # ── Validators ───────────────────────────────────────────────────────
@@ -70,3 +77,5 @@ def get_settings() -> Settings:
     same ``Settings`` object is reused across the entire application.
     """
     return Settings()  # type: ignore[call-arg]
+
+settings = get_settings()
