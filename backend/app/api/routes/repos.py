@@ -114,20 +114,39 @@ async def sync_repo(
     3. Returns the repo ID and status to the caller.
     """
     
-    if user.github_username not in settings.DEVELOPERS:
-        active_count = await pg.get_active_repo_count(user.id)
-        if active_count >= 2:
+    # Check if repo already exists for the user
+    existing_repo = await pg.get_repo_by_url(user.id, str(request.repo_url))
+    if existing_repo:
+        repo_status = existing_repo["status"]
+        if repo_status in ("queued", "processing"):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Free plan is limited to 2 repositories. Upgrade to Pro for unlimited repos."
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Repository {request.repo_url} is already being synced (status: {repo_status})."
             )
+        
+        # Re-use the existing record by resetting its status to queued
+        repo_row = await pg.update_repo_status(
+            repo_id=existing_repo["id"],
+            user_id=user.id,
+            status="queued",
+            detailed_status="queued",
+            error_message=None
+        )
+    else:
+        if user.github_username not in settings.DEVELOPERS:
+            active_count = await pg.get_active_repo_count(user.id)
+            if active_count >= 2:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Free plan is limited to 2 repositories. Upgrade to Pro for unlimited repos."
+                )
 
-    # Insert repo record
-    repo_row = await pg.insert_repo(
-        user_id=user.id,
-        github_url=str(request.repo_url),
-        branch=request.branch,
-    )
+        # Insert new repo record
+        repo_row = await pg.insert_repo(
+            user_id=user.id,
+            github_url=str(request.repo_url),
+            branch=request.branch,
+        )
 
     # Dispatch Inngest event to trigger the ingestion pipeline
     await inngest_client.send(

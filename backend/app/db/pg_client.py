@@ -141,6 +141,23 @@ class SupabasePGClient:
         )
         return response.data
 
+    async def get_repo_by_url(
+        self,
+        user_id: str,
+        github_url: str,
+    ) -> dict[str, Any] | None:
+        """Fetch a single repository by GitHub URL, scoped to the user."""
+        response = (
+            self._client.table("repos")
+            .select("*")
+            .eq("github_url", github_url)
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        return response.data
+
+
     async def get_user_repos(
         self,
         user_id: str,
