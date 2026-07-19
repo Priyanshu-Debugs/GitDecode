@@ -317,13 +317,14 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       >
         <div className={styles.sidebarHeader}>
           {!collapsed && (
-            <Link href="/">
+            <Link href="/" style={{ display: "flex", alignItems: "center" }}>
               <Image
-                src="/logo.svg"
+                src="/gitmesh-logo-vector.svg"
                 alt="GitMesh"
-                width={100}
-                height={24}
+                width={120}
+                height={32}
                 className={styles.sidebarLogoImage}
+                style={{ objectFit: "contain" }}
                 priority
               />
             </Link>
@@ -459,11 +460,18 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                 Chat
               </button>
               <button
+                className={`${styles.topbarTab} ${currentTab === "report" ? styles.topbarTabActive : ""}`}
+                onClick={() => handleTabChange("report")}
+              >
+                Report
+              </button>
+              <button
                 className={`${styles.topbarTab} ${currentTab === "graph" ? styles.topbarTabActive : ""}`}
                 onClick={() => handleTabChange("graph")}
               >
                 Knowledge Graph
               </button>
+
               <button
                 className={`${styles.topbarTab} ${currentTab === "diagrams" ? styles.topbarTabActive : ""}`}
                 onClick={() => handleTabChange("diagrams")}

@@ -491,7 +491,7 @@ export function MermaidDiagram({ chart, isDedicatedView = false, isGenerating = 
         }
       `}} />
 
-      {/* ── Inline Elegant Preview Card ── */}
+      {/* ── Inline Full-Width Preview Card ── */}
       <div
         className="mermaid-preview-card"
         onClick={() => {
@@ -500,12 +500,9 @@ export function MermaidDiagram({ chart, isDedicatedView = false, isGenerating = 
           setIsModalOpen(true);
         }}
         style={{
-          width: "480px",
-          maxWidth: "100%",
-          aspectRatio: "1 / 1",
-          margin: "0",
+          width: "100%",
+          margin: "32px 0",
           position: "relative",
-          overflow: "hidden",
           cursor: "pointer",
           background: "rgba(255, 255, 255, 0.015)",
           border: "0.5px solid rgba(255, 255, 255, 0.08)",
@@ -515,6 +512,7 @@ export function MermaidDiagram({ chart, isDedicatedView = false, isGenerating = 
             "inset 0 -1px 0 0 rgba(0, 0, 0, 0.2)," +
             "0 4px 24px -8px rgba(0, 0, 0, 0.4)",
           transition: "all 300ms cubic-bezier(0.32, 0.72, 0, 1)",
+          overflow: "hidden",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = "rgba(200, 204, 212, 0.2)";
@@ -526,7 +524,7 @@ export function MermaidDiagram({ chart, isDedicatedView = false, isGenerating = 
         }}
       >
         {/* Premium header bar */}
-        <div style={{
+        <div className="mermaid-card-header" style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -552,8 +550,7 @@ export function MermaidDiagram({ chart, isDedicatedView = false, isGenerating = 
             DIAGRAM
           </span>
           
-          {/* Expand icon hint */}
-          <span style={{
+          <span className="mermaid-expand-hint" style={{
             fontSize: "0.5625rem",
             color: "var(--color-text-tertiary)",
             display: "flex",
@@ -571,19 +568,17 @@ export function MermaidDiagram({ chart, isDedicatedView = false, isGenerating = 
           </span>
         </div>
 
-        {/* Diagram render (preview scale) */}
+        {/* Diagram render (full width, natural height) */}
         <div
           dangerouslySetInnerHTML={{ __html: svg }}
           style={{
             width: "100%",
-            height: "calc(100% - 32px)",
+            padding: "24px",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            overflow: "hidden",
             transformOrigin: "center center",
             pointerEvents: "none",
-            animation: "diagramReveal 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
           }}
         />
       </div>

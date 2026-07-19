@@ -182,6 +182,29 @@ export interface RepoDiagrams {
   dataFlow: string;
 }
 
+export interface ReportPlanSection {
+  id: number;
+  title: string;
+  goal: string;
+  bullets?: string[];
+  target_words?: number;
+}
+
+export interface ReportPlan {
+  report_title: string;
+  report_type: string;
+  executive_summary_goal?: string;
+  sections: ReportPlanSection[];
+}
+
+export interface CodebaseReport {
+  repo_id: string;
+  report_markdown: string;
+  plan: ReportPlan | null;
+  created_at: string;
+}
+
+
 // ── Mock Data Templates ─────────────────────────────────────────────
 
 const MOCK_REPOS_LIST: RepoItem[] = [
@@ -850,3 +873,140 @@ export async function deleteChatMessage(messageId: string): Promise<void> {
   });
   if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
 }
+
+// ── Codebase Report API ─────────────────────────────────────────────
+
+/** Fetch saved report for a repository (returns null if none) */
+export async function getReport(repoId: string): Promise<CodebaseReport | null> {
+  if (isDemoMode()) return null;
+  try {
+    return await apiFetch<CodebaseReport>(`/repos/${repoId}/report`);
+  } catch {
+    return null;
+  }
+}
+
+/** Generate a report via SSE streaming */
+export async function generateReport(
+  repoId: string,
+  onUpdate: (
+    type: "stage" | "report_type" | "plan" | "section_start" | "section_complete" | "report" | "done" | "error",
+    content: any
+  ) => void
+): Promise<void> {
+  if (isDemoMode()) {
+    onUpdate("stage", "Demo Mode — Simulating report generation...");
+    await new Promise((r) => setTimeout(r, 600));
+    onUpdate("stage", "Analyzing repository architecture...");
+    await new Promise((r) => setTimeout(r, 800));
+    onUpdate("stage", "Planning deep report sections...");
+    await new Promise((r) => setTimeout(r, 800));
+    onUpdate("report_type", { report_type: "fullstack", key_technologies: ["TypeScript", "Python", "FastAPI"] });
+    onUpdate("plan", {
+      report_title: "Demo Codebase Deep Analysis",
+      report_type: "fullstack",
+      sections: [
+        { id: 1, title: "Architecture Breakdown", goal: "System modules analysis" },
+        { id: 2, title: "API Router & Services", goal: "Endpoints and backend flow" },
+        { id: 3, title: "Data Layer & Persistence", goal: "Database models and queries" },
+      ],
+    });
+    onUpdate("section_complete", { completed: 1, total: 3, title: "Architecture Breakdown" });
+    await new Promise((r) => setTimeout(r, 800));
+    onUpdate("section_complete", { completed: 2, total: 3, title: "API Router & Services" });
+    await new Promise((r) => setTimeout(r, 800));
+    onUpdate("section_complete", { completed: 3, total: 3, title: "Data Layer & Persistence" });
+    await new Promise((r) => setTimeout(r, 800));
+    onUpdate("stage", "Polishing final report content...");
+    await new Promise((r) => setTimeout(r, 600));
+    onUpdate(
+      "report",
+      "# Demo Codebase Deep Analysis\n\n**Repository**: Demo Project | **Type**: Fullstack\n\n## Executive Summary\n\nThis is a simulated codebase report in Demo Mode.\n\n## Architecture Breakdown\n\nThe repository follows a clean multi-tier architecture separating frontend UI components from backend API routes.\n\n```mermaid\ngraph TD\n  Client[Next.js Client] --> API[FastAPI Router]\n  API --> DB[(Supabase Postgres)]\n```\n\n## API Router & Services\n\nAPI routes are defined under `/app/api/routes` handling authentication, repository management, and chat interactions."
+    );
+    onUpdate("done", "");
+    return;
+  }
+
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/repos/${repoId}/report/generate`, {
+    method: "POST",
+    headers,
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(errBody.detail || `API Error: ${res.status}`);
+  }
+
+  if (!res.body) throw new Error("No response body");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          onUpdate(data.type, data.content || "");
+        } catch (e) {
+          console.warn("Failed to parse SSE JSON", e);
+        }
+      }
+    }
+  }
+}
+
+/** Delete cached report */
+export async function deleteReport(repoId: string): Promise<void> {
+  if (isDemoMode()) return;
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/repos/${repoId}/report`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!res.ok) throw new Error(`Delete report failed: ${res.status}`);
+}
+
+/** Check report rate limit status */
+export async function getReportRateLimitStatus(
+  repoId: string
+): Promise<{ can_generate: boolean; next_available: string | null; is_developer?: boolean }> {
+  if (isDemoMode()) return { can_generate: true, next_available: null, is_developer: true };
+  return apiFetch<{ can_generate: boolean; next_available: string | null; is_developer?: boolean }>(
+    `/repos/${repoId}/report/rate-limit`
+  );
+}
+
+/** Export report as PDF blob */
+export async function exportReportPdf(
+  repoId: string,
+  markdown: string,
+  repoName: string
+): Promise<Blob> {
+  if (isDemoMode()) {
+    throw new Error("PDF export is disabled in Demo Mode.");
+  }
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/repos/${repoId}/report/export-pdf`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ markdown, repo_name: repoName }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(errBody.detail || `Backend PDF generation failed (${res.status})`);
+  }
+
+  return await res.blob();
+}
+

@@ -710,3 +710,155 @@ class SupabasePGClient:
         }).eq("id", row_id).execute()
         
         return True
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  Codebase Reports Storage & Rate Limiting
+    # ══════════════════════════════════════════════════════════════════════
+
+    async def save_report(
+        self, repo_id: str, user_id: str, report_md: str, plan: dict | None = None
+    ) -> dict[str, Any]:
+        """Save or overwrite the latest report for a repository.
+
+        Args:
+            repo_id: The repository UUID.
+            user_id: The owner user UUID.
+            report_md: Full rendered Markdown string.
+            plan: Optional plan dictionary structure.
+
+        Returns:
+            The saved database record.
+        """
+        from datetime import datetime, timezone
+        try:
+            existing = (
+                self._client.table("codebase_reports")
+                .select("id")
+                .eq("repo_id", repo_id)
+                .eq("user_id", user_id)
+                .execute()
+            )
+            if existing.data:
+                response = (
+                    self._client.table("codebase_reports")
+                    .update({
+                        "report_markdown": report_md,
+                        "plan": plan,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                    .eq("id", existing.data[0]["id"])
+                    .execute()
+                )
+                return response.data[0]
+            else:
+                response = (
+                    self._client.table("codebase_reports")
+                    .insert({
+                        "repo_id": repo_id,
+                        "user_id": user_id,
+                        "report_markdown": report_md,
+                        "plan": plan,
+                    })
+                    .execute()
+                )
+                return response.data[0]
+        except Exception as e:
+            logger.warning("Failed to save report to database (table missing?): %s", str(e))
+            return {"id": "unsaved", "repo_id": repo_id, "user_id": user_id, "report_markdown": report_md, "plan": plan}
+
+    async def get_report(self, repo_id: str, user_id: str) -> dict[str, Any] | None:
+        """Fetch the latest saved report for a repository.
+
+        Returns:
+            The database record or None if no report exists.
+        """
+        try:
+            response = (
+                self._client.table("codebase_reports")
+                .select("*")
+                .eq("repo_id", repo_id)
+                .eq("user_id", user_id)
+                .execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.warning("Failed to fetch report from database (table missing?): %s", str(e))
+            return None
+
+    async def delete_report(self, repo_id: str, user_id: str) -> None:
+        """Delete the saved report for a repository."""
+        try:
+            self._client.table("codebase_reports").delete().eq(
+                "repo_id", repo_id
+            ).eq("user_id", user_id).execute()
+        except Exception as e:
+            logger.warning("Failed to delete report from database: %s", str(e))
+
+    async def check_report_rate_limit(self, user_id: str, repo_id: str) -> bool:
+        """Check if user can generate a report for this repo (max 2 per month)."""
+        from datetime import date
+        month_str = date.today().strftime("%Y-%m-01")
+        try:
+            response = (
+                self._client.table("report_rate_limits")
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("repo_id", repo_id)
+                .execute()
+            )
+            if not response.data:
+                return True
+            row = response.data[0]
+            if row.get("last_report_month") != month_str:
+                return True
+            return row.get("monthly_count", 0) < 2
+        except Exception as e:
+            logger.warning("Rate limit check failed (table missing?): %s", str(e))
+            return True
+
+    async def increment_report_rate_limit(self, user_id: str, repo_id: str) -> None:
+        """Record a report generation event for rate limit tracking."""
+        from datetime import date
+        month_str = date.today().strftime("%Y-%m-01")
+        try:
+            response = (
+                self._client.table("report_rate_limits")
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("repo_id", repo_id)
+                .execute()
+            )
+            if not response.data:
+                self._client.table("report_rate_limits").insert({
+                    "user_id": user_id,
+                    "repo_id": repo_id,
+                    "monthly_count": 1,
+                    "last_report_month": month_str,
+                }).execute()
+            else:
+                row = response.data[0]
+                count = 0 if row.get("last_report_month") != month_str else row.get("monthly_count", 0)
+                self._client.table("report_rate_limits").update({
+                    "monthly_count": count + 1,
+                    "last_report_month": month_str,
+                }).eq("id", row["id"]).execute()
+        except Exception as e:
+            logger.warning("Failed to increment report rate limit: %s", str(e))
+
+    async def get_report_rate_limit_status(
+        self, user_id: str, repo_id: str
+    ) -> dict[str, Any]:
+        """Check report generation rate limit status for UI notifications."""
+        from datetime import date
+        can_generate = await self.check_report_rate_limit(user_id, repo_id)
+        next_month = date.today().replace(day=28)
+        if next_month.month == 12:
+            next_month = date(next_month.year + 1, 1, 1)
+        else:
+            next_month = date(next_month.year, next_month.month + 1, 1)
+        return {
+            "can_generate": can_generate,
+            "next_available": None if can_generate else next_month.isoformat(),
+        }
+
+

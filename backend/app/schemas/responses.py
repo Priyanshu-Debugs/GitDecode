@@ -241,3 +241,22 @@ class ClassGraphResponse(BaseModel):
 
     nodes: list[GraphNode]
     edges: list[GraphEdge]
+
+
+class CodebaseReportResponse(BaseModel):
+    """Response model for a saved codebase analysis report.
+
+    Attributes:
+        repo_id: The repository UUID.
+        report_markdown: The rendered Markdown report string.
+        plan: The structured report plan JSON object.
+        created_at: Timestamp when the report was generated.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    repo_id: UUID
+    report_markdown: str
+    plan: dict | None = None
+    created_at: datetime
+

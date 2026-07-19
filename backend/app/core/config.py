@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     DAILY_MSG_LIMIT: int = 3
     MONTHLY_MSG_LIMIT: int = 15
 
+    # ── Report Rate Limits ───────────────────────────────────────────────
+    MONTHLY_REPORT_LIMIT: int = 1  # Max 1 report per repo per month for free tier
+
+
 
     # ── Validators ───────────────────────────────────────────────────────
     @field_validator("CORS_ORIGINS", mode="before")

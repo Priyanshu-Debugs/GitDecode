@@ -33,8 +33,17 @@ import {
   submitChatFeedback,
   deleteChatMessage,
   getRepoFileContent,
+  getReport,
+  generateReport,
+  deleteReport,
+  getReportRateLimitStatus,
+  exportReportPdf,
+  type CodebaseReport,
+  type ReportPlan,
 } from "@/app/lib/api";
 import styles from "./dashboard.module.css";
+
+
 import { motion } from "framer-motion";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
 import ModelSelector from "@/app/components/ModelSelector";
@@ -283,7 +292,87 @@ function DashboardContent() {
   } | null>(null);
 
   // Graphs states
-  const activeGraphTab = (searchParams.get("tab") as "graph" | "chat" | "diagrams" | "insights") || "chat";
+  const activeGraphTab = (searchParams.get("tab") as "graph" | "chat" | "report" | "diagrams" | "insights") || "chat";
+
+  // Codebase Report state
+  const [report, setReport] = useState<CodebaseReport | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportGenerating, setReportGenerating] = useState(false);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [reportStages, setReportStages] = useState<string[]>([]);
+  const [reportPlan, setReportPlan] = useState<ReportPlan | null>(null);
+  const [reportSectionProgress, setReportSectionProgress] = useState<{ completed: number; total: number; title?: string } | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [reportRateLimit, setReportRateLimit] = useState<{ can_generate: boolean; next_available: string | null } | null>(null);
+
+  const handleGenerateReport = async () => {
+    if (!activeRepoId || reportGenerating) return;
+    setReportGenerating(true);
+    setReportStages([]);
+    setReportPlan(null);
+    setReportSectionProgress(null);
+    setReportError(null);
+    setReport(null);
+
+    try {
+      await generateReport(activeRepoId, (type, content) => {
+        if (type === "stage") setReportStages((prev) => [...prev, content]);
+        else if (type === "plan") setReportPlan(content);
+        else if (type === "section_complete") setReportSectionProgress(content);
+        else if (type === "report") setReport({ repo_id: activeRepoId, report_markdown: content, plan: reportPlan, created_at: new Date().toISOString() });
+        else if (type === "error") setReportError(content);
+        else if (type === "done") setReportGenerating(false);
+      });
+    } catch (e: any) {
+      setReportError(e.message || "Failed to generate report");
+      setReportGenerating(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!report || !activeRepoId || pdfDownloading) return;
+    setPdfDownloading(true);
+    try {
+      const activeRepo = repos.find((r) => r.id === activeRepoId);
+      const repoName = activeRepo?.github_url?.split("/").pop() || "codebase";
+      
+      const blob = await exportReportPdf(activeRepoId, report.report_markdown, repoName);
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${repoName}_codebase_report.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      setCustomConfirm({
+        isOpen: true,
+        title: "Download Failed",
+        message: err instanceof Error ? err.message : "Failed to generate PDF download.",
+        confirmText: "Close",
+        onConfirm: () => {},
+      });
+    } finally {
+      setPdfDownloading(false);
+    }
+  };
+
+  const handleDownloadMarkdown = () => {
+    if (!report) return;
+    const blob = new Blob([report.report_markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${activeRepo?.github_url?.split("/").pop() || "codebase"}_report.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
 
   const getLangColor = (lang: string) => {
     const colors: { [key: string]: string } = {
@@ -425,6 +514,7 @@ function DashboardContent() {
   const activeRepoStatus = repos.find(r => r.id === activeRepoId)?.status;
 
   // Fetch graph details when active repository changes
+
   useEffect(() => {
     if (!activeRepoId || activeRepoStatus !== "completed") {
       setGraphData(null);
@@ -665,6 +755,22 @@ function DashboardContent() {
   }, [activeRepoId, chatInput, chatLoading, chatSessionId]);
 
   const activeRepo = repos.find((r) => r.id === activeRepoId);
+
+  // Fetch cached report when entering report tab
+  useEffect(() => {
+    if (activeGraphTab === "report" && activeRepoId && activeRepo?.status === "completed") {
+      setReportLoading(true);
+      getReport(activeRepoId)
+        .then((data) => setReport(data))
+        .catch(() => setReport(null))
+        .finally(() => setReportLoading(false));
+
+      getReportRateLimitStatus(activeRepoId)
+        .then((res) => setReportRateLimit(res))
+        .catch(() => setReportRateLimit({ can_generate: true, next_available: null }));
+    }
+  }, [activeGraphTab, activeRepoId, activeRepo?.status]);
+
 
 
 
@@ -1469,7 +1575,170 @@ function DashboardContent() {
             </div>
           )}
 
+          {activeGraphTab === "report" && (
+            <div className={styles.reportFullSpace}>
+              {reportLoading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: 64 }}>
+                  <div className={styles.loadingSpinner} />
+                </div>
+              ) : reportGenerating ? (
+                /* LIVE GENERATION PROGRESS VIEW */
+                <div className={styles.reportProgressCard}>
+                  <div className={styles.reportProgressTitle}>
+                    <div className={styles.loadingSpinner} style={{ width: 20, height: 20 }} />
+                    <span>Generating Codebase Deep Analysis Report...</span>
+                  </div>
+
+                  <div className={styles.reportStageList}>
+                    {reportStages.map((stg, i) => (
+                      <div key={i} className={styles.reportStageItem}>
+                        <div className={styles.reportStageDot} />
+                        <span>{stg}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {reportSectionProgress && (
+                    <div style={{ marginTop: 12, fontSize: "0.875rem", color: "var(--color-text-secondary)" }}>
+                      Writing section {reportSectionProgress.completed} of {reportSectionProgress.total}...
+                    </div>
+                  )}
+
+                  {reportPlan && (
+                    <div style={{ marginTop: 16 }}>
+                      <h4 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "var(--color-white)", marginBottom: 8 }}>
+                        {reportPlan.report_title}
+                      </h4>
+                      <div className={styles.reportPlanGrid}>
+                        {reportPlan.sections.map((sec) => (
+                          <div key={sec.id} className={styles.reportPlanItem}>
+                            <span className={styles.reportPlanItemTitle}>
+                              {sec.id}. {sec.title}
+                            </span>
+                            <span className={styles.reportPlanItemGoal}>{sec.goal}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : report ? (
+                /* RENDERED REPORT VIEW */
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div className={styles.reportHeaderCard}>
+                    <div className={styles.reportHeaderInfo}>
+                      <h2 className={styles.reportTitleText}>
+                        {report.plan?.report_title || `Codebase Report: ${activeRepo?.github_url?.split("/").pop()}`}
+                      </h2>
+                      <div className={styles.reportMetaBadges}>
+                        {report.plan?.report_type && (
+                          <span className={styles.reportBadge}>{report.plan.report_type}</span>
+                        )}
+                        <span className={styles.reportMetaText}>
+                          Generated on {new Date(report.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={styles.reportActionGroup}>
+                      <button
+                        className={styles.reportActionBtn}
+                        onClick={handleDownloadPdf}
+                        disabled={pdfDownloading}
+                      >
+                        {pdfDownloading ? (
+                          <>
+                            <svg className={styles.spinIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                              <path d="M12 2a10 10 0 0 1 10 10" />
+                            </svg>
+                            Preparing PDF download...
+                          </>
+                        ) : (
+                          <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                              <polyline points="7 10 12 15 17 10" />
+                              <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Download PDF
+                          </>
+                        )}
+                      </button>
+                      <button className={styles.reportActionBtn} onClick={handleDownloadMarkdown}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        Download MD
+                      </button>
+                      <button
+                        className={styles.reportActionBtn}
+                        onClick={handleGenerateReport}
+                        disabled={reportRateLimit?.can_generate === false}
+                      >
+                        Regenerate
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── REPORT CONTENT CONTAINER ── */}
+                  <div id="codebase-report-content" className={styles.reportContentPaper}>
+                    <div className={styles.reportPdfHeader}>
+                      <div className={styles.reportPdfHeaderTitle} style={{ paddingLeft: 0 }}>
+                        Repository Analysis Report
+                      </div>
+                    </div>
+
+                    <ChatMarkdown content={report.report_markdown} />
+                    
+                    <div className={styles.reportPdfFooter}>
+                      Created by GitMesh
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* EMPTY STATE — NO REPORT YET */
+                <div className={styles.reportEmptyState}>
+                  <div className={styles.reportEmptyIcon}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  </div>
+                  <h3 className={styles.reportEmptyTitle}>Generate Codebase Deep Report</h3>
+                  <p className={styles.reportEmptyDesc}>
+                    Run a multi-agent LangGraph analysis pipeline that inspects your AST graph, directory hierarchy,
+                    and source files to compile a comprehensive architectural report with inline diagrams.
+                  </p>
+                  {reportError && (
+                    <div style={{ color: "var(--color-danger, #e0705f)", fontSize: "0.875rem", marginBottom: 16 }}>
+                      {reportError}
+                    </div>
+                  )}
+
+                  <button
+                    className={styles.reportGenerateBtn}
+                    onClick={handleGenerateReport}
+                    disabled={reportRateLimit?.can_generate === false}
+                  >
+                    Generate Deep Analysis Report
+                  </button>
+                  <span className={styles.reportRateNotice}>
+                    {reportRateLimit?.can_generate === false
+                      ? "Monthly report limit reached (1 report per repository per month)."
+                      : "Limit: 1 report per repository per month"}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeGraphTab === "graph" && (
+
             <div className={styles.graphFullSpace}>
               {graphData ? (
                 <NvlGraphViewer
