@@ -627,6 +627,7 @@ export default function RepoDetailPage() {
 
             <div style={{ width: "100%", maxWidth: "900px", margin: "0 auto", padding: "0 20px 24px 20px" }}>
               <ChatInput
+                repoId={repoId}
                 onSend={(query) => handleSendChat(query)}
                 disabled={chatLoading && messages[messages.length-1]?.role === "user"}
                 initialValue={chatInput}

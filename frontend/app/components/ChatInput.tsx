@@ -66,165 +66,197 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
     setValue("");
   };
 
-  const [showLimitCard, setShowLimitCard] = useState(false);
-  const isLimitReached = Boolean(rateLimit && rateLimit.remaining_daily === 0 && !rateLimit.is_developer);
-
-  useEffect(() => {
-    if (isLimitReached) {
-      setShowLimitCard(true);
-    } else {
-      setShowLimitCard(false);
-    }
-  }, [isLimitReached]);
+  const isLimitReached = Boolean(rateLimit && rateLimit.remaining_daily === 0 && !rateLimit.is_developer && isDefaultModel);
 
   return (
-    <div className={styles.chatInputBoxFull} style={{ position: 'relative' }}>
-      {isLimitReached && showLimitCard && (
+    <div style={{ width: '100%' }}>
+      {isLimitReached && (
         <div style={{
-          position: 'absolute',
-          bottom: 'calc(100% + 24px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '90%',
-          maxWidth: '420px',
+          width: '100%',
           background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
+          border: '1px solid rgba(248, 113, 113, 0.3)',
           borderRadius: '16px',
-          padding: '24px',
-          boxShadow: '0 24px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.02) inset',
-          zIndex: 100,
+          padding: '20px 24px',
+          marginBottom: '16px',
+          boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(248, 113, 113, 0.15) inset',
           color: 'var(--color-text)',
-          animation: 'slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+          position: 'relative',
           overflow: 'hidden'
         }}>
-          {/* Subtle glowing accent */}
+          {/* Glowing Top Accent Line */}
           <div style={{
             position: 'absolute',
-            top: 0, left: '10%', right: '10%', height: '1px',
-            background: 'linear-gradient(90deg, transparent, var(--color-error), transparent)',
-            opacity: 0.6,
-            boxShadow: '0 1px 12px var(--color-error)'
+            top: 0, left: '5%', right: '5%', height: '2px',
+            background: 'linear-gradient(90deg, transparent, #ef4444, transparent)',
+            opacity: 0.85
           }} />
           
-          <button 
-            onClick={() => setShowLimitCard(false)}
-            style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.background = 'var(--color-surface-elevated)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; e.currentTarget.style.background = 'transparent'; }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-            <div style={{ background: 'rgba(248, 113, 113, 0.08)', color: 'var(--color-error)', border: '1px solid rgba(248, 113, 113, 0.15)', borderRadius: '12px', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'inset 0 0 12px rgba(248, 113, 113, 0.05)' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+            <div style={{
+              background: 'rgba(248, 113, 113, 0.1)',
+              color: '#ef4444',
+              border: '1px solid rgba(248, 113, 113, 0.25)',
+              borderRadius: '12px',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--color-text)' }}>Usage Limit Reached</h3>
+              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>
+                Daily Usage Limit Reached (0/3 Messages)
+              </h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '0.8125rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                You have reached your daily limit of 3 free messages using the default model. Bring your own API key or upgrade to Pro to continue.
+              </p>
             </div>
           </div>
           
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
-            You&apos;ve reached your daily limit of <strong style={{ color: 'var(--color-text)' }}>3 messages</strong> using the default model. Bring your own API key to continue exploring your codebase without restrictions.
-          </p>
-          
-          <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-            <Link href="/dashboard/settings" className="btn" style={{ flex: 1, justifyContent: 'center', padding: '10px 12px', border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text)' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '16px', flexWrap: 'wrap' }}>
+            <Link 
+              href="/dashboard/settings" 
+              className="btn btn-ghost btn-sm" 
+              style={{ 
+                padding: '9px 16px', 
+                border: '1px solid var(--color-border-hover)', 
+                background: 'var(--color-surface-elevated)', 
+                color: 'var(--color-text)', 
+                fontSize: '0.8125rem',
+                borderRadius: '10px',
+                fontWeight: 500,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="6" width="20" height="12" rx="2" />
+                <path d="M6 12h4" />
+                <circle cx="16" cy="12" r="2" />
+              </svg>
               Configure API Key
             </Link>
-            <Link href="/pricing" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '10px 12px' }}>
+
+            <Link 
+              href="/pricing" 
+              className="btn btn-sm" 
+              style={{ 
+                padding: '9px 18px', 
+                background: 'var(--color-primary)', 
+                color: 'var(--color-primary-text)', 
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                borderRadius: '10px',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 4px 16px rgba(131, 193, 103, 0.25)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
               Upgrade to Pro
             </Link>
           </div>
-          <style dangerouslySetInnerHTML={{__html: `
-            @keyframes slideUpFade {
-              from { opacity: 0; transform: translate(-50%, 12px) scale(0.97); }
-              to { opacity: 1; transform: translate(-50%, 0) scale(1); }
-            }
-          `}} />
         </div>
       )}
-      <textarea
-        ref={textareaRef}
-        placeholder="Ask anything about the codebase..."
-        rows={1}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit();
-          }
-        }}
-        disabled={disabled}
-        style={{
-          background: "transparent",
-          border: "none",
-          outline: "none",
-          resize: "none",
-          width: "100%",
-          padding: "4px 8px",
-          fontSize: "0.8125rem",
-          color: "var(--color-text)",
-          minHeight: "40px",
-          maxHeight: "120px",
-          fontFamily: "var(--font-sans)",
-        }}
-      />
-      <div className={styles.chatToolbar}>
-        <div className={styles.chatToolbarLeft}>
-          <ModelSelector />
-          {rateLimit && !rateLimit.is_developer && isDefaultModel && (
-            <span style={{ 
-              fontSize: '0.7rem', 
-              color: rateLimit.remaining_daily <= 1 ? 'var(--color-error)' : 'var(--color-text-secondary)',
-              background: 'var(--color-surface-elevated)',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              marginLeft: '8px'
-            }}>
-              {rateLimit.remaining_daily} daily remaining
-            </span>
-          )}
-          {rateLimit?.is_developer && (
-            <span style={{ 
-              fontSize: '0.7rem', 
-              color: 'var(--color-primary)',
-              background: 'rgba(56, 189, 248, 0.1)',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              marginLeft: '8px',
-              fontWeight: 600
-            }}>
-              Developer Bypass
-            </span>
-          )}
-        </div>
-        <div className={styles.chatToolbarRight}>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleSubmit}
-            disabled={disabled || !value.trim() || isLimitReached}
-            style={{
-              width: 32,
-              height: 32,
-              padding: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "50%",
-              opacity: disabled || !value.trim() || isLimitReached ? 0.5 : 1,
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
+
+      <div className={styles.chatInputBoxFull} style={{ position: 'relative' }}>
+        <textarea
+          ref={textareaRef}
+          placeholder={isLimitReached ? "Daily free message limit reached (0/3). Configure API Key or upgrade to continue." : "Ask anything about the codebase..."}
+          rows={1}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          disabled={disabled || isLimitReached}
+          style={{
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            resize: "none",
+            width: "100%",
+            padding: "4px 8px",
+            fontSize: "0.8125rem",
+            color: isLimitReached ? "var(--color-text-tertiary)" : "var(--color-text)",
+            minHeight: "40px",
+            maxHeight: "120px",
+            fontFamily: "var(--font-sans)",
+            cursor: isLimitReached ? "not-allowed" : "text"
+          }}
+        />
+        <div className={styles.chatToolbar}>
+          <div className={styles.chatToolbarLeft}>
+            <ModelSelector />
+            {rateLimit && !rateLimit.is_developer && isDefaultModel && (
+              <span style={{ 
+                fontSize: '0.725rem', 
+                fontWeight: 500,
+                color: rateLimit.remaining_daily === 0 ? 'var(--color-error)' : rateLimit.remaining_daily === 1 ? '#f59e0b' : 'var(--color-text-secondary)',
+                background: rateLimit.remaining_daily === 0 ? 'rgba(239, 68, 68, 0.12)' : 'var(--color-surface-elevated)',
+                border: rateLimit.remaining_daily === 0 ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--color-border)',
+                padding: '2px 10px',
+                borderRadius: '12px',
+                marginLeft: '8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                {rateLimit.remaining_daily === 0 ? '0/3 Daily Messages (Limit Reached)' : `${rateLimit.remaining_daily}/3 Daily Messages`}
+              </span>
+            )}
+            {rateLimit?.is_developer && (
+              <span style={{ 
+                fontSize: '0.7rem', 
+                color: 'var(--color-primary)',
+                background: 'rgba(56, 189, 248, 0.1)',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                marginLeft: '8px',
+                fontWeight: 600
+              }}>
+                Developer Bypass
+              </span>
+            )}
+          </div>
+          <div className={styles.chatToolbarRight}>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={handleSubmit}
+              disabled={disabled || !value.trim() || isLimitReached}
+              style={{
+                width: 32,
+                height: 32,
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                opacity: disabled || !value.trim() || isLimitReached ? 0.5 : 1,
+                cursor: isLimitReached ? "not-allowed" : "pointer"
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
