@@ -799,7 +799,7 @@ function DashboardContent() {
             <div className={styles.confirmModalFooter}>
               {customConfirm.cancelText && (
                 <button
-                  className="btn btn-ghost btn-sm"
+                  className={styles.confirmActionBtnGhost}
                   onClick={() => {
                     if (customConfirm.onCancel) customConfirm.onCancel();
                     setCustomConfirm(null);
@@ -809,13 +809,13 @@ function DashboardContent() {
                 </button>
               )}
               <button
-                className="btn btn-primary btn-sm"
+                className={styles.confirmActionBtnPrimary}
                 onClick={() => {
                   customConfirm.onConfirm();
                   setCustomConfirm(null);
                 }}
               >
-                {customConfirm.confirmText || "OK"}
+                {customConfirm.confirmText || "Close"}
               </button>
             </div>
           </div>
