@@ -1,0 +1,445 @@
+.wrap {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.header {
+  margin-bottom: 48px;
+}
+
+.logoWrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.headerLogo {
+  display: block;
+}
+
+.bubble {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f3eee1;
+  color: #1a1813;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: 0px;
+  z-index: 10;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  width: max-content;
+  max-width: 240px;
+  font-family: var(--font-mono);
+}
+
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 7px solid transparent;
+  border-right-color: #f3eee1;
+  border-left: 0;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--color-dim);
+  line-height: 1.6;
+}
+
+.comment {
+  color: var(--color-dim);
+}
+
+/* ── Interactive Layout Grid ─────────────────────────────────── */
+/* ── Pricing Grid (Horizontal cards) ─────────────────────────── */
+.pricingSection {
+  margin-bottom: 64px;
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.planCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.planCard:hover {
+  border-color: var(--color-border-hover);
+  transform: translateY(-2px);
+}
+
+.recommendedCard {
+  border-color: var(--color-secondary-accent);
+  box-shadow: 0 4px 24px rgba(216, 166, 87, 0.05);
+}
+
+.planCard.recommendedCard:hover {
+  border-color: var(--color-green);
+  box-shadow: 0 4px 24px rgba(131, 193, 103, 0.1);
+}
+
+.recommendedBadge {
+  position: absolute;
+  top: -8px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--color-primary-text);
+  background: var(--color-secondary-accent);
+  padding: 1px 6px;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.cardHeaderTab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardName {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.priceContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.originalPrice {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--color-dim);
+  text-decoration: line-through;
+  margin-right: 8px;
+  align-self: center;
+}
+
+.promoText {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: var(--color-green);
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.priceNum {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.pricePeriod {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-dim);
+}
+
+.activeIcon {
+  color: var(--color-green);
+}
+
+.inactiveIcon {
+  color: var(--color-dim);
+}
+
+.cardBody {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.cardDesc {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.featuresList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+}
+
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.checkIcon {
+  color: var(--color-green);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cardAction {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.buyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  background: #f3eee1;
+  color: #1a1813;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  transition: all var(--transition-fast);
+  text-align: center;
+  border: 1px solid var(--color-border);
+}
+
+.buyButton:hover {
+  background: var(--color-green);
+  color: #0e0d0b;
+  border-color: var(--color-green);
+  box-shadow: 0 0 16px rgba(131, 193, 103, 0.2);
+}
+
+.footnote {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-dim);
+  text-align: center;
+}
+
+/* ── Guarantee Callout Section ────────────────────────────────── */
+.calloutSection {
+  margin-top: 32px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 48px;
+}
+
+.calloutCard {
+  background: rgba(224, 112, 95, 0.03);
+  border: 1px solid var(--color-border);
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.calloutIcon {
+  color: var(--color-orange);
+}
+
+.calloutText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calloutTitle {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.calloutDesc {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.linkText {
+  color: var(--color-green);
+  text-decoration: underline;
+}
+
+/* ── Coming Soon Banner Card ─────────────────────────────────── */
+.bannerSection {
+  margin-bottom: 40px;
+}
+
+.bannerCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.bannerCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--color-secondary-accent);
+}
+
+.bannerContent {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 80%;
+}
+
+.bannerIcon {
+  color: var(--color-secondary-accent);
+  flex-shrink: 0;
+}
+
+.bannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bannerTitle {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.bannerDesc {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.bannerBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(216, 166, 87, 0.08);
+  border: 1px solid rgba(216, 166, 87, 0.2);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: bold;
+  color: var(--color-secondary-accent);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.pulsingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-secondary-accent);
+  box-shadow: 0 0 0 0 rgba(216, 166, 87, 0.7);
+  animation: pulse-dot 1.6s infinite;
+}
+
+@keyframes pulse-dot {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(216, 166, 87, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(216, 166, 87, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(216, 166, 87, 0);
+  }
+}
+
+/* ── Responsive Overrides ────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bannerCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .bannerContent {
+    max-width: 100%;
+    align-items: flex-start;
+  }
+
+  .bannerBadge {
+    align-self: flex-start;
+  }
+}

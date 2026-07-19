@@ -122,6 +122,11 @@
   border-color: var(--color-amber);
 }
 
+.inspiration {
+  color: var(--color-dim);
+  opacity: 0.85;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .links {

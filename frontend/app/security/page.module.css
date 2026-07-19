@@ -1,0 +1,356 @@
+.wrap {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.header {
+  margin-bottom: 48px;
+}
+
+.logoWrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.headerLogo {
+  display: block;
+}
+
+.bubble {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f3eee1;
+  color: #1a1813;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: 0px;
+  z-index: 10;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  width: max-content;
+  max-width: 240px;
+  font-family: var(--font-mono);
+}
+
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 7px solid transparent;
+  border-right-color: #f3eee1;
+  border-left: 0;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--color-dim);
+  line-height: 1.6;
+}
+
+.comment {
+  color: var(--color-dim);
+}
+
+/* ── Interactive Layout Grid ─────────────────────────────────── */
+.interactiveSection {
+  margin-bottom: 80px;
+}
+
+.paneGrid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.mobileAccordionContent {
+  display: none; /* Hidden on desktop */
+}
+
+/* ── Pillar Tabs Selector ────────────────────────────────────── */
+.pillarTabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 96px;
+}
+
+.selectorInstruction {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  margin-bottom: 12px;
+  color: var(--color-green);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-weight: 600;
+}
+
+.pillarTabButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+}
+
+.pillarTabButton:hover {
+  border-color: var(--color-border-hover);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.activePillarTabButton {
+  border-color: var(--color-green);
+  background: rgba(131, 193, 103, 0.05);
+}
+
+.pillarTabLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.activeIcon {
+  color: var(--color-green);
+}
+
+.inactiveIcon {
+  color: var(--color-dim);
+}
+
+.pillarTitleLabel {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.pillarTabRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pillarBadge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--color-orange);
+  border: 1px solid rgba(224, 138, 74, 0.3);
+  padding: 2px 6px;
+}
+
+.activeChevron {
+  color: var(--color-green);
+}
+
+/* ── Dynamic Details Display ─────────────────────────────────── */
+.detailsWrapper {
+  min-height: 280px;
+  position: sticky;
+  top: 96px;
+}
+
+.detailsCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.detailsCardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 20px;
+}
+
+.detailsTitle {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.detailsDesc {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.techPillsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.techPill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  color: var(--color-dim);
+}
+
+/* ── Specs Lists ─────────────────────────────────────────────── */
+.specsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.specsTitle {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--color-dim);
+  letter-spacing: 0.05em;
+}
+
+.specsList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.specsListItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.checkIcon {
+  color: var(--color-green);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.specItemTitle {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.specItemDesc {
+  color: var(--color-text-secondary);
+}
+
+/* ── FAQ Section ─────────────────────────────────────────────── */
+.faqSection {
+  margin-top: 96px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 64px;
+}
+
+.faqHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.faqMainTitle {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 12px 0;
+}
+
+.faqGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.faqCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faqQuestion {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.faqAnswer {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* ── Responsive Styling ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .paneGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .leftPane {
+    display: none; /* Hide standalone center pane on mobile */
+  }
+
+  .detailsWrapper {
+    display: none; /* Hide standalone right pane on mobile */
+  }
+
+  .pillarTabs {
+    position: static;
+  }
+
+  .mobileAccordionContent {
+    display: block;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .faqGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .detailsCard {
+    padding: 20px;
+  }
+}

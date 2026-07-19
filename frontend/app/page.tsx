@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import HowItWorksSection from "./components/HowItWorksSection";
 import styles from "./page.module.css";
 
 /* ── Language Data ───────────────────────────────────────────────── */
@@ -126,12 +126,12 @@ export default function Home() {
 
             {/* CTA buttons */}
             <div className={styles.cta}>
-              <a href="/auth/sign-in" className={styles.btnFill}>
+              <Link href="/auth/sign-in" className={styles.btnFill}>
                 sign in
-              </a>
-              <a href="#how-it-works" className={styles.btnOutline}>
+              </Link>
+              <Link href="/how-it-works" className={styles.btnOutline}>
                 how it works
-              </a>
+              </Link>
             </div>
 
             <p className={styles.trust}>
@@ -140,8 +140,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* ── HOW IT WORKS ─────────────────────────────────────── */}
-        <HowItWorksSection />
+
 
         {/* ── CAPABILITIES ─────────────────────────────────────── */}
         <section className={styles.section}>

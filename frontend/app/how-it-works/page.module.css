@@ -1,0 +1,1007 @@
+.wrap {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.header {
+  margin-bottom: 48px;
+}
+
+.logoWrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.headerLogo {
+  display: block;
+}
+
+.bubble {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f3eee1;
+  color: #1a1813;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: 0px;
+  z-index: 10;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  width: max-content;
+  max-width: 240px;
+  font-family: var(--font-mono);
+}
+
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 7px solid transparent;
+  border-right-color: #f3eee1;
+  border-left: 0;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--color-dim);
+  line-height: 1.6;
+}
+
+.comment {
+  color: var(--color-dim);
+}
+
+/* ── Interactive Layout Grid ─────────────────────────────────── */
+.interactiveSection {
+  margin-bottom: 80px;
+}
+
+.paneGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.leftPane {
+  position: sticky;
+  top: 96px;
+}
+
+.rightPane {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── IDE Editor Mockup ────────────────────────────────────────── */
+.editorFrame {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.editorBar {
+  background: #100e0b;
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-dim);
+}
+
+.editorTab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.editorMeta {
+  opacity: 0.8;
+}
+
+.editorPre {
+  padding: 24px;
+  margin: 0;
+  overflow-x: auto;
+}
+
+.editorCode {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.ln {
+  display: block;
+}
+
+.codeBrace {
+  color: var(--color-text);
+}
+
+.codeKey {
+  color: var(--color-orange);
+}
+
+.codeVal {
+  color: var(--color-green);
+}
+
+.codeNum {
+  color: var(--color-secondary-accent);
+}
+
+.codeDim {
+  color: var(--color-dim);
+}
+
+.codeClass {
+  color: var(--color-secondary-accent);
+}
+
+/* ── Step Selector Tabs ──────────────────────────────────────── */
+.pipelineTabs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+}
+
+.stepTabButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.stepTabButton:hover {
+  border-color: var(--color-border-hover);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.activeStepTabButton {
+  border-color: var(--color-green);
+  background: rgba(131, 193, 103, 0.05);
+  position: relative;
+}
+
+.stepNumBadge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-green);
+}
+
+.stepTitleLabel {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.activeChevron {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  color: var(--color-green);
+}
+
+/* ── Visualizer Content Box ──────────────────────────────────── */
+.visualizerWrapper {
+  min-height: 480px;
+}
+
+.visualizerCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.visualizerCardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 16px;
+}
+
+.visualizerTitle {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.techPillsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.techPill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  color: var(--color-dim);
+}
+
+.visualizerContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.visualizerCaption {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Step 1: Terminal simulator ───────────────────────────────── */
+.terminalWindow {
+  background: #080706;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: var(--font-mono);
+}
+
+.terminalHeader {
+  background: #12100e;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.terminalTitle {
+  font-size: 0.68rem;
+  color: var(--color-dim);
+}
+
+.terminalContent {
+  padding: 16px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #c4beb3;
+  min-height: 200px;
+}
+
+.promptLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.promptSymbol {
+  color: var(--color-green);
+  font-weight: bold;
+}
+
+.glowingText {
+  color: var(--color-green);
+  text-shadow: 0 0 8px rgba(131, 193, 103, 0.3);
+}
+
+.terminalCursor {
+  animation: blink 1s step-end infinite;
+  color: var(--color-green);
+}
+
+.terminalLine {
+  margin-bottom: 4px;
+  animation: rise 0.2s ease-out forwards;
+}
+
+.successColor {
+  color: var(--color-green);
+}
+
+.infoColor {
+  color: var(--color-secondary-accent);
+}
+
+/* ── Step 2: AST Node Graph simulator ─────────────────────────── */
+.astVisualizer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: #080706;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+}
+
+.fileNodeRow {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr 1.2fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.astCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  font-size: 0.72rem;
+}
+
+.astCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.astPre {
+  margin: 0;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.astConnector {
+  position: relative;
+  height: 24px;
+  border-top: 1px dashed var(--color-border-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--color-orange);
+  padding-top: 8px;
+}
+
+.astPulse {
+  position: absolute;
+  top: -2px;
+  width: 6px;
+  height: 4px;
+  background: var(--color-orange);
+  box-shadow: 0 0 8px var(--color-orange);
+}
+
+.graphPreview {
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.previewLabel {
+  font-size: 0.68rem;
+  color: var(--color-dim);
+  text-transform: uppercase;
+}
+
+.graphNodes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.gNode {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  color: var(--color-dim);
+}
+
+.activeGNode {
+  border-color: var(--color-green);
+  color: var(--color-text);
+  background: rgba(131, 193, 103, 0.04);
+}
+
+.gLine {
+  width: 16px;
+  height: 1px;
+  background: var(--color-border-hover);
+}
+
+/* ── Step 3: BFS Graph RAG simulator ──────────────────────────── */
+.ragVisualizer {
+  background: #080706;
+  border: 1px solid var(--color-border);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.queryInputBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+.arrowIcon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--color-dim);
+}
+
+.ragGraphGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.depthNodeCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.depthBadge {
+  font-size: 0.62rem;
+  color: var(--color-dim);
+  text-transform: uppercase;
+}
+
+.ragNodeCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+}
+
+.glowGreenBorder {
+  border-color: var(--color-green);
+  box-shadow: 0 0 12px rgba(131, 193, 103, 0.1);
+}
+
+.glowAmberBorder {
+  border-color: var(--color-secondary-accent);
+  box-shadow: 0 0 12px rgba(216, 166, 87, 0.1);
+}
+
+.ragNodeHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.nodeStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.ragNodeDesc {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Step 4: LangGraph Supervisor specialist simulator ─────────── */
+.pipelineVisualizer {
+  background: #080706;
+  border: 1px solid var(--color-border);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.agentCenterNode {
+  background: var(--color-panel);
+  border: 1px solid var(--color-secondary-accent);
+  padding: 12px 20px;
+  text-align: center;
+  box-shadow: 0 0 16px rgba(216, 166, 87, 0.1);
+}
+
+.agentBadge {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--color-secondary-accent);
+  margin-bottom: 4px;
+}
+
+.agentPrompt {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.agentBranches {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.agentBranchCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 10px;
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.agentBranchHeader {
+  font-weight: bold;
+  color: var(--color-text);
+  margin-bottom: 4px;
+  font-size: 0.7rem;
+}
+
+/* ── Step 5: Explore & Understand Chat Console ───────────────── */
+.chatWindowMock {
+  background: #080706;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  font-family: var(--font-mono);
+}
+
+.chatHeader {
+  background: #12100e;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.7rem;
+  color: var(--color-text);
+}
+
+.chatContent {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.chatMsgUser {
+  align-self: flex-end;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-hover);
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  color: var(--color-text);
+}
+
+.chatMsgSystem {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 90%;
+}
+
+.thoughtProcess {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: var(--color-orange);
+}
+
+.spinningIcon {
+  animation: spin 3s linear infinite;
+}
+
+.systemContent {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 10px;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.citationsBlock {
+  border-top: 1px dashed var(--color-border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.citationLabel {
+  font-size: 0.6rem;
+  color: var(--color-dim);
+  text-transform: uppercase;
+}
+
+.citationLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: var(--color-green);
+}
+
+/* ── Technical Comparison Section ────────────────────────────── */
+.detailsSection {
+  margin-top: 96px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 64px;
+}
+
+.detailsHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.detailsTitle {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 12px 0;
+}
+
+.detailsSubtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.comparisonCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comparisonGlowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.comparisonBadge {
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: var(--color-primary-text);
+  background: var(--color-green);
+  padding: 2px 6px;
+}
+
+.comparisonCardTitle {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.comparisonList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comparisonListItem {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.crossSymbol {
+  color: var(--color-danger);
+  font-weight: bold;
+}
+
+.checkSymbol {
+  color: var(--color-green);
+  font-weight: bold;
+}
+
+/* ── Animation Keyframes ─────────────────────────────────────────── */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Timeline Section ────────────────────────────────────────── */
+.timelineSection {
+  margin-top: 96px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 64px;
+}
+
+.timelineHeader {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.timelineMainTitle {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 12px 0;
+}
+
+.timelineMainSubtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.timelineWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: relative;
+}
+
+.timelineVerticalLine {
+  position: absolute;
+  top: 40px;
+  bottom: 40px;
+  left: 28px;
+  width: 2px;
+  background: var(--color-border-hover);
+  opacity: 0.5;
+  z-index: 0;
+}
+
+.timelineStepCard {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 24px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0px;
+  padding: 28px 32px;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.timelineStepCard:hover {
+  border-color: var(--color-border-hover);
+  transform: translateY(-2px);
+}
+
+.timelineStepBadge {
+  width: 56px;
+  height: 56px;
+  border-radius: 0px;
+  background: #080706;
+  border: 1px solid var(--color-border-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-green);
+  font-family: var(--font-mono);
+}
+
+.timelineStepDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineStepHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.timelineStepTitle {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.timelineStepHeadline {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-orange);
+  font-weight: 500;
+}
+
+.timelineStepDescription {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.timelineStepTechRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.timelineStepTechTag {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-dim);
+}
+
+.timelineStepCodeBox {
+  background: #080706;
+  border: 1px solid var(--color-border);
+  border-radius: 0px;
+}
+
+.timelineCodeHeader {
+  background: #12100e;
+  border-bottom: 1px solid var(--color-border);
+  padding: 6px 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--color-dim);
+}
+
+.timelineCodeLang {
+  opacity: 0.8;
+}
+
+.timelineCodePre {
+  padding: 12px 16px;
+  margin: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-green);
+}
+
+/* ── Responsive Styling ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .paneGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .leftPane {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .pipelineTabs {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  
+  .comparisonGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .timelineVerticalLine {
+    left: 20px;
+  }
+
+  .timelineStepCard {
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .timelineStepBadge {
+    width: 40px;
+    height: 40px;
+    font-size: 0.95rem;
+  }
+}

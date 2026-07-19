@@ -69,6 +69,30 @@ export default function Navbar() {
                 Home.md
               </Link>
               <Link
+                href="/how-it-works"
+                className={`${styles.tab} ${
+                  pathname === "/how-it-works" ? styles.activeTab : ""
+                }`}
+              >
+                HowItWorks.json
+              </Link>
+              <Link
+                href="/security"
+                className={`${styles.tab} ${
+                  pathname === "/security" ? styles.activeTab : ""
+                }`}
+              >
+                security.yaml
+              </Link>
+              <Link
+                href="/pricing"
+                className={`${styles.tab} ${
+                  pathname === "/pricing" ? styles.activeTab : ""
+                }`}
+              >
+                Pricing.js
+              </Link>
+              <Link
                 href="/developers"
                 className={`${styles.tab} ${
                   pathname === "/developers" ? styles.activeTab : ""

@@ -30,17 +30,12 @@ export default function Footer() {
             <h3 className={styles.colTitle}>Product</h3>
             <ul className={styles.colList}>
               <li>
-                <Link href="#how-it-works" className={styles.colLink}>
+                <Link href="/how-it-works" className={styles.colLink}>
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link href="#" className={styles.colLink}>
-                  Docs
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className={styles.colLink}>
+                <Link href="/pricing" className={styles.colLink}>
                   Pricing
                 </Link>
               </li>
@@ -50,18 +45,8 @@ export default function Footer() {
             <h3 className={styles.colTitle}>Legal</h3>
             <ul className={styles.colList}>
               <li>
-                <Link href="#" className={styles.colLink}>
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className={styles.colLink}>
-                  Terms
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className={styles.colLink}>
-                  Security
+                <Link href="/security" className={styles.colLink}>
+                  Security & Privacy
                 </Link>
               </li>
             </ul>
@@ -79,6 +64,18 @@ export default function Footer() {
           >
             GitHub
           </a>
+          {" · "}
+          <span className={styles.inspiration}>
+            Design Inspiration from{" "}
+            <a
+              href="https://ponytail.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.metaLink}
+            >
+              ponytail.dev
+            </a>
+          </span>
         </p>
       </div>
     </footer>

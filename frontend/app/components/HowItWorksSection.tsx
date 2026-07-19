@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "../page.module.css";
+import { howItWorksData } from "../lib/howItWorksData";
 
 interface StepItem {
   id: number;
@@ -22,16 +22,8 @@ interface HowItWorksData {
 }
 
 export default function HowItWorksSection() {
-  const [data, setData] = useState<HowItWorksData | null>(null);
+  const data = howItWorksData;
 
-  useEffect(() => {
-    fetch("/HowItWorks.json")
-      .then((res) => res.json())
-      .then((json) => setData(json))
-      .catch((err) => console.error("Failed to load HowItWorks.json:", err));
-  }, []);
-
-  if (!data) return null;
 
   return (
     <section id="how-it-works" className={styles.section} style={{ position: "relative", overflow: "hidden" }}>
