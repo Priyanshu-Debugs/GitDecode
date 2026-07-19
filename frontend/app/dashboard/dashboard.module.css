@@ -3490,3 +3490,96 @@
     background-position: 200% center;
   }
 }
+
+/* Premium Limit Alert Banner */
+.limitBanner {
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  border-radius: var(--radius-md, 10px);
+  background: radial-gradient(circle at top left, rgba(216, 166, 87, 0.04) 0%, rgba(22, 20, 16, 0.6) 50%, rgba(14, 13, 11, 0.9) 100%);
+  border: 1px solid rgba(216, 166, 87, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.limitBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(216, 166, 87, 0.3), transparent);
+}
+
+.limitBannerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 75%;
+}
+
+.limitBannerTitle {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-white, #f3eee1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.limitBannerText {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #8b8270);
+  line-height: 1.5;
+}
+
+.limitBannerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--color-primary, #83c167);
+  color: var(--color-primary-text, #0e0d0b);
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm, 6px);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.2s);
+  box-shadow: 0 4px 12px rgba(131, 193, 103, 0.15);
+  white-space: nowrap;
+}
+
+.limitBannerBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(131, 193, 103, 0.3);
+  background: var(--color-primary-hover, #9ad67e);
+}
+
+@media (max-width: 768px) {
+  .limitBanner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .limitBannerContent {
+    max-width: 100%;
+  }
+  .limitBannerBtn {
+    width: 100%;
+  }
+}
+

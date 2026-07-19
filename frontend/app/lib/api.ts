@@ -94,7 +94,6 @@ export interface RepoItem {
   detailed_status?: string;
   error_message?: string;
   created_at: string;
-  is_active?: boolean;
 }
 
 export interface RepoSyncResponse {
@@ -239,22 +238,6 @@ export async function listRepos(): Promise<RepoItem[]> {
   return apiFetch<RepoItem[]>("/repos");
 }
 
-export async function toggleRepoStatus(repoId: string, isActive: boolean): Promise<RepoItem> {
-  if (isDemoMode()) {
-    const list = getMockRepos();
-    const repo = list.find(r => r.id === repoId);
-    if (repo) {
-      repo.is_active = isActive;
-      localStorage.setItem("gitmesh_mock_repos", JSON.stringify(list));
-      return repo;
-    }
-    throw new Error("Repo not found in demo mode");
-  }
-  return apiFetch<RepoItem>(`/repos/${repoId}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ is_active: isActive })
-  });
-}
 
 export async function getRateLimitStatus(repoId: string): Promise<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean }> {
   if (isDemoMode()) {
@@ -731,16 +714,6 @@ export async function listChatSessions(
   return apiFetch<ChatSession[]>(`/chat/sessions?repo_id=${repoId}`);
 }
 
-/** Delete a repo and all its data */
-export async function deleteRepo(repoId: string): Promise<void> {
-  if (isDemoMode()) {
-    const list = getMockRepos();
-    const filtered = list.filter((r) => r.id !== repoId);
-    localStorage.setItem("gitmesh_mock_repos", JSON.stringify(filtered));
-    return;
-  }
-  return apiFetch<void>(`/repos/${repoId}`, { method: "DELETE" });
-}
 
 /** Get call graph for visualization */
 export async function getCallGraph(repoId: string): Promise<DependencyGraph> {

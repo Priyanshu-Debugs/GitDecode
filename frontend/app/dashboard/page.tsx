@@ -15,7 +15,6 @@ import { useAuth } from "@/app/lib/useAuth";
 import {
   listRepos,
   syncRepo,
-  deleteRepo,
   getDependencyGraph,
   getCallGraph,
   getClassGraph,
@@ -802,7 +801,7 @@ function DashboardContent() {
       return colors[lang] || "#888888";
     };
 
-    const activeReposCount = repos.filter(r => (r.is_active ?? true) === true).length;
+    const activeReposCount = repos.length;
     const isAtLimit = activeReposCount >= 2;
 
     return (
@@ -820,6 +819,39 @@ function DashboardContent() {
             Connect, analyze, and traverse your codebase graphs. Ask context-grounded questions using your workspace repository nodes.
           </p>
         </div>
+        
+        {isAtLimit && (
+          <motion.div 
+            className={styles.limitBanner}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className={styles.limitBannerContent}>
+              <h3 className={styles.limitBannerTitle}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--color-secondary-accent, #d8a657)" }}>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                Free Plan Limit Reached
+              </h3>
+              <p className={styles.limitBannerText}>
+                You can only connect 2 repositories on the Free Plan. Upgrade your subscription to connect unlimited repositories.
+              </p>
+            </div>
+            <button 
+              className={styles.limitBannerBtn}
+              onClick={() => router.push("/pricing")}
+            >
+              <span>View Pricing & Upgrade</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
+          </motion.div>
+        )}
 
         {/* Quick Bento Stats Section */}
         <div className={styles.statsRow} style={{ zIndex: 1, position: "relative" }}>
@@ -962,60 +994,16 @@ function DashboardContent() {
                       {repo.status === "completed" && (
                         <>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className={`${styles.repoCardBadge} ${(repo.is_active ?? true) !== false ? styles.badgeCompleted : styles.badgeNotConnected}`}>
-                              <span className={`${styles.pulseLightDot} ${(repo.is_active ?? true) !== false ? styles.pulseDotGreen : styles.pulseDotGray}`} />
-                              {(repo.is_active ?? true) !== false ? 'Active' : 'Inactive'}
+                            <span className={`${styles.repoCardBadge} ${styles.badgeCompleted}`}>
+                              <span className={`${styles.pulseLightDot} ${styles.pulseDotGreen}`} />
+                              Connected
                             </span>
-                            
-                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
-                              <input 
-                                type="checkbox" 
-                                checked={(repo.is_active ?? true) !== false}
-                                onChange={async (e) => {
-                                  const newStatus = e.target.checked;
-                                  
-                                  // Optimistically update the UI
-                                  setRepos(prev => prev.map(r => r.id === repo.id ? { ...r, is_active: newStatus } : r));
-                                  
-                                  try {
-                                    const { toggleRepoStatus } = await import('@/app/lib/api');
-                                    await toggleRepoStatus(repo.id, newStatus);
-                                    // Removed fetchRepos() to prevent aggressive Next.js fetch cache from reverting the optimistic update
-                                  } catch (err: any) {
-                                    // Revert on error
-                                    setRepos(prev => prev.map(r => r.id === repo.id ? { ...r, is_active: !newStatus } : r));
-                                    
-                                    alert(`Toggle Failed: ${err.message || "Could not update repository status."}`);
-                                  }
-                                }}
-                                style={{ opacity: 0, position: 'absolute', width: 0, height: 0 }} 
-                              />
-                              <div style={{ 
-                                width: '36px', height: '20px', 
-                                background: (repo.is_active ?? true) !== false ? 'var(--color-primary)' : 'var(--color-surface-elevated)', 
-                                borderRadius: '10px', 
-                                position: 'relative', 
-                                transition: 'background 0.2s',
-                                border: '1px solid var(--color-border)'
-                              }}>
-                                <div style={{ 
-                                  width: '14px', height: '14px', 
-                                  background: '#fff', 
-                                  borderRadius: '50%', 
-                                  position: 'absolute', 
-                                  top: '2px', 
-                                  left: (repo.is_active ?? true) !== false ? '18px' : '3px', 
-                                  transition: 'left 0.2s' 
-                                }} />
-                              </div>
-                            </label>
                           </div>
                           
                           <button
                             className="btn btn-ghost btn-sm"
                             onClick={() => router.push(`/dashboard?repo_id=${repo.id}`)}
-                            disabled={repo.is_active === false}
-                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem", opacity: repo.is_active === false ? 0.5 : 1 }}
+                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
                           >
                             Explore Workspace
                           </button>
@@ -1070,7 +1058,7 @@ function DashboardContent() {
                               setSyncBranch(repo.branch || "main");
                             }}
                             disabled={isAtLimit}
-                            title={isAtLimit ? "Maximum 2 active repos reached. Deactivate one first." : ""}
+                            title={isAtLimit ? "Free plan limited to 2 repos. Upgrade to Pro for unlimited." : ""}
                             style={{ 
                               height: 28, 
                               padding: "0 12px", 
@@ -1114,7 +1102,7 @@ function DashboardContent() {
                 opacity: isAtLimit ? 0.5 : 1,
                 cursor: isAtLimit ? "not-allowed" : "pointer"
               }}
-              title={isAtLimit ? "Maximum 2 active repos reached. Deactivate one first." : ""}
+              title={isAtLimit ? "Free plan limited to 2 repos. Upgrade to Pro for unlimited." : ""}
             >
               <div className={styles.customConnectIconWrapper}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -1251,45 +1239,6 @@ function DashboardContent() {
               <span className={`${styles.statusDot} ${activeRepo.status === "failed" ? styles.statusDotFailed : styles.statusDotProcessing}`} />
               {activeRepo.status === "failed" ? "Failed" : activeRepo.detailed_status || "Processing"}
             </span>
-            <button
-              onClick={async () => {
-                setCustomConfirm({
-                  isOpen: true,
-                  title: "Cancel Ingestion",
-                  message: `Are you sure you want to cancel and delete ingestion for ${activeRepo.github_url.split("/").pop()}? This will stop indexing and remove all parsed nodes.`,
-                  confirmText: "Cancel Ingestion",
-                  cancelText: "Keep Ingesting",
-                  onConfirm: async () => {
-                    try {
-                      await deleteRepo(activeRepo.id);
-                      router.push("/dashboard");
-                    } catch (err) {
-                      console.error("Failed to cancel sync", err);
-                      setCustomConfirm({
-                        isOpen: true,
-                        title: "Cancellation Failed",
-                        message: err instanceof Error ? err.message : "Failed to cancel sync process.",
-                        confirmText: "Close",
-                        onConfirm: () => {}
-                      });
-                    }
-                  }
-                });
-              }}
-              style={{
-                fontSize: "0.75rem",
-                height: 28,
-                padding: "0 12px",
-                color: "#ef4444",
-                background: "rgba(239, 68, 68, 0.05)",
-                border: "0.5px solid rgba(239, 68, 68, 0.3)",
-                borderRadius: "var(--radius-sm)",
-                cursor: "pointer",
-                transition: "all var(--transition-fast)",
-              }}
-            >
-              Cancel Ingestion
-            </button>
           </div>
         </div>
 

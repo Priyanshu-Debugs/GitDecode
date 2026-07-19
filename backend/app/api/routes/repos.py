@@ -23,7 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
 from app.core.config import settings
-from app.schemas.requests import RepoSyncRequest, RepoStatusUpdate
+from app.schemas.requests import RepoSyncRequest
 from app.schemas.responses import (
     RepoSyncResponse,
     RepoListItem,
@@ -118,8 +118,8 @@ async def sync_repo(
         active_count = await pg.get_active_repo_count(user.id)
         if active_count >= 2:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You have reached the maximum limit of 2 active repositories. Please deactivate one before adding a new repository."
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Free plan is limited to 2 repositories. Upgrade to Pro for unlimited repos."
             )
 
     # Insert repo record
@@ -201,45 +201,6 @@ async def get_repo_status(
     )
 
 
-@router.patch(
-    "/{repo_id}/status",
-    response_model=RepoListItem,
-    summary="Update repository active status",
-    description="Toggle whether a repository is active for chatting.",
-)
-async def update_repo_status_toggle(
-    repo_id: UUID,
-    request: RepoStatusUpdate,
-    user: AuthenticatedUser = Depends(require_auth),
-    pg: SupabasePGClient = Depends(get_pg),
-) -> RepoListItem:
-    """Toggle repository active status."""
-    import logging
-    logging.error(f"DEBUG REPO TOGGLE: repo_id={repo_id}, request={request.dict()}, type(is_active)={type(request.is_active)}")
-    
-    with open("debug_repo_toggle.txt", "a") as f:
-        f.write(f"repo_id={repo_id}, is_active={request.is_active}, type={type(request.is_active)}\n")
-    if request.is_active is True and user.github_username not in settings.DEVELOPERS:
-        active_count = await pg.get_active_repo_count(user.id)
-        if active_count >= 2:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You have reached the maximum limit of 2 active repositories. Please deactivate one before activating another."
-            )
-            
-    updated = await pg.toggle_repo_active_status(
-        repo_id=str(repo_id),
-        user_id=user.id,
-        is_active=request.is_active,
-    )
-    
-    if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Repository {repo_id} not found."
-        )
-        
-    return RepoListItem(**updated)
 
 
 @router.get(
@@ -469,32 +430,6 @@ async def get_blast_radius(
     )
 
 
-@router.delete(
-    "/{repo_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a repository",
-    description="Deletes a repository and all associated graph data and files.",
-    responses={
-        404: {"model": ErrorResponse, "description": "Repository not found"},
-    },
-)
-async def delete_repo(
-    repo_id: UUID,
-    user: AuthenticatedUser = Depends(require_auth),
-    pg: SupabasePGClient = Depends(get_pg),
-) -> None:
-    """Delete a repository and all its associated data."""
-    repo_row = await pg.get_repo(repo_id=str(repo_id), user_id=user.id)
-    if repo_row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Repository {repo_id} not found.",
-        )
-
-    # Delete files, graph data, then the repo record
-    await pg.delete_repo_files(str(repo_id), user.id)
-    await pg.delete_repo_graph(str(repo_id), user.id)
-    await pg.delete_repo(str(repo_id), user.id)
 
 
 @router.get(

@@ -182,34 +182,13 @@ class SupabasePGClient:
         )
         logger.info("Deleted repo %s for user %s", repo_id, user_id)
 
-    async def toggle_repo_active_status(
-        self,
-        repo_id: str,
-        user_id: str,
-        is_active: bool,
-    ) -> dict[str, Any]:
-        """Update the active status of a repository."""
-        response = (
-            self._client.table("repos")
-            .update({"is_active": is_active})
-            .eq("id", repo_id)
-            .eq("user_id", user_id)
-            .execute()
-        )
-        repo = await self.get_repo(repo_id, user_id)
-        if not repo:
-            logger.error("Failed to update repo active status: repository %s not found for user %s", repo_id, user_id)
-            return {}
-        logger.info("Updated repo %s active status to '%s'", repo_id, is_active)
-        return repo
 
     async def get_active_repo_count(self, user_id: str) -> int:
-        """Get the number of active repositories for a user."""
+        """Get the total number of repositories for a user (all repos count toward the limit)."""
         response = (
             self._client.table("repos")
             .select("id", count="exact")
             .eq("user_id", user_id)
-            .eq("is_active", True)
             .execute()
         )
         return response.count if response.count is not None else 0

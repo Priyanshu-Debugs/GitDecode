@@ -131,7 +131,6 @@ class RepoListItem(BaseModel):
     detailed_status: str | None = None
     error_message: str | None = None
     created_at: datetime
-    is_active: bool = True
 
 
 class GraphStatsResponse(BaseModel):
