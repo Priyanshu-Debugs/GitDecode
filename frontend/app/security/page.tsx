@@ -176,7 +176,7 @@ export default function SecurityPage() {
         {/* ── SIDE-BY-SIDE POSTURE VIEW (CARDS & SPEC INFO) ────────── */}
         <section className={styles.interactiveSection}>
           <div className={styles.paneGrid}>
-            
+
             {/* Column 1: Tabs Selector List */}
             <div className={styles.pillarTabs}>
               <p className={styles.selectorInstruction}>
@@ -200,7 +200,7 @@ export default function SecurityPage() {
                         {isActive && <ChevronRight size={14} className={styles.activeChevron} />}
                       </div>
                     </button>
-                    
+
                     {/* Inline Accordion Content (Visible only on mobile/tablet when active) */}
                     {isActive && (
                       <div className={styles.mobileAccordionContent}>
@@ -248,7 +248,7 @@ export default function SecurityPage() {
                     <div className={styles.detailsCardHeader}>
                       <h2 className={styles.detailsTitle}>{activePillar.title}</h2>
                       <p className={styles.detailsDesc}>{activePillar.description}</p>
-                      
+
                       <div className={styles.techPillsRow}>
                         {activePillar.techStack.map((tech) => (
                           <span key={tech} className={styles.techPill}>{tech}</span>

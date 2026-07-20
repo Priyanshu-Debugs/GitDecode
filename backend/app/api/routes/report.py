@@ -29,6 +29,7 @@ router = APIRouter(prefix="/repos/{repo_id}/report", tags=["reports"])
 class PDFExportRequest(BaseModel):
     markdown: str
     repo_name: str = "Repository"
+    created_at: Optional[str] = None
 
 
 def sse_event(event_type: str, content: Any) -> str:
@@ -229,7 +230,7 @@ async def export_pdf(
     """Generate and stream a clean A4 PDF from Markdown content."""
     try:
         from app.services.pdf_generator import generate_pdf_from_markdown
-        pdf_bytes = generate_pdf_from_markdown(payload.markdown, payload.repo_name)
+        pdf_bytes = generate_pdf_from_markdown(payload.markdown, payload.repo_name, payload.created_at)
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",

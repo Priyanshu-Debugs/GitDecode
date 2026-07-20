@@ -979,6 +979,20 @@
 }
 
 @media (max-width: 768px) {
+  .bubble {
+    position: relative;
+    left: 0;
+    top: 0;
+    transform: none;
+    margin-top: 12px;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .bubble::before {
+    display: none;
+  }
+
   .pipelineTabs {
     grid-template-columns: 1fr;
     gap: 4px;

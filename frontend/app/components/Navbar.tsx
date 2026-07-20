@@ -144,6 +144,41 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className={styles.mobileMenu}>
+          <Link
+            href="/"
+            className={`${styles.mobileLink} ${pathname === "/" ? styles.activeMobileLink : ""}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            Home.md
+          </Link>
+          <Link
+            href="/how-it-works"
+            className={`${styles.mobileLink} ${pathname === "/how-it-works" ? styles.activeMobileLink : ""}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            HowItWorks.json
+          </Link>
+          <Link
+            href="/security"
+            className={`${styles.mobileLink} ${pathname === "/security" ? styles.activeMobileLink : ""}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            security.yaml
+          </Link>
+          <Link
+            href="/pricing"
+            className={`${styles.mobileLink} ${pathname === "/pricing" ? styles.activeMobileLink : ""}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            Pricing.js
+          </Link>
+          <Link
+            href="/developers"
+            className={`${styles.mobileLink} ${pathname === "/developers" ? styles.activeMobileLink : ""}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            developers.py
+          </Link>
           <div className={styles.lightbtnWrapperMobile}>
             <button
               className={styles.mobileLink}
@@ -154,19 +189,11 @@ export default function Navbar() {
               ☀ light mode
             </button>
           </div>
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.mobileLink}
-            onClick={() => setMobileOpen(false)}
-          >
-            GitHub
-          </a>
           <Link
             href="/auth/sign-in"
             className={styles.mobileLink}
             onClick={() => setMobileOpen(false)}
+            style={{ color: "var(--color-green)" }}
           >
             [ sign in ]
           </Link>

@@ -181,7 +181,7 @@ export default function PricingPage() {
                   {plan.recommended && (
                     <span className={styles.recommendedBadge}>popular</span>
                   )}
-                  
+
                   {/* Card Header (IDE file tab style) */}
                   <div className={styles.cardHeader}>
                     <div className={styles.cardHeaderTab}>
@@ -203,7 +203,7 @@ export default function PricingPage() {
                   {/* Card Body */}
                   <div className={styles.cardBody}>
                     <p className={styles.cardDesc}>{plan.description}</p>
-                    
+
                     <ul className={styles.featuresList}>
                       {plan.features.map((feature, i) => (
                         <li key={i} className={styles.featureItem}>

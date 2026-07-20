@@ -501,7 +501,26 @@
   }
 
   .hero {
-    padding: 40px 0 36px;
+    padding: 36px 0 28px;
+  }
+
+  .heroLogo {
+    width: 90px;
+    height: 90px;
+  }
+
+  .bubble {
+    position: relative;
+    left: 0;
+    top: 0;
+    transform: none;
+    margin-top: 12px;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .bubble::before {
+    display: none;
   }
 
   .cta {

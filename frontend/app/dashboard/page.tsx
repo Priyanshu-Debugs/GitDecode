@@ -344,7 +344,7 @@ function DashboardContent() {
       const activeRepo = repos.find((r) => r.id === activeRepoId);
       const repoName = activeRepo?.github_url?.split("/").pop() || "codebase";
       
-      const blob = await exportReportPdf(activeRepoId, report.report_markdown, repoName);
+      const blob = await exportReportPdf(activeRepoId, report.report_markdown, repoName, report.created_at);
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1643,7 +1643,11 @@ function DashboardContent() {
                           <span className={styles.reportBadge}>{report.plan.report_type}</span>
                         )}
                         <span className={styles.reportMetaText}>
-                          Generated on {new Date(report.created_at).toLocaleDateString()}
+                          Generated on {(() => {
+                            const d = new Date(report.created_at);
+                            const pad = (n: number) => n.toString().padStart(2, "0");
+                            return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                          })()}
                         </span>
                       </div>
                     </div>

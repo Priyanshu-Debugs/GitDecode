@@ -990,7 +990,8 @@ export async function getReportRateLimitStatus(
 export async function exportReportPdf(
   repoId: string,
   markdown: string,
-  repoName: string
+  repoName: string,
+  createdAt?: string
 ): Promise<Blob> {
   if (isDemoMode()) {
     throw new Error("PDF export is disabled in Demo Mode.");
@@ -999,7 +1000,7 @@ export async function exportReportPdf(
   const res = await fetch(`${API_BASE}/repos/${repoId}/report/export-pdf`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ markdown, repo_name: repoName }),
+    body: JSON.stringify({ markdown, repo_name: repoName, created_at: createdAt }),
   });
 
   if (!res.ok) {

@@ -279,12 +279,14 @@ async def report_reducer_node(state: ReportState) -> Dict[str, Any]:
 
     plan = state.get("plan") or {}
     report_title = plan.get("report_title", f"Codebase Deep Analysis: {state.get('repo_name')}")
+    current_timestamp = datetime.now(timezone.utc).strftime("%d-%m-%Y %H:%M UTC")
 
     reducer_context = f"""DOCUMENT METADATA:
 - Repository Name: {state.get('repo_name')}
 - Report Title: {report_title}
 - Project Classification: {state.get('report_type')}
 - Key Technologies: {', '.join(state.get('key_technologies', []))}
+- Generation Timestamp: {current_timestamp}
 
 {diagrams_context}
 
@@ -307,7 +309,7 @@ DRAFT SECTIONS TO COMBINE AND POLISH:
         logger.exception("Failed in reducer node: %s", str(e))
         # Fallback manual merge
         final_report = f"# {report_title}\n\n"
-        final_report += f"**Repository**: {state.get('repo_name')} | **Type**: {state.get('report_type')}\n\n"
+        final_report += f"**Repository**: {state.get('repo_name')} | **Type**: {state.get('report_type')} | **Date**: {current_timestamp}\n\n"
         final_report += "## Executive Summary\n\nThis report provides a structural analysis of the codebase based on automated AST graph parsing and code inspection.\n\n"
         final_report += combined_sections_md
 

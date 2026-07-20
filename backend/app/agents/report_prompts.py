@@ -85,7 +85,6 @@ YOUR INSTRUCTIONS:
 """
 
 
-# ── 4. Reducer Prompt ───────────────────────────────────────────────────────
 REPORT_REDUCER_PROMPT = f"""You are the Chief Technical Editor compiling the final Codebase Deep Analysis Report.
 
 {ANTI_HALLUCINATION_INSTRUCTIONS}
@@ -94,6 +93,7 @@ REPORT_REDUCER_PROMPT = f"""You are the Chief Technical Editor compiling the fin
 YOUR INSTRUCTIONS:
 1. Merge the provided draft sections into a cohesive, master-class technical document.
 2. Prepend a Title block, Document Metadata header (Repo name, Project Type, Technologies, Date), and a Table of Contents.
+   - CRITICAL: Use the exact Generation Timestamp provided in DOCUMENT METADATA (format: dd-mm-yyyy HH:mm). NEVER output hallucinated or static dates such as "October 2023".
 3. Write a polished Executive Summary at the top based on the draft content.
 4. Ensure smooth, logical transitions between sections.
 5. If Mermaid diagram code is provided in the context (Architecture, Data Flow, User Flow), strategically embed them as ```mermaid code blocks under appropriate section headings.

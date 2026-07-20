@@ -288,11 +288,20 @@
   color: var(--color-green);
 }
 
+.activeMobileLink {
+  color: var(--color-green);
+  font-weight: 600;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
   .inner {
     padding: 0 16px;
     height: 44px;
+  }
+
+  .tabs {
+    display: none;
   }
 
   .desktopActions {

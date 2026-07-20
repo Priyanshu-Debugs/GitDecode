@@ -74,7 +74,7 @@ export default function HowItWorksPage() {
     let urlTimeout: NodeJS.Timeout;
     let printInterval: NodeJS.Timeout;
     let index = 0;
-    
+
     // Simulating developer typing the URL
     const type = () => {
       if (index < targetUrl.length) {
@@ -86,7 +86,7 @@ export default function HowItWorksPage() {
         printTerminalLines();
       }
     };
-    
+
     urlTimeout = setTimeout(type, 500);
 
     const terminalLines = [
@@ -262,7 +262,7 @@ export default function HowItWorksPage() {
                   </pre>
                 </div>
               </div>
-              
+
               <div className={styles.graphPreview}>
                 <span className={styles.previewLabel}>Auto-Compiled Dependency Tree</span>
                 <div className={styles.graphNodes}>
@@ -436,7 +436,7 @@ export default function HowItWorksPage() {
         {/* ── INTERACTIVE DUAL PANE ───────────────────────────────── */}
         <section className={styles.interactiveSection}>
           <div className={styles.paneGrid}>
-            
+
             {/* Left Pane - Mock JSON Editor */}
             <div className={styles.leftPane}>
               <div className={styles.editorFrame}>
@@ -491,7 +491,7 @@ export default function HowItWorksPage() {
                           ))}
                         </div>
                       </div>
-                      
+
                       {renderStepVisualizer()}
                     </div>
                   </motion.div>
@@ -536,7 +536,7 @@ export default function HowItWorksPage() {
                     <span className={styles.timelineStepHeadline}>{step.headline}</span>
                   </div>
                   <p className={styles.timelineStepDescription}>{step.description}</p>
-                  
+
                   {/* Tech tags */}
                   <div className={styles.timelineStepTechRow}>
                     {step.tech.map((t, i) => (
