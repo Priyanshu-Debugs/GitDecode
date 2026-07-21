@@ -8,7 +8,7 @@ for multi-agent codebase analysis reports via LangGraph & SSE.
 import asyncio
 import json
 import logging
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Response

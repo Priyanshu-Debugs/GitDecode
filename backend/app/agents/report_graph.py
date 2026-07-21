@@ -7,6 +7,8 @@ Pipeline: Planner -> Orchestrator -> Fan-Out Section Workers -> Reducer.
 
 import json
 import logging
+import re
+from datetime import datetime, timezone
 from typing import Dict, Any, List
 
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -279,14 +281,13 @@ async def report_reducer_node(state: ReportState) -> Dict[str, Any]:
 
     plan = state.get("plan") or {}
     report_title = plan.get("report_title", f"Codebase Deep Analysis: {state.get('repo_name')}")
-    current_timestamp = datetime.now(timezone.utc).strftime("%d-%m-%Y %H:%M UTC")
+    current_date = datetime.now(timezone.utc).strftime("%d-%m-%Y")
 
     reducer_context = f"""DOCUMENT METADATA:
 - Repository Name: {state.get('repo_name')}
 - Report Title: {report_title}
 - Project Classification: {state.get('report_type')}
 - Key Technologies: {', '.join(state.get('key_technologies', []))}
-- Generation Timestamp: {current_timestamp}
 
 {diagrams_context}
 
@@ -305,11 +306,20 @@ DRAFT SECTIONS TO COMBINE AND POLISH:
         if isinstance(content, list):
             content = "".join([b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"])
         final_report = str(content).strip()
+        
+        # Enforce the exact generation timestamp to prevent LLM date hallucinations
+        final_report = re.sub(
+            r'(Date:[\s\*]*).*?(?=\n)',
+            f'\\g<1>{current_date}',
+            final_report,
+            flags=re.IGNORECASE,
+            count=1
+        )
     except Exception as e:
         logger.exception("Failed in reducer node: %s", str(e))
         # Fallback manual merge
         final_report = f"# {report_title}\n\n"
-        final_report += f"**Repository**: {state.get('repo_name')} | **Type**: {state.get('report_type')} | **Date**: {current_timestamp}\n\n"
+        final_report += f"**Repository**: {state.get('repo_name')} | **Type**: {state.get('report_type')} | **Date**: {current_date}\n\n"
         final_report += "## Executive Summary\n\nThis report provides a structural analysis of the codebase based on automated AST graph parsing and code inspection.\n\n"
         final_report += combined_sections_md
 
