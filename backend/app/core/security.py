@@ -34,6 +34,7 @@ class AuthenticatedUser(BaseModel):
     email: str
     role: str
     github_username: str = ""
+    candidate_usernames: list[str] = []
 
 
 def verify_supabase_token(token: str) -> dict:
@@ -127,19 +128,25 @@ def get_current_user(
         )
 
     # Extract GitHub username from OAuth user_metadata (fallback to email prefix)
-    user_metadata = payload.get("user_metadata", {})
-    github_username = (
-        user_metadata.get("user_name", "")
-        or user_metadata.get("preferred_username", "")
-        or user_metadata.get("full_name", "")
-        or (email.split("@")[0] if email else "")
-    )
+    user_metadata = payload.get("user_metadata") or {}
+    
+    # Store all possible candidates for permission checks to mirror frontend logic
+    candidates = [
+        user_metadata.get("preferred_username", ""),
+        user_metadata.get("user_name", ""),
+        user_metadata.get("full_name", ""),
+        email.split("@")[0] if email else "",
+    ]
+    candidate_usernames = [c for c in candidates if c]
+    
+    github_username = candidate_usernames[0] if candidate_usernames else ""
 
     return AuthenticatedUser(
         id=user_id,
         email=email,
         role=role or "authenticated",
         github_username=github_username,
+        candidate_usernames=candidate_usernames,
     )
 
 
@@ -151,7 +158,7 @@ def is_developer_account(user: AuthenticatedUser) -> bool:
     settings = get_settings()
     dev_handles = [d.strip().lower() for d in settings.DEVELOPERS]
 
-    candidates = [
+    candidates = user.candidate_usernames or [
         user.github_username,
         user.email.split("@")[0] if user.email else "",
     ]

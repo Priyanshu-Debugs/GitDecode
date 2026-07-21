@@ -546,7 +546,7 @@ function DashboardContent() {
       setSyncError(displayMsg);
       setCustomConfirm({
         isOpen: true,
-        title: "Connection Failed",
+        title: displayMsg.includes("Free plan") ? "Plan Limit Reached" : "Connection Failed",
         message: displayMsg,
         confirmText: "Close",
         onConfirm: () => {}
@@ -1449,12 +1449,12 @@ function DashboardContent() {
               {/* Chat Messages */}
               <div className={styles.chatMessageListFull} onScroll={handleScroll}>
                 {chatHistoryLoading ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%", padding: "16px 0" }}>
-                    <div className={`${styles.chatSkeletonBubble} ${styles.user}`} style={{ width: "35%", height: 60 }} />
-                    <div className={`${styles.chatSkeletonBubble} ${styles.assistant}`} style={{ width: "85%", height: 140 }} />
-                    <div className={`${styles.chatSkeletonBubble} ${styles.user}`} style={{ width: "45%", height: 80 }} />
-                    <div className={`${styles.chatSkeletonBubble} ${styles.assistant}`} style={{ width: "75%", height: 110 }} />
-                  </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%", padding: "16px 0" }}>
+                      <div className={`${styles.chatSkeletonBubble} ${styles.user}`} style={{ width: "35%", height: 60 }} />
+                      <div className={`${styles.chatSkeletonBubble} ${styles.assistant}`} style={{ width: "85%", height: 140 }} />
+                      <div className={`${styles.chatSkeletonBubble} ${styles.user}`} style={{ width: "45%", height: 80 }} />
+                      <div className={`${styles.chatSkeletonBubble} ${styles.assistant}`} style={{ width: "75%", height: 110 }} />
+                    </div>
                 ) : messages.length === 0 && (
                   <div className={styles.chatEmptyState}>
                     <h3 className={styles.chatEmptyTitle}>

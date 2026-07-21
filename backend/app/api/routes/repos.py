@@ -114,60 +114,67 @@ async def sync_repo(
     2. Dispatches an Inngest event to trigger the background ingestion pipeline.
     3. Returns the repo ID and status to the caller.
     """
-    
-    # Check if repo already exists for the user
-    existing_repo = await pg.get_repo_by_url(user.id, str(request.repo_url))
-    if existing_repo:
-        repo_status = existing_repo["status"]
-        if repo_status in ("queued", "processing"):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Repository {request.repo_url} is already being synced (status: {repo_status})."
-            )
-        
-        # Re-use the existing record by resetting its status to queued
-        repo_row = await pg.update_repo_status(
-            repo_id=existing_repo["id"],
-            user_id=user.id,
-            status="queued",
-            detailed_status="queued",
-            error_message=None
-        )
-    else:
-        if not is_developer_account(user):
-            active_count = await pg.get_active_repo_count(user.id)
-            if active_count >= 2:
+    try:
+        # Check if repo already exists for the user
+        existing_repo = await pg.get_repo_by_url(user.id, str(request.repo_url))
+        if existing_repo:
+            repo_status = existing_repo["status"]
+            if repo_status in ("queued", "processing"):
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Free plan is limited to 2 repositories. Upgrade to Pro for unlimited repos."
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Repository {request.repo_url} is already being synced (status: {repo_status})."
                 )
+            
+            # Re-use the existing record by resetting its status to queued
+            repo_row = await pg.update_repo_status(
+                repo_id=existing_repo["id"],
+                user_id=user.id,
+                status="queued",
+                detailed_status="queued",
+                error_message=None
+            )
+        else:
+            if not is_developer_account(user):
+                active_count = await pg.get_active_repo_count(user.id)
+                if active_count >= 2:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Free plan is limited to 2 repositories. Upgrade to Pro for unlimited repos."
+                    )
 
-        # Insert new repo record
-        repo_row = await pg.insert_repo(
-            user_id=user.id,
-            github_url=str(request.repo_url),
-            branch=request.branch,
+            # Insert new repo record
+            repo_row = await pg.insert_repo(
+                user_id=user.id,
+                github_url=str(request.repo_url),
+                branch=request.branch,
+            )
+
+        # Dispatch Inngest event to trigger the ingestion pipeline
+        await inngest_client.send(
+            inngest.Event(
+                name="repo/sync.requested",
+                data={
+                    "repo_id": repo_row["id"],
+                    "user_id": user.id,
+                    "repo_url": str(request.repo_url),
+                    "branch": request.branch,
+                },
+            )
         )
 
-    # Dispatch Inngest event to trigger the ingestion pipeline
-    await inngest_client.send(
-        inngest.Event(
-            name="repo/sync.requested",
-            data={
-                "repo_id": repo_row["id"],
-                "user_id": user.id,
-                "repo_url": str(request.repo_url),
-                "branch": request.branch,
-            },
+        return RepoSyncResponse(
+            repo_id=repo_row["id"],
+            status="queued",
+            message=f"Repository {request.repo_url} has been queued for ingestion.",
+            queued_at=repo_row.get("created_at", datetime.now(timezone.utc)),
         )
-    )
-
-    return RepoSyncResponse(
-        repo_id=repo_row["id"],
-        status="queued",
-        message=f"Repository {request.repo_url} has been queued for ingestion.",
-        queued_at=repo_row.get("created_at", datetime.now(timezone.utc)),
-    )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        with open("sync_error.log", "a") as f:
+            f.write(traceback.format_exc() + "\n")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.get(

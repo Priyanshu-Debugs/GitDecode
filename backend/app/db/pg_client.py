@@ -155,7 +155,7 @@ class SupabasePGClient:
             .maybe_single()
             .execute()
         )
-        return response.data
+        return response.data if response else None
 
 
     async def get_user_repos(
