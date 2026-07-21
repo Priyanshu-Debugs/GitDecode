@@ -467,6 +467,7 @@ function DashboardContent() {
   const [copiedMsgIds, setCopiedMsgIds] = useState<Set<string>>(new Set());
   const [feedbackState, setFeedbackState] = useState<Record<string, string>>({});
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+  const [chatHistoryLoading, setChatHistoryLoading] = useState(true);
   const [selectedCitation, setSelectedCitation] = useState<any | null>(null);
 
   // File viewer state
@@ -616,9 +617,11 @@ function DashboardContent() {
     if (!activeRepoId) {
       setMessages([]);
       setChatSessionId(null);
+      setChatHistoryLoading(false);
       return;
     }
     
+    setChatHistoryLoading(true);
     listChatSessions(activeRepoId)
       .then((sessions) => {
         const requestedSessionExists = querySessionId && sessions.some((s) => s.session_id === querySessionId);
@@ -627,15 +630,20 @@ function DashboardContent() {
           setChatSessionId(sid);
           getChatHistory(sid, activeRepoId).then((history) => {
             setMessages(history.messages);
+            setChatHistoryLoading(false);
+          }).catch(() => {
+            setChatHistoryLoading(false);
           });
         } else {
           setMessages([]);
           setChatSessionId(null);
+          setChatHistoryLoading(false);
         }
       })
       .catch(() => {
         setMessages([]);
         setChatSessionId(null);
+        setChatHistoryLoading(false);
       });
   }, [activeRepoId, querySessionId]);
 
@@ -1419,7 +1427,14 @@ function DashboardContent() {
             <div className={styles.chatFullSpace}>
               {/* Chat Messages */}
               <div className={styles.chatMessageListFull} onScroll={handleScroll}>
-                {messages.length === 0 && (
+                {chatHistoryLoading ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%", padding: "16px 0" }}>
+                    <div className={`${styles.chatSkeletonBubble} ${styles.user}`} style={{ width: "35%", height: 60 }} />
+                    <div className={`${styles.chatSkeletonBubble} ${styles.assistant}`} style={{ width: "85%", height: 140 }} />
+                    <div className={`${styles.chatSkeletonBubble} ${styles.user}`} style={{ width: "45%", height: 80 }} />
+                    <div className={`${styles.chatSkeletonBubble} ${styles.assistant}`} style={{ width: "75%", height: 110 }} />
+                  </div>
+                ) : messages.length === 0 && (
                   <div className={styles.chatEmptyState}>
                     <h3 className={styles.chatEmptyTitle}>
                       Let&apos;s Explore The Codebase 
