@@ -369,6 +369,31 @@ export async function getRepoStatus(
   return apiFetch<RepoSyncResponse>(`/repos/${repoId}/status`);
 }
 
+/**
+ * Resolve a repository's UUID from its GitHub username and repo name.
+ * Calls GET /repos/by-name/{username}/{repoName} on the backend.
+ * In Demo Mode, matches against the mock repo list using the reconstructed URL.
+ */
+export async function getRepoByName(
+  username: string,
+  repoName: string
+): Promise<RepoSyncResponse> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const githubUrl = `https://github.com/${username}/${repoName}`;
+    const repo = list.find((r) => r.github_url === githubUrl);
+    if (!repo) throw new Error(`Repository '${username}/${repoName}' not found in Demo Mode.`);
+    return {
+      repo_id: repo.id,
+      status: repo.status,
+      message: "Demo Mode lookup.",
+      detailed_status: repo.detailed_status || repo.status,
+      queued_at: repo.created_at,
+    };
+  }
+  return apiFetch<RepoSyncResponse>(`/repos/by-name/${encodeURIComponent(username)}/${encodeURIComponent(repoName)}`);
+}
+
 /** Get graph statistics for a repo */
 export async function getGraphStats(repoId: string): Promise<GraphStats> {
   if (isDemoMode()) {

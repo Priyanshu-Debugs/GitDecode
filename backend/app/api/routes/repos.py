@@ -185,6 +185,57 @@ async def list_repos(
 
 
 @router.get(
+    "/by-name/{username}/{repo_name}",
+    response_model=RepoSyncResponse,
+    summary="Get repository by GitHub username and repo name",
+    description=(
+        "Looks up a repository owned by the authenticated user using its GitHub "
+        "username and repository name (e.g. /by-name/torvalds/linux). "
+        "Returns the repository metadata including its internal UUID, which can "
+        "then be used for all subsequent graph/chat API calls."
+    ),
+    responses={
+        404: {"model": ErrorResponse, "description": "Repository not found"},
+    },
+)
+async def get_repo_by_name(
+    username: str,
+    repo_name: str,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> RepoSyncResponse:
+    """Retrieve a repository by its GitHub username and repository name.
+
+    Reconstructs the canonical GitHub URL from the path parameters and
+    delegates to ``get_repo_by_url``. Only returns repos owned by the
+    authenticated user (user-scoped).
+    """
+    # Normalise: strip trailing slashes and .git suffix to be safe
+    clean_repo_name = repo_name.rstrip("/").removesuffix(".git")
+    github_url = f"https://github.com/{username}/{clean_repo_name}"
+
+    repo_row = await pg.get_repo_by_url(
+        user_id=user.id,
+        github_url=github_url,
+    )
+
+    if repo_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository '{username}/{clean_repo_name}' not found or you don't have access to it.",
+        )
+
+    return RepoSyncResponse(
+        repo_id=repo_row["id"],
+        status=repo_row["status"],
+        message=repo_row.get("error_message") or f"Repository sync status: {repo_row['status']}",
+        detailed_status=repo_row.get("detailed_status") or repo_row["status"],
+        error_message=repo_row.get("error_message"),
+        queued_at=repo_row["created_at"],
+    )
+
+
+@router.get(
     "/{repo_id}/status",
     response_model=RepoSyncResponse,
     summary="Get repository sync status",

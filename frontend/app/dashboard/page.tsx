@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { MermaidDiagram } from "@/components/ui/MermaidDiagram";
 import { ChatMarkdown } from "@/components/ui/ChatMarkdown";
 import {
@@ -68,6 +68,24 @@ function SendIcon() {
   );
 }
 
+/**
+ * Extracts `username/repoName` from a GitHub URL for use in clean routes.
+ * Handles URLs with or without .git suffix, trailing slashes, or deep paths.
+ * e.g. "https://github.com/Priyanshu/GitMesh" → "/dashboard/repo/Priyanshu/GitMesh"
+ */
+function githubUrlToRepoPath(githubUrl: string): string {
+  try {
+    const clean = githubUrl.replace(/\.git$/, "").replace(/\/$/, "");
+    const parts = clean.split("/");
+    // Last two segments are owner and repo
+    const repoName = parts[parts.length - 1];
+    const owner = parts[parts.length - 2];
+    if (owner && repoName) return `/dashboard/repo/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}`;
+  } catch {
+    // fall through to fallback
+  }
+  return "/dashboard";
+}
 
 
 /* ── Force Layout Math Engine ────────────────────────────────────────── */
@@ -252,7 +270,8 @@ function DashboardContent() {
 
   // Read Selection from URL params
   const searchParams = useSearchParams();
-  const activeRepoId = searchParams.get("repo_id");
+  const pathname = usePathname();
+  let activeRepoId = searchParams.get("repo_id");
 
   // States
   const [repos, setRepos] = useState<RepoItem[]>(() => {
@@ -262,6 +281,25 @@ function DashboardContent() {
     }
     return [];
   });
+
+  // Infer activeRepoId from URL path if it is the clean URL pattern
+  const isRepoDetailPath = pathname.startsWith("/dashboard/repo/");
+  const pathParts = pathname.split("/").filter(Boolean);
+  const pathUsername = isRepoDetailPath && pathParts.length >= 4 ? decodeURIComponent(pathParts[2]) : null;
+  const pathRepoName = isRepoDetailPath && pathParts.length >= 4 ? decodeURIComponent(pathParts[3]) : null;
+
+  if (!activeRepoId && pathUsername && pathRepoName && repos.length > 0) {
+    const matched = repos.find((r) => {
+      const parts = r.github_url.replace(/\.git$/, "").replace(/\/$/, "").split("/");
+      return (
+        parts[parts.length - 1] === pathRepoName &&
+        parts[parts.length - 2] === pathUsername
+      );
+    });
+    if (matched) {
+      activeRepoId = matched.id;
+    }
+  }
   const [loading, setLoading] = useState(() => {
     if (typeof window !== "undefined") {
       const cached = localStorage.getItem("gitmesh_cached_repos");
@@ -493,7 +531,9 @@ function DashboardContent() {
       const res = await syncRepo(url.trim(), branch.trim() || "main");
       fetchRepos();
       if (res && res.repo_id) {
-        router.push(`/dashboard?repo_id=${res.repo_id}`);
+        // Navigate to human-readable URL; the bridge page will resolve it
+        const repoPath = githubUrlToRepoPath(url.trim());
+        router.push(repoPath);
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "Sync request failed.";
@@ -1116,7 +1156,7 @@ function DashboardContent() {
                           
                           <button
                             className="btn btn-ghost btn-sm"
-                            onClick={() => router.push(`/dashboard?repo_id=${repo.id}`)}
+                            onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
                             style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
                           >
                             Explore Workspace
@@ -1132,7 +1172,7 @@ function DashboardContent() {
                           </span>
                           <button
                             className="btn btn-ghost btn-sm"
-                            onClick={() => router.push(`/dashboard?repo_id=${repo.id}`)}
+                            onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
                             style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
                           >
                             Track Progress

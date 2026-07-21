@@ -142,19 +142,74 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Extracts `username/repoName` from a GitHub URL for use in clean routes.
+   * e.g. "https://github.com/Priyanshu/GitMesh" -> "/dashboard/repo/Priyanshu/GitMesh"
+   */
+  function githubUrlToRepoPath(githubUrl: string): string {
+    try {
+      const clean = githubUrl.replace(/\.git$/, "").replace(/\/$/, "");
+      const parts = clean.split("/");
+      const repoName = parts[parts.length - 1];
+      const owner = parts[parts.length - 2];
+      if (owner && repoName) return `/dashboard/repo/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}`;
+    } catch {
+      // fall through to fallback
+    }
+    return "/dashboard";
+  }
+
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeRepoId = searchParams.get("repo_id");
   const activeRepo = repos.find((r) => r.id === activeRepoId);
-  const activeRepoName = activeRepo?.github_url.split("/").pop();
   const activeRepoStatus = activeRepo?.status;
   const currentTab = searchParams.get("tab") || "chat";
+
+  // Detect the new /dashboard/repo/[username]/[repoName] path pattern
+  const isRepoDetailPath = pathname.startsWith("/dashboard/repo/");
+  const pathParts = pathname.split("/").filter(Boolean); // ['dashboard','repo','username','repoName']
+  const pathUsername = isRepoDetailPath && pathParts.length >= 4 ? decodeURIComponent(pathParts[2]) : null;
+  const pathRepoName = isRepoDetailPath && pathParts.length >= 4 ? decodeURIComponent(pathParts[3]) : null;
+
+  // Find repo from path when on the new route (no repo_id in URL)
+  const pathActiveRepo = isRepoDetailPath && pathUsername && pathRepoName
+    ? repos.find((r) => {
+        const parts = r.github_url.replace(/\.git$/, "").replace(/\/$/, "").split("/");
+        return (
+          parts[parts.length - 1] === pathRepoName &&
+          parts[parts.length - 2] === pathUsername
+        );
+      })
+    : null;
+
+  // Unified display name: pretty name for new path, or URL-derived name for old path
+  const activeRepoDisplayName =
+    isRepoDetailPath && pathUsername && pathRepoName
+      ? `${pathUsername}/${pathRepoName}`
+      : activeRepo?.github_url.split("/").pop();
+
+  // Unified status: use path-resolved repo if on new route
+  const effectiveRepoStatus = isRepoDetailPath ? pathActiveRepo?.status : activeRepoStatus;
+
+  // Show tabs when: old route (repo_id in URL + completed) OR new route (repo found + completed)
+  const showRepoTabs =
+    (activeRepoId && activeRepoStatus === "completed") ||
+    (isRepoDetailPath && effectiveRepoStatus === "completed");
+
+  // Show breadcrumb when: old route has repo_id OR on new route with valid path segments
+  const showBreadcrumb = !!activeRepoId || isRepoDetailPath;
 
   const handleTabChange = (tab: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    router.push(`/dashboard?${params.toString()}`);
+    if (isRepoDetailPath && pathUsername && pathRepoName) {
+      // Stay on the clean URL, just change the tab query param
+      router.push(`/dashboard/repo/${encodeURIComponent(pathUsername)}/${encodeURIComponent(pathRepoName)}?${params.toString()}`);
+    } else {
+      router.push(`/dashboard?${params.toString()}`);
+    }
   };
 
   const completedRepos = repos.filter((r) => r.status === "completed");
@@ -178,6 +233,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
               ...s,
               repoId: repo.id,
               repoName: repo.github_url.split("/").pop() || "repository",
+              repoUrl: repo.github_url,
             }));
           } catch {
             return [];
@@ -263,7 +319,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       setRepoUrlInput("");
       fetchLayoutRepos();
       if (res && res.repo_id) {
-        router.push(`/dashboard?repo_id=${res.repo_id}`);
+        router.push(githubUrlToRepoPath(url.trim()));
       }
     } catch (err) {
       setSyncError(err instanceof Error ? err.message : "Sync requested failed.");
@@ -341,14 +397,16 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
         {/* Scrollable Sidebar Nav Container */}
         <nav className={styles.sidebarNav} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16, padding: "16px 12px" }}>
           
-          {/* Active Codebase Shortcut */}
-          {!collapsed && activeRepoId && (
+          {/* Active Codebase Shortcut — old route: ?repo_id=, new route: /repo/username/name */}
+          {!collapsed && (activeRepoId || isRepoDetailPath) && (
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6, borderBottom: "0.5px solid var(--color-border)", paddingBottom: 12, marginBottom: 12 }}>
               <div className={styles.sidebarQueueHeader} style={{ fontSize: "0.6875rem", letterSpacing: "0.05em", color: "var(--color-text-secondary)" }}>
                 Active Codebase
               </div>
               <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--color-white)", padding: "0 8px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
-                {repos.find(r => r.id === activeRepoId)?.github_url.split("/").pop() || "Repository"}
+                {isRepoDetailPath && pathRepoName
+                  ? `${pathUsername}/${pathRepoName}`
+                  : (repos.find(r => r.id === activeRepoId)?.github_url.split("/").pop() || "Repository")}
               </div>
               <div style={{ padding: "0 8px" }}>
                 <span className={`${styles.statusBadge} ${styles.statusProcessing}`} style={{ fontSize: "0.65rem", padding: "2px 8px" }}>
@@ -382,7 +440,16 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                     return (
                       <div
                         key={`${chat.repoId}-${chat.session_id}`}
-                        onClick={() => handleNavClick(`/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}`)}
+                        onClick={() => {
+                          let navUrl = `/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}&tab=chat`;
+                          if (chat.repoUrl) {
+                            const basePath = githubUrlToRepoPath(chat.repoUrl);
+                            if (basePath !== "/dashboard") {
+                              navUrl = `${basePath}?session_id=${chat.session_id}&tab=chat`;
+                            }
+                          }
+                          handleNavClick(navUrl);
+                        }}
                         className={styles.repoCard}
                         style={{
                            padding: 8,
@@ -440,18 +507,18 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
               <span className={styles.topbarHomeLabel}>Workspace Home</span>
             </Link>
 
-            {activeRepoId && (
+            {showBreadcrumb && (
               <>
                 <span className={styles.topbarSeparator}>/</span>
                 <div className={styles.topbarActiveRepo}>
-                  {activeRepoName || "Repository"}
+                  {activeRepoDisplayName || "Repository"}
                 </div>
               </>
             )}
           </div>
 
           {/* Center Navigation Tabs (Only when repo is active and completed) */}
-          {activeRepoId && activeRepoStatus === "completed" && (
+          {showRepoTabs && (
             <div className={styles.topbarNav}>
               <button
                 className={`${styles.topbarTab} ${currentTab === "chat" ? styles.topbarTabActive : ""}`}
