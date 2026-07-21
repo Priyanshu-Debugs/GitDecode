@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/app/lib/useAuth";
 import { listRepos, listChatSessions, getRepoSummary, getSystemHealth, type RepoItem } from "@/app/lib/api";
+import { isDeveloperAccount } from "@/app/lib/developers";
 import { motion } from "framer-motion";
 import styles from "../dashboard.module.css";
 
@@ -160,6 +162,7 @@ export default function ProfilePage() {
 
   const githubName = user.user_metadata?.preferred_username || user.user_metadata?.user_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Developer";
   const initials = githubName.slice(0, 2).toUpperCase();
+  const isMasterDeveloper = isDeveloperAccount(user);
 
   const completedCount = repos.filter((r) => r.status === "completed").length;
 
@@ -225,10 +228,10 @@ export default function ProfilePage() {
         <div className={styles.profileUserInfo}>
           <div className="relative flex items-center justify-center shrink-0">
             <motion.div
-              className="absolute rounded-full bg-[rgba(200,204,212,0.12)]"
-              animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
+              className="absolute rounded-full"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0, 0.4] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-              style={{ width: 88, height: 88 }}
+              style={{ width: 88, height: 88, background: "rgba(131, 193, 103, 0.15)" }}
             />
             <div className={styles.profileAvatar} style={{ zIndex: 1, position: "relative" }}>
               {user.user_metadata?.avatar_url ? (
@@ -239,14 +242,38 @@ export default function ProfilePage() {
             </div>
           </div>
           <div className={styles.profileDetails}>
-            <h2 className={styles.profileEmail} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h2 className={styles.profileEmail} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {githubName}
-              <span style={{ fontSize: "0.6875rem", background: "rgba(200, 204, 212, 0.1)", border: "0.5px solid rgba(200, 204, 212, 0.3)", color: "#c8ccd4", padding: "2px 8px", borderRadius: 4, fontFamily: "var(--font-mono)", fontWeight: 500 }}>
-                CORE MEMBER
-              </span>
+              {isMasterDeveloper ? (
+                <span style={{ 
+                  fontSize: "0.7rem", 
+                  background: "rgba(224, 138, 74, 0.12)", 
+                  border: "1px solid #e08a4a", 
+                  color: "#e08a4a", 
+                  padding: "3px 10px", 
+                  borderRadius: 6, 
+                  fontFamily: "var(--font-mono)", 
+                  fontWeight: 700,
+                  letterSpacing: "0.03em",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}>
+                  Developer
+                </span>
+              ) : (
+                <span style={{ fontSize: "0.6875rem", background: "rgba(131, 193, 103, 0.1)", border: "1px solid var(--color-green, #83c167)", color: "var(--color-green, #83c167)", padding: "2px 8px", borderRadius: 4, fontFamily: "var(--font-mono)", fontWeight: 500 }}>
+                  CORE MEMBER
+                </span>
+              )}
             </h2>
             <span className={styles.profileMeta}>
               Connected via {user.app_metadata?.provider || "GitHub"} • Email: <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "var(--color-white)" }}>{user.email}</span>
+              {isMasterDeveloper && (
+                <span style={{ marginLeft: 10, color: "#e08a4a", fontWeight: 600 }}>
+                  • Unlimited Access (Repos, Chat, Reports)
+                </span>
+              )}
             </span>
           </div>
         </div>

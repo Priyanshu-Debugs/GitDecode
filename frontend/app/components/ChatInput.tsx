@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import styles from "@/app/dashboard/dashboard.module.css";
 import ModelSelector from "./ModelSelector";
 import { getRateLimitStatus } from "@/app/lib/api";
+import { useAuth } from "@/app/lib/useAuth";
+import { isDeveloperAccount } from "@/app/lib/developers";
 import Link from "next/link";
 import { useLocalKeys } from "@/app/lib/useLocalKeys";
 
@@ -16,6 +18,7 @@ interface ChatInputProps {
 }
 
 export default function ChatInput({ repoId, onSend, disabled, initialValue = "", onLimitReached }: ChatInputProps) {
+  const { user } = useAuth(false);
   const [value, setValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [rateLimit, setRateLimit] = useState<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean } | null>(null);
@@ -25,6 +28,7 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
   
   // A heuristic: if it's default google model and user has no key, they are using the default model
   const isDefaultModel = (!pref.provider || pref.provider === "google") && !hasOwnKey;
+  const isMasterDeveloper = isDeveloperAccount(user) || Boolean(rateLimit?.is_developer);
 
   const fetchRateLimit = async () => {
     if (!repoId || !isDefaultModel) {
@@ -34,7 +38,7 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
     try {
       const res = await getRateLimitStatus(repoId);
       setRateLimit(res);
-      if (res.remaining_daily === 0 && !res.is_developer && onLimitReached) {
+      if (res.remaining_daily === 0 && !res.is_developer && !isDeveloperAccount(user) && onLimitReached) {
         onLimitReached();
       }
     } catch (e) {
@@ -60,13 +64,20 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
     }
   }, [disabled]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   const handleSubmit = () => {
     if (!value.trim() || disabled || isLimitReached) return;
     onSend(value.trim());
     setValue("");
   };
 
-  const isLimitReached = Boolean(rateLimit && rateLimit.remaining_daily === 0 && !rateLimit.is_developer && isDefaultModel);
+  const isLimitReached = Boolean(!isMasterDeveloper && rateLimit && rateLimit.remaining_daily === 0 && isDefaultModel);
 
   return (
     <div style={{ width: '100%' }}>
@@ -203,7 +214,7 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
         <div className={styles.chatToolbar}>
           <div className={styles.chatToolbarLeft}>
             <ModelSelector />
-            {rateLimit && !rateLimit.is_developer && isDefaultModel && (
+            {rateLimit && !isMasterDeveloper && isDefaultModel && (
               <span style={{ 
                 fontSize: '0.725rem', 
                 fontWeight: 500,
@@ -220,17 +231,22 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
                 {rateLimit.remaining_daily === 0 ? '0/3 Daily Messages (Limit Reached)' : `${rateLimit.remaining_daily}/3 Daily Messages`}
               </span>
             )}
-            {rateLimit?.is_developer && (
+            {isMasterDeveloper && (
               <span style={{ 
                 fontSize: '0.7rem', 
-                color: 'var(--color-primary)',
-                background: 'rgba(56, 189, 248, 0.1)',
-                padding: '2px 8px',
+                color: '#e08a4a',
+                background: 'rgba(224, 138, 74, 0.12)',
+                border: '1px solid #e08a4a',
+                padding: '2px 9px',
                 borderRadius: '12px',
                 marginLeft: '8px',
-                fontWeight: 600
+                fontWeight: 700,
+                letterSpacing: '0.02em',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
               }}>
-                Developer Bypass
+                Developer
               </span>
             )}
           </div>

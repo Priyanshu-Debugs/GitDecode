@@ -23,6 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
 from app.core.config import settings
+from app.core.security import is_developer_account
 from app.schemas.requests import RepoSyncRequest
 from app.schemas.responses import (
     RepoSyncResponse,
@@ -133,7 +134,7 @@ async def sync_repo(
             error_message=None
         )
     else:
-        if user.github_username not in settings.DEVELOPERS:
+        if not is_developer_account(user):
             active_count = await pg.get_active_repo_count(user.id)
             if active_count >= 2:
                 raise HTTPException(

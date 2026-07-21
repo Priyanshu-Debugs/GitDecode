@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/lib/useAuth";
 import { listRepos, syncRepo, listChatSessions, type RepoItem } from "@/app/lib/api";
+import { isDeveloperAccount } from "@/app/lib/developers";
 import styles from "./dashboard.module.css";
 import DashboardLoader from "@/app/components/DashboardLoader";
 
@@ -184,10 +185,10 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       })
     : null;
 
-  // Unified display name: pretty name for new path, or URL-derived name for old path
+  // Unified display name: repo name only without username prefix
   const activeRepoDisplayName =
-    isRepoDetailPath && pathUsername && pathRepoName
-      ? `${pathUsername}/${pathRepoName}`
+    isRepoDetailPath && pathRepoName
+      ? pathRepoName
       : activeRepo?.github_url.split("/").pop();
 
   // Unified status: use path-resolved repo if on new route
@@ -351,6 +352,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   const githubName = user.user_metadata?.preferred_username || user.user_metadata?.user_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Developer";
   const initials = githubName.slice(0, 2).toUpperCase();
+  const isMasterDeveloper = isDeveloperAccount(user);
 
   const activeSyncs = repos.filter(
     (r) => r.status === "queued" || r.status === "processing" || r.status === "failed"
@@ -517,50 +519,47 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {/* Center Navigation Tabs (Only when repo is active and completed) */}
-          {showRepoTabs && (
-            <div className={styles.topbarNav}>
-              <button
-                className={`${styles.topbarTab} ${currentTab === "chat" ? styles.topbarTabActive : ""}`}
-                onClick={() => handleTabChange("chat")}
-              >
-                Chat
-              </button>
-              <button
-                className={`${styles.topbarTab} ${currentTab === "report" ? styles.topbarTabActive : ""}`}
-                onClick={() => handleTabChange("report")}
-              >
-                Report
-              </button>
-              <button
-                className={`${styles.topbarTab} ${currentTab === "graph" ? styles.topbarTabActive : ""}`}
-                onClick={() => handleTabChange("graph")}
-              >
-                Knowledge Graph
-              </button>
-
-              <button
-                className={`${styles.topbarTab} ${currentTab === "diagrams" ? styles.topbarTabActive : ""}`}
-                onClick={() => handleTabChange("diagrams")}
-              >
-                Diagrams
-              </button>
-              <button
-                className={`${styles.topbarTab} ${currentTab === "insights" ? styles.topbarTabActive : ""}`}
-                onClick={() => handleTabChange("insights")}
-              >
-                Insights
-              </button>
-            </div>
-          )}
-
-          {/* Right Profile Widget */}
+          {/* Right Navigation & Profile Area */}
           <div className={styles.topbarRight}>
+            {showRepoTabs && (
+              <div className={styles.topbarNav}>
+                <button
+                  className={`${styles.topbarTab} ${currentTab === "chat" ? styles.topbarTabActive : ""}`}
+                  onClick={() => handleTabChange("chat")}
+                >
+                  Chat
+                </button>
+                <button
+                  className={`${styles.topbarTab} ${currentTab === "report" ? styles.topbarTabActive : ""}`}
+                  onClick={() => handleTabChange("report")}
+                >
+                  Report
+                </button>
+                <button
+                  className={`${styles.topbarTab} ${currentTab === "graph" ? styles.topbarTabActive : ""}`}
+                  onClick={() => handleTabChange("graph")}
+                >
+                  Knowledge Graph
+                </button>
+                <button
+                  className={`${styles.topbarTab} ${currentTab === "diagrams" ? styles.topbarTabActive : ""}`}
+                  onClick={() => handleTabChange("diagrams")}
+                >
+                  Diagrams
+                </button>
+                <button
+                  className={`${styles.topbarTab} ${currentTab === "insights" ? styles.topbarTabActive : ""}`}
+                  onClick={() => handleTabChange("insights")}
+                >
+                  Insights
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => router.push("/dashboard/settings")}
               className={styles.topbarSignOutBtn}
               title="Settings & API Keys"
-              style={{ marginRight: 4 }}
             >
               <SettingsIcon />
             </button>
@@ -577,11 +576,25 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
               ) : (
                 <div className={styles.topbarAvatar}>{initials}</div>
               )}
-              <span className={styles.topbarProfileName}>
+              <span className={styles.topbarProfileName} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {githubName}
+                {isMasterDeveloper && (
+                  <span style={{ 
+                    fontSize: "0.6rem", 
+                    background: "rgba(224, 138, 74, 0.12)", 
+                    border: "1px solid #e08a4a", 
+                    color: "#e08a4a", 
+                    padding: "1px 6px", 
+                    borderRadius: 4, 
+                    fontFamily: "var(--font-mono)", 
+                    fontWeight: 700,
+                    letterSpacing: "0.02em"
+                  }}>
+                    Dev
+                  </span>
+                )}
               </span>
             </div>
-
           </div>
         </div>
 

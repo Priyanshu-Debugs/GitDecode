@@ -126,9 +126,14 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Extract GitHub username from OAuth user_metadata
+    # Extract GitHub username from OAuth user_metadata (fallback to email prefix)
     user_metadata = payload.get("user_metadata", {})
-    github_username = user_metadata.get("user_name", "") or user_metadata.get("preferred_username", "")
+    github_username = (
+        user_metadata.get("user_name", "")
+        or user_metadata.get("preferred_username", "")
+        or user_metadata.get("full_name", "")
+        or (email.split("@")[0] if email else "")
+    )
 
     return AuthenticatedUser(
         id=user_id,
@@ -136,3 +141,23 @@ def get_current_user(
         role=role or "authenticated",
         github_username=github_username,
     )
+
+
+def is_developer_account(user: AuthenticatedUser) -> bool:
+    """Check if the authenticated user has developer privileges (case-insensitive)."""
+    if not user:
+        return False
+
+    settings = get_settings()
+    dev_handles = [d.strip().lower() for d in settings.DEVELOPERS]
+
+    candidates = [
+        user.github_username,
+        user.email.split("@")[0] if user.email else "",
+    ]
+
+    for candidate in candidates:
+        if candidate and candidate.strip().lower() in dev_handles:
+            return True
+
+    return False

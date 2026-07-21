@@ -20,6 +20,7 @@ from app.db.pg_client import SupabasePGClient
 from app.schemas.responses import CodebaseReportResponse, ErrorResponse
 from app.agents.report_graph import report_graph
 from app.core.config import get_settings
+from app.core.security import is_developer_account
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +57,13 @@ async def generate_report(
     settings = get_settings()
 
     # 1. Rate Limit Enforcement
-    allowed = await pg.check_report_rate_limit(user.id, repo_str)
-    if not allowed:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Report generation limit reached (2 reports per repository per month).",
-        )
+    if not is_developer_account(user):
+        allowed = await pg.check_report_rate_limit(user.id, repo_str)
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Report generation limit reached (2 reports per repository per month).",
+            )
 
     # 2. Verify repository exists and is completed
     repo_row = await pg.get_repo(repo_str, user.id)
@@ -215,7 +217,10 @@ async def get_report_rate_limit_status(
     """Get report generation rate limit status for the current repository."""
     settings = get_settings()
     status_dict = await pg.get_report_rate_limit_status(user.id, str(repo_id))
-    status_dict["is_developer"] = user.github_username in settings.DEVELOPERS
+    is_dev = is_developer_account(user)
+    if is_dev:
+        status_dict["can_generate"] = True
+    status_dict["is_developer"] = is_dev
     return status_dict
 
 

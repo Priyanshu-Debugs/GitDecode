@@ -412,9 +412,9 @@
 }
 
 .statusFailed {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 0.5px solid rgba(239, 68, 68, 0.2);
+  background: rgba(224, 138, 74, 0.1);
+  color: var(--color-orange);
+  border: 0.5px solid rgba(224, 138, 74, 0.3);
 }
 
 .statusDot {
@@ -438,7 +438,8 @@
 }
 
 .statusDotFailed {
-  background: #ef4444;
+  background: var(--color-orange);
+  box-shadow: 0 0 6px var(--color-orange);
 }
 
 .repoBranch {
@@ -1097,7 +1098,9 @@
 .topbarLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 @media (max-width: 768px) {
@@ -2331,9 +2334,9 @@
 }
 
 .badgeFailed {
-  background: rgba(239, 68, 68, 0.05);
-  border: 0.5px solid rgba(239, 68, 68, 0.25);
-  color: var(--color-danger);
+  background: rgba(224, 138, 74, 0.08);
+  border: 0.5px solid rgba(224, 138, 74, 0.3);
+  color: var(--color-orange);
 }
 
 .pulseLightDot {
@@ -2471,12 +2474,15 @@
 }
 
 .confirmModalInner {
-  background: #050505;
-  border: 0.5px solid rgba(255, 255, 255, 0.04);
-  border-radius: calc(24px - 8px);
+  background: var(--color-surface, #161410);
+  border: 1px solid var(--color-border, #211f19);
+  border-radius: var(--radius-lg, 12px);
   padding: 24px;
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .confirmModalHeader {
@@ -3302,18 +3308,21 @@
 
 /* ── Top Header Navigation Tabs and Profile Widgets ────────────────── */
 .topbarHomeLink {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  height: 34px;
   font-family: var(--font-sans);
   font-size: 0.8125rem;
   color: var(--color-text-secondary);
   text-decoration: none;
-  padding: 6px 12px;
+  padding: 0 12px;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   background: rgba(255, 255, 255, 0.01);
   border: 0.5px solid rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .topbarHomeLink:hover {
@@ -3330,6 +3339,7 @@
 
 .topbarHomeLabel {
   font-weight: 500;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -3339,33 +3349,39 @@
 }
 
 .topbarSeparator {
-  color: var(--color-text-tertiary);
-  opacity: 0.4;
-  font-size: 0.8125rem;
-  margin: 0 4px;
+  color: var(--color-text-secondary, #8b8270);
+  opacity: 0.85;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 2px;
 }
 
 .topbarActiveRepo {
-  font-size: 0.8125rem;
+  font-size: 0.84rem;
   font-family: var(--font-mono);
   color: var(--color-white);
   font-weight: 600;
   letter-spacing: -0.01em;
-  background: rgba(255, 255, 255, 0.02);
-  border: 0.5px solid rgba(255, 255, 255, 0.04);
-  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  padding: 0 16px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--radius-sm);
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  max-width: 200px;
+  max-width: 300px;
+  flex-shrink: 1;
+  box-sizing: border-box;
 }
 
 /* Top bar Horizontal Nav Tabs */
 .topbarNav {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   background: transparent;
   border: none;
   padding: 0;
@@ -3378,12 +3394,18 @@
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-dim);
-  padding: 6px 14px;
+  padding: 0 14px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--color-border);
   border-bottom: 2px solid transparent;
   background: rgba(255, 255, 255, 0.02);
   border-radius: 0px;
   cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
   transition: all var(--transition-fast);
 }
 
@@ -3405,17 +3427,22 @@
 .topbarRight {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  margin-left: 8px;
+  flex-shrink: 0;
 }
 
 .topbarProfileWidget {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  height: 34px;
   cursor: pointer;
-  padding: 4px 10px;
+  padding: 0 10px;
   border-radius: 0px;
   border: 0.5px solid transparent;
+  white-space: nowrap;
+  box-sizing: border-box;
   transition: all var(--transition-fast);
 }
 
@@ -3436,12 +3463,14 @@
   font-size: 0.6875rem;
   font-weight: 600;
   border: 0.5px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
 .topbarProfileName {
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
@@ -3455,16 +3484,17 @@
 }
 
 .topbarSignOutBtn {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border-radius: 0px;
   border: 0.5px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
   color: var(--color-text-secondary);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   transition: all var(--transition-fast);
 }
 
@@ -4052,10 +4082,12 @@
 .confirmModalOuter {
   width: 90%;
   max-width: 440px;
-  background: var(--color-surface, #161410);
-  border: 1px solid var(--color-border, #211f19);
+  background: rgba(22, 20, 16, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-xl, 16px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
@@ -4096,28 +4128,29 @@
 }
 
 .confirmActionBtnPrimary {
-  background: var(--color-surface-hover, #211f19);
-  color: var(--color-white, #f3eee1);
-  border: 1px solid var(--color-border, #343028);
-  border-radius: var(--radius-md, 8px);
+  background: var(--color-green, #83c167);
+  color: #0e0d0b;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0px;
   padding: 8px 18px;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(131, 193, 103, 0.2);
   transition: all 200ms ease;
 }
 
 .confirmActionBtnPrimary:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--color-primary, #83c167);
-  color: var(--color-primary, #83c167);
+  background: #93d177;
+  color: #0e0d0b;
+  box-shadow: 0 6px 18px rgba(131, 193, 103, 0.3);
 }
 
 .confirmActionBtnGhost {
   background: transparent;
   color: var(--color-text-secondary, #a09a8c);
   border: 1px solid transparent;
-  border-radius: var(--radius-md, 8px);
+  border-radius: 0px;
   padding: 8px 16px;
   font-size: 0.8125rem;
   font-weight: 500;

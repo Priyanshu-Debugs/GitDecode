@@ -12,6 +12,7 @@ import {
   ChainOfThoughtStep
 } from "@/components/ai-elements/chain-of-thought";
 import { useAuth } from "@/app/lib/useAuth";
+import { isDeveloperAccount } from "@/app/lib/developers";
 import {
   listRepos,
   syncRepo,
@@ -341,7 +342,7 @@ function DashboardContent() {
   const [reportPlan, setReportPlan] = useState<ReportPlan | null>(null);
   const [reportSectionProgress, setReportSectionProgress] = useState<{ completed: number; total: number; title?: string } | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
-  const [reportRateLimit, setReportRateLimit] = useState<{ can_generate: boolean; next_available: string | null } | null>(null);
+  const [reportRateLimit, setReportRateLimit] = useState<{ can_generate: boolean; next_available: string | null; is_developer?: boolean } | null>(null);
 
   const handleGenerateReport = async () => {
     if (!activeRepoId || reportGenerating) return;
@@ -537,12 +538,16 @@ function DashboardContent() {
         router.push(repoPath);
       }
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "Sync request failed.";
-      setSyncError(errMsg);
+      const rawMsg = err instanceof Error ? err.message : "Sync request failed.";
+      const displayMsg =
+        rawMsg === "Failed to fetch" || rawMsg.includes("Failed to fetch")
+          ? "Unable to reach GitMesh backend API server. Please verify that the backend service is running and accessible."
+          : rawMsg;
+      setSyncError(displayMsg);
       setCustomConfirm({
         isOpen: true,
         title: "Connection Failed",
-        message: errMsg,
+        message: displayMsg,
         confirmText: "Close",
         onConfirm: () => {}
       });
@@ -964,7 +969,8 @@ function DashboardContent() {
     };
 
     const activeReposCount = repos.length;
-    const isAtLimit = activeReposCount >= 2;
+    const isMasterDeveloper = isDeveloperAccount(user);
+    const isAtLimit = !isMasterDeveloper && activeReposCount >= 2;
 
     return (
       <div className={styles.repoDashboardContainer} style={{ padding: "40px 48px", overflowY: "auto", width: "100%", height: "100%", background: "var(--color-bg)", position: "relative" }}>
@@ -1384,14 +1390,29 @@ function DashboardContent() {
   if (isSyncing) {
     return (
       <div className={styles.workspace} style={{ padding: "40px", flexDirection: "column", overflowY: "auto", gap: "32px", width: "100%", height: "100%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "0.5px solid var(--color-border)", paddingBottom: "24px", width: "100%" }}>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          border: activeRepo.status === "failed" ? "1px solid rgba(224, 138, 74, 0.3)" : "1px solid rgba(255, 255, 255, 0.08)",
+          background: "rgba(22, 20, 16, 0.75)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          padding: "24px 32px",
+          borderRadius: "var(--radius-lg, 12px)",
+          boxShadow: "0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+          width: "100%"
+        }}>
           <div>
-            <h1 className={styles.pageTitle} style={{ fontSize: "1.5rem", display: "flex", alignItems: "center", gap: "10px", color: "var(--color-white)", fontWeight: 600 }}>
-              Ingesting Codebase: <code style={{ color: "#ef4444", fontSize: "1.25rem", fontFamily: "var(--font-mono)", background: "rgba(255,255,255,0.03)", padding: "2px 8px", borderRadius: "var(--radius-sm)" }}>{activeRepo.github_url.split("/").pop()}</code>
+            <h1 className={styles.pageTitle} style={{ fontSize: "1.35rem", display: "flex", alignItems: "center", gap: "10px", color: "var(--color-white)", fontWeight: 600 }}>
+              {activeRepo.status === "failed" ? "Ingestion Failed:" : "Ingesting Codebase:"}{" "}
+              <span style={{ color: activeRepo.status === "failed" ? "var(--color-orange)" : "var(--color-green)", fontSize: "1.35rem", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                {activeRepo.github_url.split("/").pop()}
+              </span>
             </h1>
-            <p className={styles.pageSubtitle} style={{ marginTop: "6px", color: "var(--color-text-secondary)", fontSize: "0.875rem" }}>
+            <p className={styles.pageSubtitle} style={{ marginTop: "8px", color: "var(--color-text-secondary)", fontSize: "0.875rem" }}>
               {activeRepo.status === "failed" 
-                ? `Ingestion failed. Error: ${activeRepo.error_message || "Unknown error."}`
+                ? `Ingestion failed: ${activeRepo.error_message || "Unable to parse repository files."}`
                 : "GitMesh AI agents are parsing files, tokenizing Abstract Syntax Trees, mapping dependencies, and generating embeddings in real-time."
               }
             </p>
@@ -1742,14 +1763,14 @@ function DashboardContent() {
                       <button
                         className={styles.reportActionBtn}
                         onClick={handleGenerateReport}
-                        disabled={reportRateLimit?.can_generate === false}
+                        disabled={!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false}
                       >
                         Regenerate
                       </button>
                     </div>
                   </div>
 
-                  {reportRateLimit?.can_generate === false && (
+                  {!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false && (
                     <div className={styles.upgradeNoticeBox}>
                       <span className={styles.upgradeNoticeText}>
                         Monthly report limit reached (2 generations per repository per month). Upgrade your plan for unlimited deep analysis.
@@ -1801,17 +1822,19 @@ function DashboardContent() {
                   <button
                     className={styles.reportGenerateBtn}
                     onClick={handleGenerateReport}
-                    disabled={reportRateLimit?.can_generate === false}
+                    disabled={!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false}
                   >
                     Generate Deep Analysis Report
                   </button>
                   <span className={styles.reportRateNotice}>
-                    {reportRateLimit?.can_generate === false
+                    {isDeveloperAccount(user) || reportRateLimit?.is_developer
+                      ? "Developer Access — Unlimited Report Generations"
+                      : reportRateLimit?.can_generate === false
                       ? "Monthly report limit reached (2 generations per repository per month)."
                       : "Limit: 2 generations (1 initial + 1 regeneration) per repository per month"}
                   </span>
 
-                  {reportRateLimit?.can_generate === false && (
+                  {!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false && (
                     <div className={styles.upgradeNoticeBox}>
                       <span className={styles.upgradeNoticeText}>
                         Monthly report limit reached (2 generations per repository per month). Upgrade your plan for unlimited deep analysis.
