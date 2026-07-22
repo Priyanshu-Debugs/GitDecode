@@ -626,11 +626,28 @@ function DashboardContent() {
       return;
     }
     
+    // Guard against wiping active stream/chat state when URL sync triggers a re-render
+    if (querySessionId && chatSessionId === querySessionId && messages.length > 0) {
+        return;
+    }
+    
     setChatHistoryLoading(true);
     listChatSessions(activeRepoId)
       .then((sessions) => {
         const requestedSessionExists = querySessionId && sessions.some((s) => s.session_id === querySessionId);
         const sid = requestedSessionExists ? querySessionId : (sessions.length > 0 ? sessions[0].session_id : null);
+        
+        if (sid !== querySessionId) {
+            const newParams = new URLSearchParams(searchParams.toString());
+            if (sid) {
+                newParams.set("session_id", sid);
+            } else {
+                newParams.delete("session_id");
+            }
+            router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+            return;
+        }
+
         if (sid) {
           setChatSessionId(sid);
           getChatHistory(sid, activeRepoId).then((history) => {
@@ -778,6 +795,12 @@ function DashboardContent() {
             setChatSessionId(extra.session_id);
             realMessageId = content;
             setMessages((prev) => prev.map(m => m.message_id === tempAssistantId ? { ...m, message_id: realMessageId, session_id: extra.session_id } : m));
+            
+            if (!querySessionId || extra.session_id !== querySessionId) {
+                const newParams = new URLSearchParams(searchParams.toString());
+                newParams.set("session_id", extra.session_id);
+                router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+            }
         } else if (type === "thought") {
             setMessages((prev) => prev.map(m => {
                 if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
