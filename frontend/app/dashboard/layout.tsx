@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/lib/useAuth";
 import { listRepos, syncRepo, listChatSessions, deleteChatSession, type RepoItem } from "@/app/lib/api";
-import { isDeveloperAccount } from "@/app/lib/developers";
+import { useSubscription } from "@/app/lib/useSubscription";
 import styles from "./dashboard.module.css";
 import DashboardLoader from "@/app/components/DashboardLoader";
 
@@ -113,6 +113,7 @@ function MenuIcon() {
 /* ── Sidebar Layout Inner ───────────────────────────────────────────── */
 function SidebarContent({ children }: { children: React.ReactNode }) {
   const { user, session, loading } = useAuth(true);
+  const { isPro } = useSubscription();
   const [collapsed, setCollapsed] = useState(false);
   
   const [repos, setRepos] = useState<RepoItem[]>(() => {
@@ -397,7 +398,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   const githubName = user.user_metadata?.preferred_username || user.user_metadata?.user_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Developer";
   const initials = githubName.slice(0, 2).toUpperCase();
-  const isMasterDeveloper = isDeveloperAccount(user);
+
 
   const activeSyncs = repos.filter(
     (r) => r.status === "queued" || r.status === "processing" || r.status === "failed"
@@ -663,19 +664,33 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
               )}
               <span className={styles.topbarProfileName} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {githubName}
-                {isMasterDeveloper && (
+                {isPro ? (
                   <span style={{ 
                     fontSize: "0.6rem", 
-                    background: "rgba(224, 138, 74, 0.12)", 
-                    border: "1px solid #e08a4a", 
-                    color: "#e08a4a", 
+                    background: "rgba(212, 175, 55, 0.12)", 
+                    border: "1px solid #d4af37", 
+                    color: "#d4af37", 
                     padding: "1px 6px", 
                     borderRadius: 4, 
                     fontFamily: "var(--font-mono)", 
                     fontWeight: 700,
                     letterSpacing: "0.02em"
                   }}>
-                    Dev
+                    Pro
+                  </span>
+                ) : (
+                  <span style={{ 
+                    fontSize: "0.6rem", 
+                    background: "rgba(136, 136, 136, 0.12)", 
+                    border: "1px solid rgba(136, 136, 136, 0.3)", 
+                    color: "#888888", 
+                    padding: "1px 6px", 
+                    borderRadius: 4, 
+                    fontFamily: "var(--font-mono)", 
+                    fontWeight: 700,
+                    letterSpacing: "0.02em"
+                  }}>
+                    Free
                   </span>
                 )}
               </span>

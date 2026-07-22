@@ -43,15 +43,18 @@ class Settings(BaseSettings):
     # ── Gemini Context Cache settings ──────────────────────────────────────
     GEMINI_CONTEXT_MODEL: str = "gemini-3.1-flash-lite"
 
-    # ── Developer Bypass ─────────────────────────────────────────────────
-    DEVELOPERS: list[str] = ["mihirpatel204", "Priyanshu-Debugs", "Sameer-0904"]
+    # ── Plan Limits ──────────────────────────────────────────────────────
+    # Free tier
+    FREE_DAILY_MSG_LIMIT: int = 3
+    FREE_MONTHLY_MSG_LIMIT: int = 15
+    FREE_REPO_LIMIT: int = 2
+    FREE_MONTHLY_REPORT_LIMIT: int = 2
 
-    # ── Rate Limits (default model only) ─────────────────────────────────
-    DAILY_MSG_LIMIT: int = 3
-    MONTHLY_MSG_LIMIT: int = 15
-
-    # ── Report Rate Limits ───────────────────────────────────────────────
-    MONTHLY_REPORT_LIMIT: int = 1  # Max 1 report per repo per month for free tier
+    # Pro tier (with safety ceilings)
+    PRO_DAILY_MSG_LIMIT: int = 1000
+    PRO_MONTHLY_MSG_LIMIT: int = 5000
+    PRO_REPO_LIMIT: int = 999999
+    PRO_MONTHLY_REPORT_LIMIT: int = 999999
 
 
 

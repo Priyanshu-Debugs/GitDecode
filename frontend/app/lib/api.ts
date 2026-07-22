@@ -262,11 +262,11 @@ export async function listRepos(): Promise<RepoItem[]> {
 }
 
 
-export async function getRateLimitStatus(repoId: string): Promise<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean }> {
+export async function getRateLimitStatus(repoId: string): Promise<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean, is_pro?: boolean, plan?: string }> {
   if (isDemoMode()) {
-    return { remaining_daily: 999, remaining_monthly: 999, is_developer: true };
+    return { remaining_daily: 999, remaining_monthly: 999, is_developer: true, is_pro: true, plan: "pro" };
   }
-  return apiFetch<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean }>(`/chat/rate-limit-status?repo_id=${repoId}`);
+  return apiFetch<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean, is_pro?: boolean, plan?: string }>(`/chat/rate-limit-status?repo_id=${repoId}`);
 }
 
 /** Initiate a repo sync */
@@ -1063,4 +1063,35 @@ export async function exportReportPdf(
 
   return await res.blob();
 }
+
+/** Get user's subscription details and plan limits */
+export async function getUserSubscription(): Promise<any> {
+  if (isDemoMode()) {
+    return {
+      plan: "pro",
+      is_pro: true,
+      limits: {
+        daily_msg_limit: 1000,
+        monthly_msg_limit: 5000,
+        repo_limit: 999999,
+        monthly_report_limit: 999999,
+      },
+      started_at: new Date().toISOString(),
+      expires_at: null,
+    };
+  }
+  return apiFetch<any>("/subscription");
+}
+
+/** Upgrade/change user subscription plan */
+export async function upgradeUserSubscription(plan: "free" | "pro"): Promise<any> {
+  if (isDemoMode()) {
+    return { status: "success", plan };
+  }
+  return apiFetch<any>("/subscription/upgrade", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });
+}
+
 

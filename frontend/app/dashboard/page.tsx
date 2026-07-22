@@ -12,7 +12,7 @@ import {
   ChainOfThoughtStep
 } from "@/components/ai-elements/chain-of-thought";
 import { useAuth } from "@/app/lib/useAuth";
-import { isDeveloperAccount } from "@/app/lib/developers";
+import { useSubscription } from "@/app/lib/useSubscription";
 import {
   listRepos,
   syncRepo,
@@ -267,6 +267,7 @@ const MOCK_REPOS = [
 
 function DashboardContent() {
   const { user, session } = useAuth(true);
+  const { subscription, isPro } = useSubscription();
   const router = useRouter();
 
   // Read Selection from URL params
@@ -343,6 +344,7 @@ function DashboardContent() {
   const [reportSectionProgress, setReportSectionProgress] = useState<{ completed: number; total: number; title?: string } | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
   const [reportRateLimit, setReportRateLimit] = useState<{ can_generate: boolean; next_available: string | null; is_developer?: boolean } | null>(null);
+  const hasUnlimitedReports = isPro || Boolean(reportRateLimit?.is_developer);
 
   const handleGenerateReport = async () => {
     if (!activeRepoId || reportGenerating) return;
@@ -999,8 +1001,7 @@ function DashboardContent() {
     };
 
     const activeReposCount = repos.length;
-    const isMasterDeveloper = isDeveloperAccount(user);
-    const isAtLimit = !isMasterDeveloper && activeReposCount >= 2;
+    const isAtLimit = !isPro && activeReposCount >= 2;
 
     return (
       <div className={styles.repoDashboardContainer} style={{ padding: "40px 48px", overflowY: "auto", width: "100%", height: "100%", background: "var(--color-bg)", position: "relative" }}>
@@ -1799,14 +1800,14 @@ function DashboardContent() {
                       <button
                         className={styles.reportActionBtn}
                         onClick={handleGenerateReport}
-                        disabled={!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false}
+                        disabled={!hasUnlimitedReports && reportRateLimit?.can_generate === false}
                       >
                         Regenerate
                       </button>
                     </div>
                   </div>
 
-                  {!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false && (
+                  {!hasUnlimitedReports && reportRateLimit?.can_generate === false && (
                     <div className={styles.upgradeNoticeBox}>
                       <span className={styles.upgradeNoticeText}>
                         Monthly report limit reached (2 generations per repository per month). Upgrade your plan for unlimited deep analysis.
@@ -1858,19 +1859,19 @@ function DashboardContent() {
                   <button
                     className={styles.reportGenerateBtn}
                     onClick={handleGenerateReport}
-                    disabled={!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false}
+                    disabled={!hasUnlimitedReports && reportRateLimit?.can_generate === false}
                   >
                     Generate Deep Analysis Report
                   </button>
                   <span className={styles.reportRateNotice}>
-                    {isDeveloperAccount(user) || reportRateLimit?.is_developer
-                      ? "Developer Access — Unlimited Report Generations"
+                    {hasUnlimitedReports
+                      ? "Pro Plan Access — Unlimited Report Generations"
                       : reportRateLimit?.can_generate === false
                       ? "Monthly report limit reached (2 generations per repository per month)."
                       : "Limit: 2 generations (1 initial + 1 regeneration) per repository per month"}
                   </span>
 
-                  {!isDeveloperAccount(user) && !reportRateLimit?.is_developer && reportRateLimit?.can_generate === false && (
+                  {!hasUnlimitedReports && reportRateLimit?.can_generate === false && (
                     <div className={styles.upgradeNoticeBox}>
                       <span className={styles.upgradeNoticeText}>
                         Monthly report limit reached (2 generations per repository per month). Upgrade your plan for unlimited deep analysis.

@@ -5,7 +5,7 @@ import styles from "@/app/dashboard/dashboard.module.css";
 import ModelSelector from "./ModelSelector";
 import { getRateLimitStatus } from "@/app/lib/api";
 import { useAuth } from "@/app/lib/useAuth";
-import { isDeveloperAccount } from "@/app/lib/developers";
+import { useSubscription } from "@/app/lib/useSubscription";
 import Link from "next/link";
 import { useLocalKeys } from "@/app/lib/useLocalKeys";
 
@@ -19,16 +19,17 @@ interface ChatInputProps {
 
 export default function ChatInput({ repoId, onSend, disabled, initialValue = "", onLimitReached }: ChatInputProps) {
   const { user } = useAuth(false);
+  const { isPro } = useSubscription();
   const [value, setValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [rateLimit, setRateLimit] = useState<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean } | null>(null);
+  const [rateLimit, setRateLimit] = useState<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean, is_pro?: boolean } | null>(null);
   const { getPreference, getKey } = useLocalKeys();
   const pref = getPreference();
   const hasOwnKey = !!getKey(pref.provider || "google");
   
   // A heuristic: if it's default google model and user has no key, they are using the default model
   const isDefaultModel = (!pref.provider || pref.provider === "google") && !hasOwnKey;
-  const isMasterDeveloper = isDeveloperAccount(user) || Boolean(rateLimit?.is_developer);
+  const isPremiumUser = isPro || Boolean(rateLimit?.is_pro) || Boolean(rateLimit?.is_developer);
 
   const fetchRateLimit = async () => {
     if (!repoId || !isDefaultModel) {
@@ -38,13 +39,14 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
     try {
       const res = await getRateLimitStatus(repoId);
       setRateLimit(res);
-      if (res.remaining_daily === 0 && !res.is_developer && !isDeveloperAccount(user) && onLimitReached) {
+      if (res && res.remaining_daily === 0 && !res.is_developer && !res.is_pro && !isPro && onLimitReached) {
         onLimitReached();
       }
     } catch (e) {
       console.error("Failed to fetch rate limit status", e);
     }
   };
+
 
   useEffect(() => {
     setValue(initialValue);
@@ -77,7 +79,7 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
     setValue("");
   };
 
-  const isLimitReached = Boolean(!isMasterDeveloper && rateLimit && rateLimit.remaining_daily === 0 && isDefaultModel);
+  const isLimitReached = Boolean(!isPremiumUser && rateLimit && rateLimit.remaining_daily === 0 && isDefaultModel);
 
   return (
     <div style={{ width: '100%' }}>
@@ -214,7 +216,7 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
         <div className={styles.chatToolbar}>
           <div className={styles.chatToolbarLeft}>
             <ModelSelector />
-            {rateLimit && !isMasterDeveloper && isDefaultModel && (
+            {rateLimit && !isPremiumUser && isDefaultModel && (
               <span style={{ 
                 fontSize: '0.725rem', 
                 fontWeight: 500,
@@ -231,12 +233,12 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
                 {rateLimit.remaining_daily === 0 ? '0/3 Daily Messages (Limit Reached)' : `${rateLimit.remaining_daily}/3 Daily Messages`}
               </span>
             )}
-            {isMasterDeveloper && (
+            {isPremiumUser && (
               <span style={{ 
                 fontSize: '0.7rem', 
-                color: '#e08a4a',
-                background: 'rgba(224, 138, 74, 0.12)',
-                border: '1px solid #e08a4a',
+                color: '#d4af37',
+                background: 'rgba(212, 175, 55, 0.12)',
+                border: '1px solid #d4af37',
                 padding: '2px 9px',
                 borderRadius: '12px',
                 marginLeft: '8px',
@@ -246,7 +248,7 @@ export default function ChatInput({ repoId, onSend, disabled, initialValue = "",
                 alignItems: 'center',
                 gap: '4px'
               }}>
-                Developer
+                Pro
               </span>
             )}
           </div>

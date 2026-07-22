@@ -3,11 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import styles from "./page.module.css";
 import { Check, Terminal, ShieldAlert, Cpu, Heart, Rocket, Building } from "lucide-react";
+import { useAuth } from "@/app/lib/useAuth";
+import { useSubscription } from "@/app/lib/useSubscription";
+import { upgradeUserSubscription } from "@/app/lib/api";
+
 
 interface PricingPlan {
   id: string;
@@ -86,10 +91,36 @@ const plans: PricingPlan[] = [
 ];
 
 export default function PricingPage() {
+  const router = useRouter();
+  const { user } = useAuth(false);
+  const { subscription, refreshSubscription } = useSubscription();
+  
   // State for the developer speech bubble
   const [showBubble, setShowBubble] = useState(false);
   const [bubbleText, setBubbleText] = useState("");
   const bubbleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePlanAction = async (planId: string) => {
+    if (!user) {
+      router.push("/auth/sign-in");
+      return;
+    }
+    try {
+      if (planId === "hobby") {
+        if (subscription?.plan !== "free") {
+          await upgradeUserSubscription("free");
+          await refreshSubscription();
+        }
+      } else if (planId === "developer") {
+        if (subscription?.plan !== "pro") {
+          await upgradeUserSubscription("pro");
+          await refreshSubscription();
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update subscription:", err);
+    }
+  };
 
   useEffect(() => {
     const handleQuoteEvent = (e: Event) => {
@@ -118,6 +149,7 @@ export default function PricingPage() {
     };
   }, []);
 
+
   return (
     <>
       <Navbar />
@@ -145,7 +177,7 @@ export default function PricingPage() {
             <span className={styles.comment}># </span>
             Deploy GitMesh intelligence for your projects. Flexible models designed for developer workflows.
             <br />
-            <span className={styles.comment}># [ALERT] Subscription plans are coming soon. All features are currently free during public beta.</span>
+            <span className={styles.comment}># [STATUS] Subscriptions are active. Select your plan below to unlock unlimited workspaces and deep AST indexing.</span>
           </p>
         </header>
 
@@ -155,15 +187,15 @@ export default function PricingPage() {
             <div className={styles.bannerContent}>
               <Cpu size={24} className={styles.bannerIcon} />
               <div className={styles.bannerText}>
-                <h2 className={styles.bannerTitle}>Subscriptions Coming Soon · Beta Active</h2>
+                <h2 className={styles.bannerTitle}>Subscriptions Active · Developer Beta</h2>
                 <p className={styles.bannerDesc}>
-                  We are finalizing our ingestion infrastructure. All features, including private repository analysis, Depth-3 BFS static indexing, and Gemini pre-warmed context caching, are 100% free of charge during our public beta.
+                  Our subscription tracking is active. You can instantly toggle between the Hobby (Free) and Developer (Pro) plans during this phase of our developer beta to test limits.
                 </p>
               </div>
             </div>
             <div className={styles.bannerBadge}>
               <span className={styles.pulsingDot}></span>
-              <span>FREE BETA</span>
+              <span>BETA LIVE</span>
             </div>
           </div>
         </section>
@@ -216,9 +248,37 @@ export default function PricingPage() {
 
                   {/* Card Action */}
                   <div className={styles.cardAction}>
-                    <Link href={plan.buttonLink} className={styles.buyButton}>
-                      {plan.buttonText}
-                    </Link>
+                    {user ? (
+                      plan.id === "hobby" ? (
+                        subscription?.plan === "free" ? (
+                          <button className={styles.buyButton} disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                            Current Plan
+                          </button>
+                        ) : (
+                          <button className={styles.buyButton} onClick={() => handlePlanAction("hobby")}>
+                            Downgrade to Free
+                          </button>
+                        )
+                      ) : plan.id === "developer" ? (
+                        subscription?.plan === "pro" ? (
+                          <button className={styles.buyButton} disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                            Current Plan
+                          </button>
+                        ) : (
+                          <button className={styles.buyButton} onClick={() => handlePlanAction("developer")} style={{ background: "var(--color-primary)", color: "var(--color-primary-text)" }}>
+                            Upgrade to Pro
+                          </button>
+                        )
+                      ) : (
+                        <Link href={plan.buttonLink} className={styles.buyButton}>
+                          {plan.buttonText}
+                        </Link>
+                      )
+                    ) : (
+                      <Link href={plan.id === "enterprise" ? plan.buttonLink : "/auth/sign-in"} className={styles.buyButton}>
+                        {plan.buttonText}
+                      </Link>
+                    )}
                     <span className={styles.footnote}>
                       {plan.id === "hobby" ? "// No credit card required" : "// Upgrade instantly"}
                     </span>

@@ -25,6 +25,8 @@ from app.schemas.requests import ChatMessageSend, ChatFeedbackRequest
 from app.schemas.responses import ChatMessageResponse, ChatHistoryResponse, ErrorResponse
 from app.agents.graph import graph as agent_graph
 from app.core.config import settings
+from app.services.subscription import get_user_plan, get_plan_limits
+
 
 logger = logging.getLogger(__name__)
 
@@ -56,17 +58,19 @@ async def send_message(
 
     # Check rate limits for default model
     is_default = not request.llm_config or not request.llm_config.api_key
-    if is_default and user.github_username not in settings.DEVELOPERS:
+    if is_default:
+        plan = await get_user_plan(pg, user.id)
+        limits = get_plan_limits(plan)
         allowed = await pg.check_and_increment_rate_limit(
             user_id=user.id,
             repo_id=str(request.repo_id),
-            daily_limit=settings.DAILY_MSG_LIMIT,
-            monthly_limit=settings.MONTHLY_MSG_LIMIT,
+            daily_limit=limits["daily_msg_limit"],
+            monthly_limit=limits["monthly_msg_limit"],
         )
         if not allowed:
             raise HTTPException(
                 status_code=429,
-                detail="You have reached your free message limit for this repository."
+                detail="You have reached your daily message limit for this repository. Upgrade to Pro for unlimited messages."
             )
 
     # 1. Persist the user message
@@ -161,17 +165,19 @@ async def stream_message(
 
     # Check rate limits for default model
     is_default = not request.llm_config or not request.llm_config.api_key
-    if is_default and user.github_username not in settings.DEVELOPERS:
+    if is_default:
+        plan = await get_user_plan(pg, user.id)
+        limits = get_plan_limits(plan)
         allowed = await pg.check_and_increment_rate_limit(
             user_id=user.id,
             repo_id=str(request.repo_id),
-            daily_limit=settings.DAILY_MSG_LIMIT,
-            monthly_limit=settings.MONTHLY_MSG_LIMIT,
+            daily_limit=limits["daily_msg_limit"],
+            monthly_limit=limits["monthly_msg_limit"],
         )
         if not allowed:
             raise HTTPException(
                 status_code=429,
-                detail="You have reached your free message limit for this repository."
+                detail="You have reached your daily message limit for this repository. Upgrade to Pro for unlimited messages."
             )
 
     async def event_generator() -> AsyncGenerator[str, None]:
@@ -387,19 +393,19 @@ async def get_rate_limit_status(
     user: AuthenticatedUser = Depends(require_auth),
     pg: SupabasePGClient = Depends(get_pg),
 ) -> dict:
-    if user.github_username in settings.DEVELOPERS:
-        return {
-            "remaining_daily": settings.DAILY_MSG_LIMIT,
-            "remaining_monthly": settings.MONTHLY_MSG_LIMIT,
-            "is_developer": True,
-        }
-        
-    return await pg.get_rate_limit_status(
+    plan = await get_user_plan(pg, user.id)
+    limits = get_plan_limits(plan)
+    
+    status_dict = await pg.get_rate_limit_status(
         user_id=user.id,
         repo_id=str(repo_id),
-        daily_limit=settings.DAILY_MSG_LIMIT,
-        monthly_limit=settings.MONTHLY_MSG_LIMIT,
+        daily_limit=limits["daily_msg_limit"],
+        monthly_limit=limits["monthly_msg_limit"],
     )
+    status_dict["plan"] = plan
+    status_dict["is_developer"] = plan == "pro"  # Keep 'is_developer' key for frontend compatibility or add 'is_pro'
+    status_dict["is_pro"] = plan == "pro"
+    return status_dict
 
 @router.delete(
     "/session/{session_id}",

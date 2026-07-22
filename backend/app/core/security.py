@@ -150,21 +150,3 @@ def get_current_user(
     )
 
 
-def is_developer_account(user: AuthenticatedUser) -> bool:
-    """Check if the authenticated user has developer privileges (case-insensitive)."""
-    if not user:
-        return False
-
-    settings = get_settings()
-    dev_handles = [d.strip().lower() for d in settings.DEVELOPERS]
-
-    candidates = user.candidate_usernames or [
-        user.github_username,
-        user.email.split("@")[0] if user.email else "",
-    ]
-
-    for candidate in candidates:
-        if candidate and candidate.strip().lower() in dev_handles:
-            return True
-
-    return False

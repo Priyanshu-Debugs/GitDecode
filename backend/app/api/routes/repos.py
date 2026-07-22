@@ -23,7 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
 from app.core.config import settings
-from app.core.security import is_developer_account
+from app.services.subscription import get_user_plan, get_plan_limits
 from app.schemas.requests import RepoSyncRequest
 from app.schemas.responses import (
     RepoSyncResponse,
@@ -134,13 +134,14 @@ async def sync_repo(
                 error_message=None
             )
         else:
-            if not is_developer_account(user):
-                active_count = await pg.get_active_repo_count(user.id)
-                if active_count >= 2:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Free plan is limited to 2 repositories. Upgrade to Pro for unlimited repos."
-                    )
+            plan = await get_user_plan(pg, user.id)
+            limits = get_plan_limits(plan)
+            active_count = await pg.get_active_repo_count(user.id)
+            if active_count >= limits["repo_limit"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Your plan ({plan}) is limited to {limits['repo_limit']} repositories. Upgrade to Pro for unlimited repos."
+                )
 
             # Insert new repo record
             repo_row = await pg.insert_repo(

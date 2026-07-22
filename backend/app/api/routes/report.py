@@ -20,7 +20,7 @@ from app.db.pg_client import SupabasePGClient
 from app.schemas.responses import CodebaseReportResponse, ErrorResponse
 from app.agents.report_graph import report_graph
 from app.core.config import get_settings
-from app.core.security import is_developer_account
+from app.services.subscription import get_user_plan
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +57,13 @@ async def generate_report(
     settings = get_settings()
 
     # 1. Rate Limit Enforcement
-    if not is_developer_account(user):
+    plan = await get_user_plan(pg, user.id)
+    if plan != "pro":
         allowed = await pg.check_report_rate_limit(user.id, repo_str)
         if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Report generation limit reached (2 reports per repository per month).",
+                detail="Report generation limit reached (2 reports per repository per month). Upgrade to Pro for unlimited reports.",
             )
 
     # 2. Verify repository exists and is completed
@@ -217,10 +218,12 @@ async def get_report_rate_limit_status(
     """Get report generation rate limit status for the current repository."""
     settings = get_settings()
     status_dict = await pg.get_report_rate_limit_status(user.id, str(repo_id))
-    is_dev = is_developer_account(user)
-    if is_dev:
+    plan = await get_user_plan(pg, user.id)
+    is_pro = plan == "pro"
+    if is_pro:
         status_dict["can_generate"] = True
-    status_dict["is_developer"] = is_dev
+    status_dict["is_developer"] = is_pro
+    status_dict["is_pro"] = is_pro
     return status_dict
 
 

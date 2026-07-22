@@ -866,4 +866,49 @@ class SupabasePGClient:
             "next_available": None if can_generate else next_month.isoformat(),
         }
 
+    # ══════════════════════════════════════════════════════════════════════
+    #  Subscriptions
+    # ══════════════════════════════════════════════════════════════════════
+
+    async def get_user_subscription(self, user_id: str) -> dict | None:
+        """Fetch the user's subscription record."""
+        try:
+            response = (
+                self._client.table("user_subscriptions")
+                .select("*")
+                .eq("user_id", user_id)
+                .maybe_single()
+                .execute()
+            )
+            return response.data if response else None
+        except Exception as e:
+            logger.warning("Failed to fetch subscription from database (table missing?): %s", str(e))
+            return None
+
+    async def upsert_user_subscription(
+        self, user_id: str, plan: str, expires_at: str | None = None
+    ) -> dict:
+        """Create or update a user's subscription."""
+        from datetime import datetime, timezone
+        try:
+            response = (
+                self._client.table("user_subscriptions")
+                .upsert(
+                    {
+                        "user_id": user_id,
+                        "plan": plan,
+                        "started_at": datetime.now(timezone.utc).isoformat(),
+                        "expires_at": expires_at,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                    on_conflict="user_id",
+                )
+                .execute()
+            )
+            return response.data[0] if response and response.data else {}
+        except Exception as e:
+            logger.warning("Failed to upsert subscription in database: %s", str(e))
+            return {}
+
+
 

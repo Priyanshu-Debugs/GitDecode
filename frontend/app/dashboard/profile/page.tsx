@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/app/lib/useAuth";
 import { listRepos, listChatSessions, getRepoSummary, getSystemHealth, type RepoItem } from "@/app/lib/api";
-import { isDeveloperAccount } from "@/app/lib/developers";
+import { useSubscription } from "@/app/lib/useSubscription";
 import { motion } from "framer-motion";
 import styles from "../dashboard.module.css";
 
@@ -37,6 +37,7 @@ function SignOutIcon() {
 
 export default function ProfilePage() {
   const { user, loading: authLoading, signOut } = useAuth(true);
+  const { subscription, isPro } = useSubscription();
   const router = useRouter();
   const [repos, setRepos] = useState<RepoItem[]>([]);
   const [recentChats, setRecentChats] = useState<any[]>([]);
@@ -162,7 +163,7 @@ export default function ProfilePage() {
 
   const githubName = user.user_metadata?.preferred_username || user.user_metadata?.user_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Developer";
   const initials = githubName.slice(0, 2).toUpperCase();
-  const isMasterDeveloper = isDeveloperAccount(user);
+
 
   const completedCount = repos.filter((r) => r.status === "completed").length;
 
@@ -244,12 +245,12 @@ export default function ProfilePage() {
           <div className={styles.profileDetails}>
             <h2 className={styles.profileEmail} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {githubName}
-              {isMasterDeveloper ? (
+              {isPro ? (
                 <span style={{ 
                   fontSize: "0.7rem", 
-                  background: "rgba(224, 138, 74, 0.12)", 
-                  border: "1px solid #e08a4a", 
-                  color: "#e08a4a", 
+                  background: "rgba(212, 175, 55, 0.12)", 
+                  border: "1px solid #d4af37", 
+                  color: "#d4af37", 
                   padding: "3px 10px", 
                   borderRadius: 6, 
                   fontFamily: "var(--font-mono)", 
@@ -259,19 +260,23 @@ export default function ProfilePage() {
                   alignItems: "center",
                   gap: "4px"
                 }}>
-                  Developer
+                  Pro Plan
                 </span>
               ) : (
-                <span style={{ fontSize: "0.6875rem", background: "rgba(131, 193, 103, 0.1)", border: "1px solid var(--color-green, #83c167)", color: "var(--color-green, #83c167)", padding: "2px 8px", borderRadius: 4, fontFamily: "var(--font-mono)", fontWeight: 500 }}>
-                  CORE MEMBER
+                <span style={{ fontSize: "0.6875rem", background: "rgba(136, 136, 136, 0.08)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)", padding: "2px 8px", borderRadius: 4, fontFamily: "var(--font-mono)", fontWeight: 500 }}>
+                  Free Plan
                 </span>
               )}
             </h2>
             <span className={styles.profileMeta}>
               Connected via {user.app_metadata?.provider || "GitHub"} • Email: <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "var(--color-white)" }}>{user.email}</span>
-              {isMasterDeveloper && (
-                <span style={{ marginLeft: 10, color: "#e08a4a", fontWeight: 600 }}>
-                  • Unlimited Access (Repos, Chat, Reports)
+              {isPro ? (
+                <span style={{ marginLeft: 10, color: "#d4af37", fontWeight: 600 }}>
+                  • Pro Access (Unlimited Repos, Chat, Reports)
+                </span>
+              ) : (
+                <span style={{ marginLeft: 10, color: "var(--color-text-secondary)", fontWeight: 500 }}>
+                  • Free Access (Limit: 2 Repos, 3 Daily Msg)
                 </span>
               )}
             </span>
