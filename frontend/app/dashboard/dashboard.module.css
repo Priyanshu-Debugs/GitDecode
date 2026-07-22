@@ -4201,3 +4201,26 @@
   background: #dc2626;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
+
+/* Sidebar Recent Chat Additions */
+.recentChatItem .deleteChatBtn {
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.recentChatItem:hover .deleteChatBtn {
+  opacity: 1;
+}
+
+.deleteChatBtn:hover {
+  color: var(--color-danger, #ff4c4c) !important;
+}
+
+/* Hide scrollbar utility */
+.hideScrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hideScrollbar::-webkit-scrollbar {
+  display: none;
+}

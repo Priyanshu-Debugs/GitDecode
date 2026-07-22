@@ -197,46 +197,76 @@ async def stream_message(
                 lc_messages.append(AIM(content=msg["content"]))
         lc_messages.append(HumanMessage(content=request.message))
 
-        yield f"data: {json.dumps({'type': 'thought', 'content': 'Loading context...'})}\n\n"
 
         final_response_text = ""
         final_sources = []
+        streamed_tokens = False
         try:
-            # We stream states to yield thoughts for each node
-            async for event in agent_graph.astream({
+            # We stream events to yield tokens and thoughts for each node
+            async for event in agent_graph.astream_events({
                 "messages": lc_messages,
                 "user_query": request.message,
                 "repo_id": str(request.repo_id),
                 "user_id": user.id,
                 "routing_decision": None,
                 "llm_config": request.llm_config.model_dump() if request.llm_config else None,
-            }):
-                for node_name, node_state in event.items():
-                    if node_name == "supervisor":
-                        decision = node_state.get("routing_decision", "Unknown")
+            }, version="v2"):
+                kind = event.get("event")
+                name = event.get("name")
+
+                if kind == "on_chat_model_stream":
+                    if "final_answer" in event.get("tags", []):
+                        streamed_tokens = True
+                        chunk = event["data"].get("chunk")
+                        if chunk and hasattr(chunk, "content"):
+                            content = chunk.content
+                            if content:
+                                if isinstance(content, str):
+                                    yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
+                                    final_response_text += content
+                                elif isinstance(content, list):
+                                    for block in content:
+                                        if isinstance(block, dict) and "text" in block:
+                                            yield f"data: {json.dumps({'type': 'token', 'content': block['text']})}\n\n"
+                                            final_response_text += block["text"]
+                                        elif isinstance(block, str):
+                                            yield f"data: {json.dumps({'type': 'token', 'content': block})}\n\n"
+                                            final_response_text += block
+                
+                elif kind == "on_chain_start":
+                    if name == "supervisor":
+                        yield f"data: {json.dumps({'type': 'thought', 'content': 'Loading context...'})}\n\n"
+                
+                elif kind == "on_chain_end":
+                    if name == "supervisor":
+                        output = event["data"].get("output", {})
+                        decision = output.get("routing_decision", "Unknown") if isinstance(output, dict) else "Unknown"
                         yield f"data: {json.dumps({'type': 'thought', 'content': f'Classified intent. Routing to {decision} engine...'})}\n\n"
-                    else:
-                        yield f"data: {json.dumps({'type': 'thought', 'content': f'Generated insights from {node_name} engine.'})}\n\n"
-                    
-                    if "messages" in node_state and len(node_state["messages"]) > 0:
-                        last_msg = node_state["messages"][-1]
-                        ai_response = last_msg.content if hasattr(last_msg, "content") else last_msg
+                    elif name in ["QA", "VISUALIZE", "IMPACT", "GUARDRAIL", "REPO_SUMMARY"]:
+                        yield f"data: {json.dumps({'type': 'thought', 'content': f'Generated insights from {name} engine.'})}\n\n"
+                        output = event["data"].get("output", {})
                         
-                        if isinstance(ai_response, list):
-                            extracted = ""
-                            for block in ai_response:
-                                if isinstance(block, dict) and "text" in block:
-                                    extracted += block["text"]
-                                elif isinstance(block, str):
-                                    extracted += block
-                            final_response_text = extracted
-                        else:
-                            final_response_text = str(ai_response)
-                        
-                        if hasattr(last_msg, "additional_kwargs") and "sources" in last_msg.additional_kwargs:
-                            final_sources = last_msg.additional_kwargs["sources"]
-                            yield f"data: {json.dumps({'type': 'sources', 'content': final_sources})}\n\n"
+                        if isinstance(output, dict) and "messages" in output and len(output["messages"]) > 0:
+                            last_msg = output["messages"][-1]
                             
+                            # Extract Sources
+                            if hasattr(last_msg, "additional_kwargs") and "sources" in last_msg.additional_kwargs:
+                                final_sources = last_msg.additional_kwargs["sources"]
+                                yield f"data: {json.dumps({'type': 'sources', 'content': final_sources})}\n\n"
+                                
+                            # If we didn't stream tokens (e.g. SDK Context Caching fallback), extract final text
+                            if not streamed_tokens:
+                                ai_response = last_msg.content if hasattr(last_msg, "content") else last_msg
+                                if isinstance(ai_response, list):
+                                    extracted = ""
+                                    for block in ai_response:
+                                        if isinstance(block, dict) and "text" in block:
+                                            extracted += block["text"]
+                                        elif isinstance(block, str):
+                                            extracted += block
+                                    final_response_text = extracted
+                                else:
+                                    final_response_text = str(ai_response)
         except Exception as e:
             logger.exception("Agent pipeline failed: %s", str(e))
             final_response_text = "I encountered an error processing your request. Please try again."
@@ -255,8 +285,9 @@ async def stream_message(
 
         yield f"data: {json.dumps({'type': 'message_id', 'content': assistant_msg['id'], 'session_id': session_id})}\n\n"
 
-        # Send the full answer immediately to let the frontend handle the visual streaming effect
-        yield f"data: {json.dumps({'type': 'full_text', 'content': final_response_text})}\n\n"
+        # Only send full_text if we didn't stream (the frontend simulates typing for full_text)
+        if not streamed_tokens:
+            yield f"data: {json.dumps({'type': 'full_text', 'content': final_response_text})}\n\n"
         
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
@@ -369,3 +400,21 @@ async def get_rate_limit_status(
         daily_limit=settings.DAILY_MSG_LIMIT,
         monthly_limit=settings.MONTHLY_MSG_LIMIT,
     )
+
+@router.delete(
+    "/session/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a chat session",
+    description="Deletes all messages associated with a given chat session.",
+)
+async def delete_session(
+    session_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> None:
+    """Delete all messages for a specific session."""
+    await pg.delete_chat_session(
+        session_id=str(session_id),
+        user_id=user.id,
+    )
+

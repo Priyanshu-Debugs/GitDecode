@@ -793,6 +793,13 @@ function DashboardContent() {
                 }
                 return m;
             }));
+        } else if (type === "sources") {
+            setMessages((prev) => prev.map(m => {
+                if (m.message_id === tempAssistantId || m.message_id === realMessageId) {
+                    return { ...m, sources: content };
+                }
+                return m;
+            }));
         } else if (type === "done") {
             setChatLoading(false);
             isSubmittingRef.current = false;
@@ -1497,10 +1504,16 @@ function DashboardContent() {
                 {messages.map((msg, idx) => {
                   let mainContent = msg.content || "";
                   let thinkContent = "";
-                  if (mainContent.includes("<think>")) {
-                    const parts = mainContent.split("</think>");
-                    thinkContent = parts[0].replace("<think>", "").trim();
-                    mainContent = parts.length > 1 ? parts.slice(1).join("</think>").trim() : "";
+                  
+                  const thinkMatch = mainContent.match(/<think>([\s\S]*?)(?:<\/think>|$)/);
+                  if (thinkMatch) {
+                    thinkContent = thinkMatch[1].trim();
+                    mainContent = mainContent.replace(/<think>[\s\S]*?(?:<\/think>|$)/, "").trim();
+                  } else {
+                    const partialMatch = mainContent.match(/<t(?:h(?:i(?:n(?:k(?:>)?)?)?)?)?$/);
+                    if (partialMatch) {
+                        mainContent = mainContent.substring(0, partialMatch.index);
+                    }
                   }
 
                   const isThinking = chatLoading && idx === messages.length - 1 && (!msg.content || (msg.content.includes("<think>") && !msg.content.includes("</think>")));
@@ -2037,27 +2050,31 @@ function DashboardContent() {
                    });
 
                    if (thinkText) {
-                       const lines = thinkText.split(/\n/).map(l => l.trim()).filter(l => l.length > 0);
-                       lines.forEach((line, idx) => {
-                           let text = line;
-                           if (line.startsWith('- ') || line.startsWith('* ')) {
-                               text = line.substring(2).trim();
-                           }
+                       const lines = thinkText.split('\n');
+                       let currentStep = "";
+                       const extractedSteps: string[] = [];
+                       
+                       lines.forEach(line => {
+                           const trimmed = line.trim();
+                           if (!trimmed) return;
                            
-                           if (idx < steps.length) {
-                               if (steps[idx].detail) {
-                                   steps[idx].detail += `\n${text}`;
-                               } else {
-                                   steps[idx].detail = text;
-                               }
-                           } else if (steps.length > 0) {
-                               steps[steps.length - 1].detail = steps[steps.length - 1].detail 
-                                   ? steps[steps.length - 1].detail + `\n${text}` 
-                                   : text;
+                           if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed)) {
+                               if (currentStep) extractedSteps.push(currentStep);
+                               currentStep = trimmed.replace(/^[-*]\s|^\d+\.\s/, '').trim();
                            } else {
-                               steps.push({ title: "Analysis", detail: text });
+                               if (currentStep) currentStep += " " + trimmed;
+                               else currentStep = trimmed;
                            }
                        });
+                       if (currentStep) extractedSteps.push(currentStep);
+                       
+                       if (extractedSteps.length <= 1) {
+                           steps.push({ title: "Agent Reasoning", detail: thinkText.trim() });
+                       } else {
+                           extractedSteps.forEach((stepText, idx) => {
+                               steps.push({ title: `Reasoning Step ${idx + 1}`, detail: stepText });
+                           });
+                       }
                    }
                    
                    return (
@@ -2070,7 +2087,7 @@ function DashboardContent() {
                                 </div>
                                 {step.detail && (
                                   <div className={styles.thoughtRawBlock}>
-                                    {step.detail}
+                                    <ChatMarkdown content={step.detail} />
                                   </div>
                                 )}
                              </div>

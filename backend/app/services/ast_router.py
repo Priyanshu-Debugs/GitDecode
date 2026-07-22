@@ -41,8 +41,12 @@ class ASTRouter:
         sample_files = all_files_list[:400]
         
         system_prompt = (
-            "You are a code routing assistant. Analyze the user's codebase query and select the most relevant files "
-            "and symbols (functions, classes) from the repository that should be used to answer the query.\n\n"
+            "You are a code routing assistant. Your job is to identify ONLY the files that directly implement or define what the user's query is asking about.\n\n"
+            "STRICT RULES:\n"
+            "1. If the user asks about a specific file by name (e.g. 'explain omdb_utils.py'), return ONLY that file. Nothing else.\n"
+            "2. If the user asks about a function or class, return ONLY the file(s) that define that function or class.\n"
+            "3. NEVER include files that merely import or call the target — those are callers, not the subject.\n"
+            "4. Return the minimum set of files. 1-2 files maximum unless the query explicitly spans multiple files.\n\n"
             f"Available Files in Repository:\n" + "\n".join([f"- {f}" for f in sample_files]) + "\n\n"
             "Respond strictly with a JSON object containing 'files' and 'symbols'."
         )

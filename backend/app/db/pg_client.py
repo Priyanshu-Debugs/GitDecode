@@ -497,6 +497,11 @@ class SupabasePGClient:
         """Deletes a chat message by its ID."""
         self._client.table("chat_messages").delete().eq("id", message_id).execute()
 
+    async def delete_chat_session(self, session_id: str, user_id: str) -> None:
+        """Deletes all chat messages for a specific session."""
+        self._client.table("chat_messages").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
+        logger.info("Deleted chat session %s for user %s", session_id, user_id)
+
     async def get_user_sessions(
         self,
         user_id: str,

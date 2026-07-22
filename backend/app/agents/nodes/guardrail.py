@@ -23,7 +23,7 @@ async def guardrail_node(state: AgentState) -> Dict[str, Any]:
     
     logger.info("Invoking Guardrail Agent for out-of-scope query.")
     try:
-        response = await llm.ainvoke(messages)
+        response = await llm.ainvoke(messages, config={"tags": ["final_answer"]})
     except Exception as e:
         import traceback
         error_msg = f"ERROR IN GUARDRAIL API: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"

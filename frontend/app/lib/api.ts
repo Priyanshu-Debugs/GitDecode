@@ -686,6 +686,23 @@ export async function streamChatMessage(
   const decoder = new TextDecoder("utf-8");
   let buffer = "";
 
+  let tokenQueue = "";
+  let isFlushing = false;
+
+  const flushQueue = async () => {
+    if (isFlushing) return;
+    isFlushing = true;
+    while (tokenQueue.length > 0) {
+      // Dynamic speed: dump more chars instantly if falling behind
+      const chunkSize = tokenQueue.length > 150 ? 10 : (tokenQueue.length > 50 ? 5 : (tokenQueue.length > 20 ? 2 : 1));
+      const chunk = tokenQueue.substring(0, chunkSize);
+      tokenQueue = tokenQueue.substring(chunkSize);
+      onUpdate("token", chunk);
+      await new Promise(r => setTimeout(r, 12));
+    }
+    isFlushing = false;
+  };
+
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -703,13 +720,11 @@ export async function streamChatMessage(
           if (data.type === "message_id") {
             onUpdate(data.type, data.content, { session_id: data.session_id });
           } else if (data.type === "full_text") {
-            // Stream the text smoothly entirely within the frontend!
-            const text = data.content || "";
-            const words = text.split(" ");
-            for (let i = 0; i < words.length; i++) {
-              onUpdate("token", words[i] + (i < words.length - 1 ? " " : ""));
-              await new Promise(r => setTimeout(r, 35));
-            }
+            tokenQueue += (data.content || "");
+            flushQueue();
+          } else if (data.type === "token") {
+            tokenQueue += (data.content || "");
+            flushQueue();
           } else {
             onUpdate(data.type, data.content || "");
           }
@@ -718,6 +733,11 @@ export async function streamChatMessage(
         }
       }
     }
+  }
+
+  // Ensure queue is empty before closing stream
+  while (isFlushing) {
+    await new Promise(r => setTimeout(r, 50));
   }
 }
 
@@ -760,6 +780,14 @@ export async function listChatSessions(
     ];
   }
   return apiFetch<ChatSession[]>(`/chat/sessions?repo_id=${repoId}`);
+}
+
+/** Delete a chat session */
+export async function deleteChatSession(sessionId: string): Promise<void> {
+  if (isDemoMode()) {
+    return;
+  }
+  await apiFetch<void>(`/chat/session/${sessionId}`, { method: "DELETE" });
 }
 
 

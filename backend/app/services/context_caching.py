@@ -136,6 +136,12 @@ class ContextCacheManager:
             cache = self.client.caches.create(
                 model=model_endpoint,
                 config=types.CreateCachedContentConfig(
+                    system_instruction=(
+                        "You are an expert AI software engineer analyzing a codebase. "
+                        "CRITICAL INSTRUCTION: For EVERY single question you answer, you MUST start your response with a <think> block detailing your step-by-step reasoning. "
+                        "Inside the <think> block, you must write out your analysis as a structured bulleted list of at least 3 sub-points before closing with </think> and providing your final answer. "
+                        "Do NOT output an empty think block or an unstructured paragraph. Do NOT skip this step."
+                    ),
                     contents=[formatted_content],
                     ttl="3600s",
                     display_name=f"gitmesh_cache_{repo_id}"

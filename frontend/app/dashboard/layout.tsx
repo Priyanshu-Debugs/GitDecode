@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/lib/useAuth";
-import { listRepos, syncRepo, listChatSessions, type RepoItem } from "@/app/lib/api";
+import { listRepos, syncRepo, listChatSessions, deleteChatSession, type RepoItem } from "@/app/lib/api";
 import { isDeveloperAccount } from "@/app/lib/developers";
 import styles from "./dashboard.module.css";
 import DashboardLoader from "@/app/components/DashboardLoader";
@@ -80,6 +80,17 @@ function ChatIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      <line x1="10" y1="11" x2="10" y2="17"></line>
+      <line x1="14" y1="11" x2="14" y2="17"></line>
+    </svg>
+  );
+}
+
 function SettingsIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
@@ -123,6 +134,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   // Recent chats states
   const [recentChats, setRecentChats] = useState<any[]>([]);
   const [chatsLoading, setChatsLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
   // Auto-collapse sidebar on mobile sizes
   useEffect(() => {
@@ -266,6 +279,38 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       active = false;
     };
   }, [repos]);
+
+  const handleDeleteSession = async (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    try {
+      setDeletingId(sessionId);
+      await deleteChatSession(sessionId);
+      
+      // Remove from list optimistically
+      setRecentChats((prev) => prev.filter((c) => c.session_id !== sessionId));
+      
+      // If deleting the active session, navigate away (reset view for the active repo)
+      const currentSessionId = searchParams?.get("session_id");
+      if (currentSessionId === sessionId) {
+        const activeRepoId = searchParams?.get("repo_id");
+        if (activeRepoId) {
+          handleNavClick(`/dashboard?repo_id=${activeRepoId}&tab=chat`);
+        } else {
+          // If we are on a clean path /dashboard/repo/owner/name
+          const pathSegments = pathname?.split("/").filter(Boolean);
+          if (pathSegments && pathSegments.length >= 3 && pathSegments[0] === "dashboard" && pathSegments[1] === "repo") {
+            handleNavClick(pathname!);
+          } else {
+             handleNavClick(`/dashboard`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete session", err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const fetchLayoutRepos = useCallback(async () => {
     try {
@@ -422,9 +467,22 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           {/* Recent chats section */}
           {!collapsed && (
             <div className={styles.sidebarQueueSection} style={{ border: "none", padding: 0, background: "transparent", marginTop: 8 }}>
-              <div className={styles.sidebarQueueHeader} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.6875rem", letterSpacing: "0.05em" }}>
-                <ChatIcon />
-                <span>Recent Conversations</span>
+              <div className={styles.sidebarQueueHeader} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.6875rem", letterSpacing: "0.05em" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <ChatIcon />
+                  <span>Recent Conversations</span>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsNewChatModalOpen(true);
+                  }}
+                  className={styles.iconBtn}
+                  style={{ opacity: 0.7, padding: 4 }}
+                  title="New Chat"
+                >
+                  <PlusIcon />
+                </button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: "300px", overflowY: "auto" }}>
                 {chatsLoading && recentChats.length === 0 ? (
@@ -439,10 +497,12 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                       hour: "2-digit",
                       minute: "2-digit"
                     });
+                    const isDeleting = deletingId === chat.session_id;
                     return (
                       <div
                         key={`${chat.repoId}-${chat.session_id}`}
                         onClick={() => {
+                          if (isDeleting) return;
                           let navUrl = `/dashboard?repo_id=${chat.repoId}&session_id=${chat.session_id}&tab=chat`;
                           if (chat.repoUrl) {
                             const basePath = githubUrlToRepoPath(chat.repoUrl);
@@ -452,21 +512,46 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                           }
                           handleNavClick(navUrl);
                         }}
-                        className={styles.repoCard}
+                        className={`${styles.repoCard} ${styles.recentChatItem}`}
                         style={{
                            padding: 8,
-                           cursor: "pointer",
+                           cursor: isDeleting ? "default" : "pointer",
                            background: "rgba(255, 255, 255, 0.01)",
-                           border: "0.5px solid rgba(255, 255, 255, 0.03)"
+                           border: "0.5px solid rgba(255, 255, 255, 0.03)",
+                           opacity: isDeleting ? 0.5 : 1,
+                           position: "relative"
                         }}
                       >
-                        <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--color-white)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--color-white)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", paddingRight: 24 }}>
                           {chat.repoName}
                         </div>
                         <div style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)", marginTop: 2, display: "flex", justifyContent: "space-between" }}>
                           <span>id: {chat.session_id.slice(0, 8)}...</span>
                           <span>{formattedDate}</span>
                         </div>
+                        <button
+                          className={styles.deleteChatBtn}
+                          onClick={(e) => handleDeleteSession(e, chat.session_id)}
+                          style={{
+                            position: "absolute",
+                            top: 8,
+                            right: 8,
+                            padding: 4,
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--color-text-tertiary)",
+                            cursor: "pointer",
+                            display: isDeleting ? "none" : undefined
+                          }}
+                          title="Delete Session"
+                        >
+                          <TrashIcon />
+                        </button>
+                        {isDeleting && (
+                          <div style={{ position: "absolute", top: 8, right: 8 }}>
+                            <div className={styles.loadingSpinner} style={{ width: 12, height: 12 }} />
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -601,6 +686,101 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
         {/* Page Content */}
         <div className={pathname === "/dashboard" ? styles.contentWorkspace : styles.content}>{children}</div>
       </div>
+
+      {/* New Chat Modal */}
+      {isNewChatModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(4px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+          onClick={() => setIsNewChatModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "#0d0f12",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "12px",
+              width: "100%",
+              maxWidth: "400px",
+              padding: "24px",
+              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+              position: "relative"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 16px 0", fontSize: "1.125rem", color: "#fff", fontWeight: 600 }}>Start New Conversation</h3>
+            <p style={{ margin: "0 0 16px 0", fontSize: "0.875rem", color: "var(--color-text-secondary)" }}>Select a connected repository to begin a fresh chat.</p>
+            
+            <div className={styles.hideScrollbar} style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "300px", overflowY: "auto", paddingRight: 4 }}>
+              {completedRepos.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "var(--color-text-tertiary)", fontSize: "0.875rem" }}>
+                  No connected repositories found.
+                </div>
+              ) : (
+                completedRepos.map(repo => {
+                  const repoName = repo.github_url.split("/").pop() || "repository";
+                  return (
+                    <button
+                      key={repo.id}
+                      onClick={() => {
+                        setIsNewChatModalOpen(false);
+                        const basePath = githubUrlToRepoPath(repo.github_url);
+                        if (basePath !== "/dashboard") {
+                          handleNavClick(`${basePath}?tab=chat`);
+                        } else {
+                          handleNavClick(`/dashboard?repo_id=${repo.id}&tab=chat`);
+                        }
+                      }}
+                      className={styles.repoCard}
+                      style={{
+                        padding: "12px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid rgba(255, 255, 255, 0.04)",
+                        borderRadius: "8px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12
+                      }}
+                    >
+                      <GithubIcon />
+                      <span style={{ fontSize: "0.875rem", color: "#fff", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {repoName}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsNewChatModalOpen(false)}
+              style={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                background: "transparent",
+                border: "none",
+                color: "var(--color-text-tertiary)",
+                cursor: "pointer",
+                padding: 4
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

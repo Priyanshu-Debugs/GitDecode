@@ -80,10 +80,28 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
             api_key = os.environ.get("GOOGLE_API_KEY")
             client = genai.Client(api_key=api_key)
             
+            import re
+            # Only keep human questions (no AI responses — they poison the context)
+            recent_messages = state.get("messages", [])[:-1][-8:]
+            history_text = ""
+            for m in recent_messages:
+                if m.type == "human":
+                    history_text += f"User: {m.content}\n"
+
+            target_files_str = "\n".join(f"- {f}" for f in target_files)
+
+            # The cache already contains the ENTIRE codebase.
+            # We send ZERO file content in the prompt — just the focus directive and question.
+            # Sending file content here makes non-target files doubly prominent and causes drift.
             prompt = (
-                f"AST Routing Context (focus on these files and relationships):\n{dynamic_context}\n\n"
-                f"User Question:\n{user_query}\n\n"
-                "Provide a detailed answer with precise citations and line numbers."
+                f"{CODE_QA_PROMPT}\n\n"
+                f"FOCUS DIRECTIVE: The user is asking about ONLY these specific files. "
+                f"Retrieve their content from your cached context and answer EXCLUSIVELY about them. "
+                f"Do NOT mention, summarize, or explain any other file.\n"
+                f"Target Files:\n{target_files_str}\n\n"
+                f"Recent conversation (for context only):\n{history_text}\n"
+                f"User Question: {user_query}\n\n"
+                f"CRITICAL: You MUST start your response with a <think> block. Inside the <think> block, you MUST write out your analysis as a structured bulleted list of at least 3 sub-points before closing with </think> and providing your final answer. Do NOT output an empty think block or an unstructured paragraph!"
             )
             
             # Run the synchronous API call in an async thread to prevent blocking
@@ -118,13 +136,45 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
         if len(dynamic_context) > max_chars:
             dynamic_context = dynamic_context[:max_chars - 100] + "\n\n[CONTEXT TRUNCATED TO FIT MODEL LIMITS]"
             
+    # Separate the user's exact target files from their graph neighbors
+    # so the model has a clear hierarchy and doesn't treat neighbors as primary
+    target_files_set = set(target_files)
+    neighbor_files = depth_1 - target_files_set
+
+    primary_context_parts = ["=== PRIMARY FILES (Answer EXCLUSIVELY about these) ==="]
+    for fp in sorted(target_files_set):
+        fi = file_contents_map.get(fp)
+        if fi:
+            primary_context_parts.append(
+                f"--- FILE: {fp} ---\n{fi.get('content', '')}\n"
+            )
+
+    supporting_context_parts = ["=== SUPPORTING CONTEXT (For cross-references only — do NOT summarize these) ==="]
+    for fp in sorted(neighbor_files):
+        fi = file_contents_map.get(fp)
+        if fi:
+            supporting_context_parts.append(
+                f"--- FILE: {fp} ---\n{fi.get('content', '')}\n"
+            )
+
+    primary_context = "\n".join(primary_context_parts)
+    supporting_context = "\n".join(supporting_context_parts)
+
+    target_files_str = "\n".join(f"- {f}" for f in target_files)
     messages = [
         SystemMessage(content=CODE_QA_PROMPT),
         *state.get("messages", []),
-        SystemMessage(content=f"AST Routed Context (Full details of relevant files):\n\n{dynamic_context}")
+        SystemMessage(content=(
+            f"FOCUS DIRECTIVE: The user's question is about ONLY these files:\n{target_files_str}\n\n"
+            f"Your answer MUST be exclusively about the PRIMARY FILES section below. "
+            f"Do NOT explain, summarize, or mention files from SUPPORTING CONTEXT unless the user explicitly asks.\n\n"
+            f"{primary_context}\n\n"
+            f"{supporting_context}\n\n"
+            f"CRITICAL: You MUST start your response with a <think> block. Inside the <think> block, you MUST write out your analysis as a structured bulleted list of at least 3 sub-points before closing with </think> and providing your final answer. Do NOT output an empty think block or an unstructured paragraph!"
+        )),
     ]
     try:
-        response = await llm.ainvoke(messages)
+        response = await llm.ainvoke(messages, config={"tags": ["final_answer"]})
     except Exception as e:
         import traceback
         error_msg = f"ERROR IN CODE QA API: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"

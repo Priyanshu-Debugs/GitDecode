@@ -47,9 +47,9 @@ async def visualizer_node(state: AgentState) -> Dict[str, Any]:
     messages = [
         SystemMessage(content=VISUALIZER_PROMPT),
         *state.get("messages", []),
-        SystemMessage(content=f"Context:\n{context}")
+        SystemMessage(content=f"Context:\n{context}\n\nCRITICAL: You MUST start your response with a <think> block. Inside the <think> block, you MUST write out your analysis as a structured bulleted list of at least 3 sub-points before closing with </think> and providing your final answer. Do NOT output an empty think block or an unstructured paragraph!")
     ]
     
-    response = await llm.ainvoke(messages)
+    response = await llm.ainvoke(messages, config={"tags": ["final_answer"]})
     
     return {"messages": [response]}
