@@ -1,5 +1,5 @@
 """
-GitMesh — FastAPI Application Entry Point
+GitDecode — FastAPI Application Entry Point
 ===========================================
 Application factory with async lifespan management.
 

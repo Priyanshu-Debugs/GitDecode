@@ -1,5 +1,5 @@
 """
-GitMesh — Report Agent State
+GitDecode — Report Agent State
 ==============================
 TypedDict state definition for the multi-agent report generation pipeline.
 """

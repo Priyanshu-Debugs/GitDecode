@@ -1,5 +1,5 @@
 """
-GitMesh — Python Code AST Parser
+GitDecode — Python Code AST Parser
 =================================
 Parses Python source files using Tree-Sitter to chunk code, identify logical
 boundaries (classes, methods, functions), resolve import statements, and extract

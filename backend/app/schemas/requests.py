@@ -1,5 +1,5 @@
 """
-GitMesh — Request Schemas
+GitDecode — Request Schemas
 ==========================
 Strict Pydantic models for API request validation.
 All models use ``extra="forbid"`` to reject unknown fields.

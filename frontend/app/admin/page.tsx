@@ -27,7 +27,7 @@ export default function AdminPage() {
 
   // Check for stored token on mount
   useEffect(() => {
-    const token = localStorage.getItem("gitmesh_admin_token");
+    const token = localStorage.getItem("gitdecode_admin_token");
     if (token) {
       setIsAuthenticated(true);
     }
@@ -44,7 +44,7 @@ export default function AdminPage() {
       setStats(statsData);
     } catch (err: any) {
       if (err.message?.includes("401") || err.message?.includes("expired") || err.message?.includes("token")) {
-        localStorage.removeItem("gitmesh_admin_token");
+        localStorage.removeItem("gitdecode_admin_token");
         setIsAuthenticated(false);
       }
     } finally {
@@ -65,7 +65,7 @@ export default function AdminPage() {
 
     try {
       const res = await adminLogin(password);
-      localStorage.setItem("gitmesh_admin_token", res.token);
+      localStorage.setItem("gitdecode_admin_token", res.token);
       setIsAuthenticated(true);
       setPassword("");
     } catch (err: any) {
@@ -76,7 +76,7 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("gitmesh_admin_token");
+    localStorage.removeItem("gitdecode_admin_token");
     setIsAuthenticated(false);
   };
 
@@ -117,7 +117,7 @@ export default function AdminPage() {
             <span className={styles.terminalTitle}>authentication</span>
           </div>
           <div className={styles.terminalBody}>
-            <p className={styles.terminalPrompt}>$ GitMesh Admin Terminal</p>
+            <p className={styles.terminalPrompt}>$ GitDecode Admin Terminal</p>
             <p className={styles.terminalLog}>
               Enter admin password to access the Pro request management dashboard.
             </p>
@@ -166,7 +166,7 @@ export default function AdminPage() {
       <div className={styles.topBar}>
         <div className={styles.topBarLeft}>
           <h1 className={styles.adminTitle}>
-            <span style={{ color: "var(--color-green)" }}>Git</span>Mesh Admin
+            <span style={{ color: "var(--color-green)" }}>Git</span>Decode Admin
           </h1>
           <span className={styles.adminLabel}>admin_dashboard.py</span>
         </div>

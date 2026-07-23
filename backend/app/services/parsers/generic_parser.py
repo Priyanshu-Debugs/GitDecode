@@ -1,5 +1,5 @@
 """
-GitMesh — Generic File Parser & Graph Node Utilities
+GitDecode — Generic File Parser & Graph Node Utilities
 ====================================================
 Provides:
   1. ``parse_notebook_file`` — extracts cell sources from Jupyter ``.ipynb`` notebooks.

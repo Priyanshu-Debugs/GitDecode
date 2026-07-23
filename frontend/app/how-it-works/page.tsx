@@ -62,7 +62,7 @@ export default function HowItWorksPage() {
   // Auto-cloning simulation state for Step 1
   const [cloneOutput, setCloneOutput] = useState<string[]>([]);
   const [typingUrl, setTypingUrl] = useState("");
-  const targetUrl = "https://github.com/Priyanshu-Debugs/GitMesh";
+  const targetUrl = "https://github.com/Priyanshu-Debugs/GitDecode";
 
   useEffect(() => {
     if (activeStepId !== 1) {
@@ -90,7 +90,7 @@ export default function HowItWorksPage() {
     urlTimeout = setTimeout(type, 500);
 
     const terminalLines = [
-      "Cloning into 'GitMesh'...",
+      "Cloning into 'GitDecode'...",
       "remote: Enumerating objects: 1240, done.",
       "remote: Counting objects: 100% (1240/1240), done.",
       "remote: Compressing objects: 100% (842/842), done.",
@@ -199,7 +199,7 @@ export default function HowItWorksPage() {
               </div>
               <div className={styles.terminalContent}>
                 <div className={styles.promptLine}>
-                  <span className={styles.promptSymbol}>$</span> gitmesh-cli import --url <span className={styles.glowingText}>{typingUrl}</span>
+                  <span className={styles.promptSymbol}>$</span> gitdecode-cli import --url <span className={styles.glowingText}>{typingUrl}</span>
                   <span className={styles.terminalCursor}>▋</span>
                 </div>
                 {cloneOutput.map((line, idx) => (
@@ -277,7 +277,7 @@ export default function HowItWorksPage() {
               </div>
             </div>
             <p className={styles.visualizerCaption}>
-              Using Tree-sitter parsers, GitMesh parses code blocks into Abstract Syntax Trees (AST) to map exact imports, classes, functions, and cross-file calling dependencies.
+              Using Tree-sitter parsers, GitDecode parses code blocks into Abstract Syntax Trees (AST) to map exact imports, classes, functions, and cross-file calling dependencies.
             </p>
           </div>
         );
@@ -360,7 +360,7 @@ export default function HowItWorksPage() {
               </div>
             </div>
             <p className={styles.visualizerCaption}>
-              GitMesh coordinates LangGraph specialist agents under a supervisor model. Queries are auto-routed to optimize response depth, structured output parsing, and tool-use operations.
+              GitDecode coordinates LangGraph specialist agents under a supervisor model. Queries are auto-routed to optimize response depth, structured output parsing, and tool-use operations.
             </p>
           </div>
         );
@@ -370,7 +370,7 @@ export default function HowItWorksPage() {
             <div className={styles.chatWindowMock}>
               <div className={styles.chatHeader}>
                 <MessageSquare size={14} />
-                <span>GitMesh Intelligence Console</span>
+                <span>GitDecode Intelligence Console</span>
               </div>
               <div className={styles.chatContent}>
                 <div className={styles.chatMsgUser}>
@@ -413,7 +413,7 @@ export default function HowItWorksPage() {
           <div className={styles.logoWrapper}>
             <Image
               src="/developer-logo-refined.svg"
-              alt="GitMesh Developer Logo"
+              alt="GitDecode Developer Logo"
               width={140}
               height={140}
               priority
@@ -429,7 +429,7 @@ export default function HowItWorksPage() {
           <h1 className={styles.title}>HowItWorks.json</h1>
           <p className={styles.subtitle}>
             <span className={styles.comment}>// </span>
-            Deep-dive technical breakdown of the GitMesh AI code intelligence engine.
+            Deep-dive technical breakdown of the GitDecode AI code intelligence engine.
           </p>
         </header>
 
@@ -507,7 +507,7 @@ export default function HowItWorksPage() {
             <p className={styles.label}>system_execution_flow</p>
             <h2 className={styles.timelineMainTitle}>Step-by-Step Architecture Process</h2>
             <p className={styles.timelineMainSubtitle}>
-              Walk through the detailed sequence of steps GitMesh performs to clone, analyze, parse, route, and stream answers for your codebase.
+              Walk through the detailed sequence of steps GitDecode performs to clone, analyze, parse, route, and stream answers for your codebase.
             </p>
           </div>
 
@@ -568,7 +568,7 @@ export default function HowItWorksPage() {
             <p className={styles.label}>comparison</p>
             <h2 className={styles.detailsTitle}>Why Vectorless Graph RAG?</h2>
             <p className={styles.detailsSubtitle}>
-              Traditional RAG splits code into text chunks and compares them using vector embeddings. This loses structure. GitMesh maps relations.
+              Traditional RAG splits code into text chunks and compares them using vector embeddings. This loses structure. GitDecode maps relations.
             </p>
           </div>
 
@@ -593,7 +593,7 @@ export default function HowItWorksPage() {
 
             <div className={styles.comparisonCard} style={{ borderColor: "var(--color-green)" }}>
               <div className={styles.comparisonGlowHeader}>
-                <h3 className={styles.comparisonCardTitle} style={{ color: "var(--color-green)" }}>GitMesh AST Graph RAG</h3>
+                <h3 className={styles.comparisonCardTitle} style={{ color: "var(--color-green)" }}>GitDecode AST Graph RAG</h3>
                 <span className={styles.comparisonBadge}>Active</span>
               </div>
               <ul className={styles.comparisonList}>

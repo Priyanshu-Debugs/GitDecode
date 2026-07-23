@@ -1,5 +1,5 @@
 """
-GitMesh — Response Schemas
+GitDecode — Response Schemas
 ============================
 Pydantic models for API response serialization.
 All models use ``from_attributes=True`` to support ORM-like objects.

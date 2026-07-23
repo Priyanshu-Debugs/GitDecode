@@ -98,7 +98,7 @@ export default function DeveloperPage() {
           <h1 className={styles.title}>developers.py</h1>
           <p className={styles.subtitle}>
             <span className={styles.comment}># </span>
-            The AI engineering team behind GitMesh codebase intelligence.
+            The AI engineering team behind GitDecode codebase intelligence.
           </p>
         </header>
 

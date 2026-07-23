@@ -1,5 +1,5 @@
 """
-GitMesh — Inngest Background Workers
+GitDecode — Inngest Background Workers
 =====================================
 Boilerplate and pipeline execution for the background repository ingestion.
 Orchestrates: clone_repo -> parse_ast -> generate_embeddings -> save_to_dbs.
@@ -153,7 +153,7 @@ async def sync_github_repository(
     try:
         # Step A: Clone the repository to the temp directory
         async def clone_repo_step() -> str:
-            temp_dir = os.path.join(tempfile.gettempdir(), f"gitmesh_{repo_id}")
+            temp_dir = os.path.join(tempfile.gettempdir(), f"gitdecode_{repo_id}")
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir, ignore_errors=True)
             os.makedirs(temp_dir, exist_ok=True)
@@ -525,7 +525,7 @@ async def sync_github_repository(
     except Exception as e:
         logger.exception("Ingestion failed for repo %s: %s", repo_id, str(e))
         # Ensure cleanup if possible
-        temp_dir = os.path.join(tempfile.gettempdir(), f"gitmesh_{repo_id}")
+        temp_dir = os.path.join(tempfile.gettempdir(), f"gitdecode_{repo_id}")
         shutil.rmtree(temp_dir, ignore_errors=True)
 
         # Update status to 'failed'

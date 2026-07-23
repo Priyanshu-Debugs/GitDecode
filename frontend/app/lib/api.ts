@@ -1,5 +1,5 @@
 /**
- * GitMesh — Typed API Client
+ * GitDecode — Typed API Client
  * ===========================
  * Wraps fetch calls to the FastAPI backend with JWT injection from Supabase.
  * In Demo Mode, intercepts requests to serve high-fidelity mock graph data client-side.
@@ -13,14 +13,14 @@ const API_BASE =
 // Helper to check if currently in Demo Mode
 export function isDemoMode(): boolean {
   if (typeof window === "undefined") return false;
-  return !!localStorage.getItem("gitmesh_mock_session");
+  return !!localStorage.getItem("gitdecode_mock_session");
 }
 
 // ── Auth Header ─────────────────────────────────────────────────────
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   try {
-    const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitmesh_mock_session") : null;
+    const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitdecode_mock_session") : null;
     if (mockSessionStr) {
       const mockSession = JSON.parse(mockSessionStr);
       if (mockSession?.access_token) {
@@ -44,7 +44,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     }
   } catch {
     // Supabase not configured — check if mock token is available as last fallback
-    const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitmesh_mock_session") : null;
+    const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitdecode_mock_session") : null;
     if (mockSessionStr) {
       try {
         const mockSession = JSON.parse(mockSessionStr);
@@ -210,7 +210,7 @@ export interface CodebaseReport {
 const MOCK_REPOS_LIST: RepoItem[] = [
   {
     id: "101",
-    github_url: "https://github.com/gitmesh/gitmesh-runtime",
+    github_url: "https://github.com/gitdecode/gitdecode-runtime",
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
@@ -218,7 +218,7 @@ const MOCK_REPOS_LIST: RepoItem[] = [
   },
   {
     id: "102",
-    github_url: "https://github.com/gitmesh/ast-lexer-engine",
+    github_url: "https://github.com/gitdecode/ast-lexer-engine",
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
@@ -226,7 +226,7 @@ const MOCK_REPOS_LIST: RepoItem[] = [
   },
   {
     id: "103",
-    github_url: "https://github.com/gitmesh/neo4j-vector-search",
+    github_url: "https://github.com/gitdecode/neo4j-vector-search",
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
@@ -234,7 +234,7 @@ const MOCK_REPOS_LIST: RepoItem[] = [
   },
   {
     id: "104",
-    github_url: "https://github.com/gitmesh/gitmesh-web-dashboard",
+    github_url: "https://github.com/gitdecode/gitdecode-web-dashboard",
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
@@ -245,9 +245,9 @@ const MOCK_REPOS_LIST: RepoItem[] = [
 // Helper to get or set mock repositories list
 function getMockRepos(): RepoItem[] {
   if (typeof window === "undefined") return MOCK_REPOS_LIST;
-  const cached = localStorage.getItem("gitmesh_mock_repos");
+  const cached = localStorage.getItem("gitdecode_mock_repos");
   if (cached) return JSON.parse(cached);
-  localStorage.setItem("gitmesh_mock_repos", JSON.stringify(MOCK_REPOS_LIST));
+  localStorage.setItem("gitdecode_mock_repos", JSON.stringify(MOCK_REPOS_LIST));
   return MOCK_REPOS_LIST;
 }
 
@@ -290,11 +290,11 @@ export async function syncRepo(
         created_at: new Date().toISOString()
       };
       list.push(repo);
-      localStorage.setItem("gitmesh_mock_repos", JSON.stringify(list));
+      localStorage.setItem("gitdecode_mock_repos", JSON.stringify(list));
     } else {
       repo.status = "queued";
       repo.detailed_status = "Sync queued in Demo Mode...";
-      localStorage.setItem("gitmesh_mock_repos", JSON.stringify(list));
+      localStorage.setItem("gitdecode_mock_repos", JSON.stringify(list));
     }
 
     // Trigger state transitions to simulate indexing pipeline
@@ -304,7 +304,7 @@ export async function syncRepo(
       if (r) {
         r.status = "processing";
         r.detailed_status = "Cloning codebase structures...";
-        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+        localStorage.setItem("gitdecode_mock_repos", JSON.stringify(current));
       }
     }, 1000);
 
@@ -314,7 +314,7 @@ export async function syncRepo(
       if (r) {
         r.status = "processing";
         r.detailed_status = "Tokenizing AST node maps...";
-        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+        localStorage.setItem("gitdecode_mock_repos", JSON.stringify(current));
       }
     }, 2800);
 
@@ -324,7 +324,7 @@ export async function syncRepo(
       if (r) {
         r.status = "processing";
         r.detailed_status = "pgvector semantic indexes generating...";
-        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+        localStorage.setItem("gitdecode_mock_repos", JSON.stringify(current));
       }
     }, 4500);
 
@@ -334,7 +334,7 @@ export async function syncRepo(
       if (r) {
         r.status = "completed";
         r.detailed_status = "Active workspace indexing verified.";
-        localStorage.setItem("gitmesh_mock_repos", JSON.stringify(current));
+        localStorage.setItem("gitdecode_mock_repos", JSON.stringify(current));
       }
     }, 6000);
 
@@ -557,7 +557,7 @@ export async function sendChatMessage(
 
     if (repoName.includes("runtime")) {
       if (normalizedMsg.includes("explain") || normalizedMsg.includes("how")) {
-        reply = "The `gitmesh-runtime` project orchestrates codebase indexing via Python Celery worker engines. The key orchestration task is `index_codebase()` within [tasks.py](file:///tasks.py#L12-L35). This function coordinates cloning the repository structure and passing the folder tree to the Tree-Sitter based `ASTParser` defined in [parser.py](file:///parser.py#L42-L80). Once variables, imports, and calls are resolved, they are stored in the graph database utilizing the `Neo4jClient` wrapper in [db.py](file:///db.py#L10-L24).";
+        reply = "The `gitdecode-runtime` project orchestrates codebase indexing via Python Celery worker engines. The key orchestration task is `index_codebase()` within [tasks.py](file:///tasks.py#L12-L35). This function coordinates cloning the repository structure and passing the folder tree to the Tree-Sitter based `ASTParser` defined in [parser.py](file:///parser.py#L42-L80). Once variables, imports, and calls are resolved, they are stored in the graph database utilizing the `Neo4jClient` wrapper in [db.py](file:///db.py#L10-L24).";
         mockSources = [
           {
             file_path: "tasks.py",
@@ -755,7 +755,7 @@ export async function getChatHistory(
           message_id: "msg-init",
           session_id: sessionId,
           role: "assistant",
-          content: "Hello! I am your GitMesh AI assistant. I have mapped the entire dependency structures of this repository. You can ask me how files interact, query functions, or inspect code citations.",
+          content: "Hello! I am your GitDecode AI assistant. I have mapped the entire dependency structures of this repository. You can ask me how files interact, query functions, or inspect code citations.",
           created_at: new Date().toISOString(),
           sources: []
         }
@@ -1134,7 +1134,7 @@ export async function getProRequestStatus(): Promise<any> {
 /** Helper: Get admin auth headers from localStorage */
 function getAdminHeaders(): HeadersInit {
   const token = typeof window !== "undefined"
-    ? localStorage.getItem("gitmesh_admin_token")
+    ? localStorage.getItem("gitdecode_admin_token")
     : null;
   return {
     "Content-Type": "application/json",

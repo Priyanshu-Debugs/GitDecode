@@ -1,5 +1,5 @@
 """
-GitMesh — One-time Migration Script
+GitDecode — One-time Migration Script
 =====================================
 Re-activates all previously deactivated repositories.
 

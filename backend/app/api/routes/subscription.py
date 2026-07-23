@@ -1,5 +1,5 @@
 """
-GitMesh — Subscription API Router
+GitDecode — Subscription API Router
 ===================================
 Endpoints to check current subscription details and upgrade plans.
 """

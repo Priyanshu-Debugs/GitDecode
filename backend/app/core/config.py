@@ -1,5 +1,5 @@
 """
-GitMesh — Centralized Configuration
+GitDecode — Centralized Configuration
 ====================================
 All application settings loaded from environment variables via pydantic-settings.
 Secrets use SecretStr to prevent accidental logging/serialization.
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     )
 
     # ── Application ──────────────────────────────────────────────────────
-    PROJECT_NAME: str = "GitMesh"
+    PROJECT_NAME: str = "GitDecode"
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

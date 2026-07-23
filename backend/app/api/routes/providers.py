@@ -1,5 +1,5 @@
 """
-GitMesh — Provider Registry & Dynamic Models API
+GitDecode — Provider Registry & Dynamic Models API
 ===================================================
 GET  /api/v1/providers           → Returns static fallback provider registry
 POST /api/v1/providers/models    → Dynamically fetches live available models from provider API using user's API key

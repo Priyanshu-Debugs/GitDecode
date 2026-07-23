@@ -40,9 +40,9 @@ const gtWalsheim = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "GitMesh | Understand Any Codebase",
+  title: "GitDecode | Understand Any Codebase",
   description:
-    "AI-powered codebase intelligence. GitMesh parses your repository, builds a knowledge graph, and lets you explore it through interactive architecture diagrams and natural conversation.",
+    "AI-powered codebase intelligence. GitDecode parses your repository, builds a knowledge graph, and lets you explore it through interactive architecture diagrams and natural conversation.",
   keywords: [
     "codebase visualization",
     "code understanding",
@@ -51,13 +51,13 @@ export const metadata: Metadata = {
     "knowledge graph",
     "developer tools",
   ],
-  authors: [{ name: "GitMesh" }],
+  authors: [{ name: "GitDecode" }],
   openGraph: {
-    title: "GitMesh — Understand Any Codebase",
+    title: "GitDecode — Understand Any Codebase",
     description:
-      "Parse, visualize, and chat with any codebase. AI-powered architecture diagrams and natural language code Q&A.",
+      "Parse your GitHub repository ASTs, trace call dependencies, and generate interactive architecture maps in seconds.",
     type: "website",
-    siteName: "GitMesh",
+    siteName: "GitDecode",
   },
 };
 

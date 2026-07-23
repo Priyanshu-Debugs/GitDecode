@@ -91,7 +91,7 @@ export default function AuthCallbackClientPage() {
           }}
         >
           <span className={styles.infoBrandGit}>Git</span>
-          <span className={styles.infoBrandMesh}>Mesh</span>
+          <span className={styles.infoBrandMesh}>Decode</span>
         </div>
         <div
           style={{

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="frontend/public/developer-logo-refined.svg" alt="GitMesh Logo" width="280" />
+  <img src="frontend/public/developer-logo-refined.svg" alt="GitDecode Logo" width="280" />
 </p>
 
-<h1 align="center">GitMesh — AI-Powered Codebase Intelligence & Graph-Native AST Engine</h1>
+<h1 align="center">GitDecode — AI-Powered Codebase Intelligence & Graph-Native AST Engine</h1>
 
 <p align="center">
   <b>Vectorless RAG • Multi-Agent LangGraph Workflows • Interactive Neo4j NVL Graph Visualizer • Inngest Background Pipeline</b>
@@ -22,11 +22,11 @@
 
 ## Section 1: Executive Overview
 
-GitMesh is an enterprise-grade, developer-centric codebase visualization, structural intelligence, and automated architectural auditing platform. Traditional Retrieval-Augmented Generation (RAG) systems attempt to answer code queries by chunking source code files into arbitrary line blocks and indexing them inside flat vector databases. This approach fundamentally fails in software engineering tasks because vector similarity search lacks structural awareness: it discards function call graphs, class inheritance trees, cross-module import paths, type definitions, and downstream dependency chains.
+GitDecode is an enterprise-grade, developer-centric codebase visualization, structural intelligence, and automated architectural auditing platform. Traditional Retrieval-Augmented Generation (RAG) systems attempt to answer code queries by chunking source code files into arbitrary line blocks and indexing them inside flat vector databases. This approach fundamentally fails in software engineering tasks because vector similarity search lacks structural awareness: it discards function call graphs, class inheritance trees, cross-module import paths, type definitions, and downstream dependency chains.
 
-GitMesh replaces vector chunking with **Vectorless RAG via Deterministic Abstract Syntax Tree (AST) Graph Traversal**. During repository ingestion, GitMesh parses source code files into a unified, symbolic knowledge graph containing explicit nodes (`File`, `Class`, `Function`, `Method`) and typed relationships (`IMPORTS`, `CALLS`, `HAS_METHOD`).
+GitDecode replaces vector chunking with **Vectorless RAG via Deterministic Abstract Syntax Tree (AST) Graph Traversal**. During repository ingestion, GitDecode parses source code files into a unified, symbolic knowledge graph containing explicit nodes (`File`, `Class`, `Function`, `Method`) and typed relationships (`IMPORTS`, `CALLS`, `HAS_METHOD`).
 
-When a developer submits a query, GitMesh identifies target entry points, performs Breadth-First Search (BFS) graph traversal across the dependency network, and builds a depth-stratified context payload. This context is supplied to a stateful **LangGraph Multi-Agent Runtime**, driving precise Q&A, instant 3-hop **Blast Radius Analysis**, real-time **Neo4j NVL Graph Visualizations**, and automated **Deep Codebase Architectural Audits** exported as publication-ready A4 PDF reports.
+When a developer submits a query, GitDecode identifies target entry points, performs Breadth-First Search (BFS) graph traversal across the dependency network, and builds a depth-stratified context payload. This context is supplied to a stateful **LangGraph Multi-Agent Runtime**, driving precise Q&A, instant 3-hop **Blast Radius Analysis**, real-time **Neo4j NVL Graph Visualizations**, and automated **Deep Codebase Architectural Audits** exported as publication-ready A4 PDF reports.
 
 ---
 
@@ -268,7 +268,7 @@ flowchart TD
 ## Section 4: Deep-Dive Technical Mechanics
 
 ### 4.1 AST Parsing Engine (`backend/app/services/parsers/`)
-GitMesh avoids simple regex-based code analysis by using AST parsers:
+GitDecode avoids simple regex-based code analysis by using AST parsers:
 1. **Python Parser (`python_parser.py`)**: Uses Python's native `ast` module to walk module trees. It extracts:
    - File-level import statements (`ast.Import`, `ast.ImportFrom`).
    - Class definitions (`ast.ClassDef`) with line numbers and docstrings.
@@ -326,10 +326,10 @@ The Blast Radius endpoint (`GET /api/v1/repos/{repo_id}/blast-radius?file_path=.
 ## Section 6: Complete Repository Codebase Structure
 
 ```
-GitMesh/
+GitDecode/
 ├── README.md                          # Comprehensive Repository Documentation
 ├── .vercelignore                      # Deployment Exclusion Rules
-├── gitmesh-logo-1.png                 # Legacy Branding Asset
+├── gitdecode-logo-1.png                 # Legacy Branding Asset
 │
 ├── backend/                           # FastAPI Python Backend Application
 │   ├── Dockerfile                     # Container Deployment Blueprint
@@ -389,8 +389,8 @@ GitMesh/
     ├── next.config.ts                 # Next.js Configuration
     ├── tailwind.config.ts             # Tailwind CSS Design Tokens
     ├── public/
-    │   ├── developer-logo-refined.svg # Refined GitMesh Vector Logo Asset
-    │   ├── gitmesh-logo-vector.svg    # Secondary Branding Graphic
+    │   ├── developer-logo-refined.svg # Refined GitDecode Vector Logo Asset
+    │   ├── gitdecode-logo-vector.svg    # Secondary Branding Graphic
     │   └── animation.gif              # Dashboard Interaction Recording
     ├── app/
     │   ├── layout.tsx                 # Root Layout & Theme Container
@@ -567,7 +567,7 @@ The `graph_data` JSON column in `REPOSITORY_GRAPHS` persists nodes and edges str
 ## Section 9: Quickstart & Developer Operations Guide
 
 ### Prerequisites
-Before running GitMesh locally, install:
+Before running GitDecode locally, install:
 - **Node.js**: Version 18.0.0 or higher
 - **npm** or **pnpm**
 - **Python**: Version 3.11 or higher
@@ -641,7 +641,7 @@ npx inngest-cli@latest dev -u http://127.0.0.1:8000/api/v1/inngest
 
 | Variable Name | Required | Description |
 | :--- | :---: | :--- |
-| `PROJECT_NAME` | No | Project title string (default: `"GitMesh"`) |
+| `PROJECT_NAME` | No | Project title string (default: `"GitDecode"`) |
 | `API_V1_PREFIX` | No | Base prefix for v1 API routes (default: `"/api/v1"`) |
 | `DEBUG` | No | Boolean flag for verbose debug logging |
 | `CORS_ORIGINS` | No | JSON array of permitted CORS client origins |
@@ -668,7 +668,7 @@ npx inngest-cli@latest dev -u http://127.0.0.1:8000/api/v1/inngest
 
 ## Section 10: Rate Limiting & Developer Bypass
 
-GitMesh enforces multi-tier access controls:
+GitDecode enforces multi-tier access controls:
 - **Free Account Tier**:
   - Maximum of 2 active synchronized repositories per user.
   - Rate limited to 3 daily chat messages per repository (15 monthly).
@@ -681,6 +681,6 @@ GitMesh enforces multi-tier access controls:
 
 ## Section 11: License & Community
 
-Contributions to GitMesh are welcome. Please open an issue or submit a pull request following standard software engineering practices.
+Contributions to GitDecode are welcome. Please open an issue or submit a pull request following standard software engineering practices.
 
 This repository is distributed under standard open-source licensing guidelines. See the project repository for full terms.

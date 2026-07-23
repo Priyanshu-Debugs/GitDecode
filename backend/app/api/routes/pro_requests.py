@@ -1,5 +1,5 @@
 """
-GitMesh — Pro Upgrade Request API Router
+GitDecode — Pro Upgrade Request API Router
 ==========================================
 User-facing endpoints for submitting and checking Pro upgrade requests.
 """

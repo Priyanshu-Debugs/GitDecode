@@ -1,5 +1,5 @@
 """
-GitMesh — Repos API Routes
+GitDecode — Repos API Routes
 ============================
 Endpoints for repository sync/ingestion management.
 
@@ -51,7 +51,7 @@ router = APIRouter(
 )
 
 # Inngest client — shared instance for dispatching background events.
-inngest_client = inngest.Inngest(app_id="gitmesh")
+inngest_client = inngest.Inngest(app_id="gitdecode")
 
 
 def flatten_nodes(nodes_list: list[dict]) -> list[dict]:

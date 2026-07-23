@@ -1,5 +1,5 @@
 """
-GitMesh — Admin Panel API Router
+GitDecode — Admin Panel API Router
 ==================================
 Password-protected admin endpoints for managing Pro upgrade requests.
 

@@ -1,5 +1,5 @@
 """
-GitMesh — Report Agent Schemas
+GitDecode — Report Agent Schemas
 ================================
 Pydantic models for structured LLM outputs during report generation.
 """

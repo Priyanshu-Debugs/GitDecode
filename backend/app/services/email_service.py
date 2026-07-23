@@ -1,5 +1,5 @@
 """
-GitMesh — Email Service
+GitDecode — Email Service
 =========================
 SMTP-based email sending for Pro upgrade notifications.
 Uses Gmail SMTP with TLS (App Password authentication).
@@ -29,7 +29,7 @@ def _get_approval_html(first_name: str, github_username: str) -> str:
             <!-- Header -->
             <div style="border-bottom:1px solid #211f19;padding-bottom:24px;margin-bottom:32px;">
                 <h1 style="color:#d8d3c5;font-size:24px;margin:0 0 8px 0;">
-                    <span style="color:#83c167;">Git</span><span style="color:#d8d3c5;">Mesh</span>
+                    <span style="color:#83c167;">Git</span><span style="color:#d8d3c5;">Decode</span>
                 </h1>
                 <p style="color:#8b8270;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:0.05em;">
                     subscription_notification.sh
@@ -47,7 +47,7 @@ def _get_approval_html(first_name: str, github_username: str) -> str:
                     <span style="color:#8b8270;">// </span>Hey {first_name},
                 </p>
                 <p style="margin:0 0 16px 0;">
-                    Your <span style="color:#83c167;font-weight:bold;">GitMesh Developer (Pro)</span> subscription 
+                    Your <span style="color:#83c167;font-weight:bold;">GitDecode Developer (Pro)</span> subscription 
                     has been activated for your GitHub account 
                     <span style="color:#d8a657;">@{github_username}</span>.
                 </p>
@@ -80,7 +80,7 @@ def _get_approval_html(first_name: str, github_username: str) -> str:
                 
                 <!-- CTA Button -->
                 <div style="margin:32px 0;">
-                    <a href="https://gitmesh.in/dashboard" 
+                    <a href="https://gitdecode.app/dashboard" 
                        style="display:inline-block;background:#83c167;color:#0e0d0b;padding:12px 24px;text-decoration:none;font-weight:bold;font-size:13px;font-family:'Courier New',monospace;text-transform:uppercase;">
                         Open Dashboard →
                     </a>
@@ -90,7 +90,7 @@ def _get_approval_html(first_name: str, github_username: str) -> str:
             <!-- Footer -->
             <div style="border-top:1px solid #211f19;padding-top:24px;margin-top:32px;">
                 <p style="color:#8b8270;font-size:11px;margin:0;">
-                    — The GitMesh Team<br>
+                    — The GitDecode Team<br>
                     <span style="color:#3a352b;">// This is an automated notification. Do not reply to this email.</span>
                 </p>
             </div>
@@ -114,7 +114,7 @@ def _get_rejection_html(first_name: str, github_username: str) -> str:
             <!-- Header -->
             <div style="border-bottom:1px solid #211f19;padding-bottom:24px;margin-bottom:32px;">
                 <h1 style="color:#d8d3c5;font-size:24px;margin:0 0 8px 0;">
-                    <span style="color:#83c167;">Git</span><span style="color:#d8d3c5;">Mesh</span>
+                    <span style="color:#83c167;">Git</span><span style="color:#d8d3c5;">Decode</span>
                 </h1>
                 <p style="color:#8b8270;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:0.05em;">
                     subscription_notification.sh
@@ -148,7 +148,7 @@ def _get_rejection_html(first_name: str, github_username: str) -> str:
                         <span style="color:#d8a657;">→</span> Double-check your coupon code and resubmit
                     </p>
                     <p style="margin:4px 0;color:#d8d3c5;">
-                        <span style="color:#d8a657;">→</span> Contact us at support@gitmesh.in for assistance
+                        <span style="color:#d8a657;">→</span> Contact us at gitdecode.team@gmail.com for assistance
                     </p>
                     <p style="margin:4px 0;color:#d8d3c5;">
                         <span style="color:#d8a657;">→</span> Continue using the free Hobby plan
@@ -157,7 +157,7 @@ def _get_rejection_html(first_name: str, github_username: str) -> str:
 
                 <!-- CTA Button -->
                 <div style="margin:32px 0;">
-                    <a href="https://gitmesh.in/pricing" 
+                    <a href="https://gitdecode.app/pricing" 
                        style="display:inline-block;background:#f3eee1;color:#0e0d0b;padding:12px 24px;text-decoration:none;font-weight:bold;font-size:13px;font-family:'Courier New',monospace;text-transform:uppercase;">
                         View Plans →
                     </a>
@@ -167,7 +167,7 @@ def _get_rejection_html(first_name: str, github_username: str) -> str:
             <!-- Footer -->
             <div style="border-top:1px solid #211f19;padding-top:24px;margin-top:32px;">
                 <p style="color:#8b8270;font-size:11px;margin:0;">
-                    — The GitMesh Team<br>
+                    — The GitDecode Team<br>
                     <span style="color:#3a352b;">// This is an automated notification. Do not reply to this email.</span>
                 </p>
             </div>
@@ -190,16 +190,16 @@ async def send_pro_approval_email(
         return False
     
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "🚀 GitMesh Pro — Your Upgrade Has Been Approved!"
-    msg["From"] = f"GitMesh <{settings.ADMIN_EMAIL_ADDRESS}>"
+    msg["Subject"] = "🚀 GitDecode Pro — Your Upgrade Has Been Approved!"
+    msg["From"] = f"GitDecode <{settings.ADMIN_EMAIL_ADDRESS}>"
     msg["To"] = to_email
     
     plain_text = (
         f"Hey {first_name},\n\n"
-        f"Your GitMesh Developer (Pro) subscription has been activated for @{github_username}.\n\n"
+        f"Your GitDecode Developer (Pro) subscription has been activated for @{github_username}.\n\n"
         f"You now have access to all Pro features for 1 year.\n\n"
-        f"Head to your dashboard: https://gitmesh.in/dashboard\n\n"
-        f"— The GitMesh Team"
+        f"Head to your dashboard: https://gitdecode.app/dashboard\n\n"
+        f"— The GitDecode Team"
     )
     
     html_content = _get_approval_html(first_name, github_username)
@@ -229,16 +229,16 @@ async def send_pro_rejection_email(
         return False
     
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "GitMesh — Pro Request Update"
-    msg["From"] = f"GitMesh <{settings.ADMIN_EMAIL_ADDRESS}>"
+    msg["Subject"] = "GitDecode — Pro Request Update"
+    msg["From"] = f"GitDecode <{settings.ADMIN_EMAIL_ADDRESS}>"
     msg["To"] = to_email
     
     plain_text = (
         f"Hey {first_name},\n\n"
         f"We've reviewed your Pro upgrade request for @{github_username}, "
         f"and unfortunately we're unable to approve it at this time.\n\n"
-        f"You can resubmit with a valid coupon code or contact support@gitmesh.in.\n\n"
-        f"— The GitMesh Team"
+        f"You can resubmit with a valid coupon code or contact gitdecode.team@gmail.com.\n\n"
+        f"— The GitDecode Team"
     )
     
     html_content = _get_rejection_html(first_name, github_username)

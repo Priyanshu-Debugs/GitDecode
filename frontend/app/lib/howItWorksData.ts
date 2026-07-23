@@ -18,14 +18,14 @@ export interface HowItWorksData {
 export const howItWorksData: HowItWorksData = {
   sectionLabel: "system_architecture",
   title: "From repo URL to full understanding.",
-  subtitle: "How GitMesh leverages Tree-sitter syntax graphs, deterministic BFS traversals, and multi-agent systems to perform codebase QA without lossy embeddings.",
+  subtitle: "How GitDecode leverages Tree-sitter syntax graphs, deterministic BFS traversals, and multi-agent systems to perform codebase QA without lossy embeddings.",
   steps: [
     {
       id: 1,
       stepNumber: "01",
       title: "Connect & Import",
       headline: "Shallow clone and workspace detection",
-      description: "Paste a public or private GitHub repository URL. GitMesh performs a shallow clone (git clone --depth 1) of the target branch to retrieve the active codebase state. It runs ingestion diagnostics to analyze project files, detect monorepos, locate package configs, and identify all active programming languages.",
+      description: "Paste a public or private GitHub repository URL. GitDecode performs a shallow clone (git clone --depth 1) of the target branch to retrieve the active codebase state. It runs ingestion diagnostics to analyze project files, detect monorepos, locate package configs, and identify all active programming languages.",
       tech: ["GitHub REST API", "Shallow Clone (Depth-1)", "Monorepo Detection", "Workspace Ingestion"],
       codePreview: "$ git clone --depth 1 --branch main https://github.com/owner/repo"
     },
@@ -43,7 +43,7 @@ export const howItWorksData: HowItWorksData = {
       stepNumber: "03",
       title: "Vectorless RAG Routing",
       headline: "Bi-directional Graph BFS & Hybrid Context",
-      description: "Unlike traditional vector database RAG, GitMesh does not chunk files or store embeddings. First, it uses Gemini LLM structured outputs to map the user query to TargetEntities (target file paths and symbols). It then executes a Breadth-First Search (BFS) graph walk traversing import and dependent relationships. Depth-0 & Depth-1 files load full source code; Depth-2 files load AST outlines (signatures & docstrings only) for import validation. Depth-3 and above are excluded to save tokens.",
+      description: "Unlike traditional vector database RAG, GitDecode does not chunk files or store embeddings. First, it uses Gemini LLM structured outputs to map the user query to TargetEntities (target file paths and symbols). It then executes a Breadth-First Search (BFS) graph walk traversing import and dependent relationships. Depth-0 & Depth-1 files load full source code; Depth-2 files load AST outlines (signatures & docstrings only) for import validation. Depth-3 and above are excluded to save tokens.",
       tech: ["TargetEntities Mapping", "Bi-directional BFS Walk", "Hybrid Context Stuffing", "AST Signatures Outline", "Gemini Context Cache"],
       codePreview: "ASTRouter.walk_graph(target_files, graph_data, max_depth=2) → (depth_1_full, depth_2_signatures)"
     },

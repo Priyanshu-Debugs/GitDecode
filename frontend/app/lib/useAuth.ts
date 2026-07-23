@@ -25,7 +25,7 @@ export function useAuth(requireAuth = true) {
     const initAuth = async () => {
       try {
         // Check for mock session first
-        const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitmesh_mock_session") : null;
+        const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitdecode_mock_session") : null;
         if (mockSessionStr) {
           const mockSession = JSON.parse(mockSessionStr);
           if (mounted) {
@@ -57,7 +57,7 @@ export function useAuth(requireAuth = true) {
         } = supabase.auth.onAuthStateChange((_event, newSession) => {
           if (mounted) {
             // Only update if no mock session exists
-            if (!localStorage.getItem("gitmesh_mock_session")) {
+            if (!localStorage.getItem("gitdecode_mock_session")) {
               setSession(newSession);
               setUser(newSession?.user ?? null);
 
@@ -73,7 +73,7 @@ export function useAuth(requireAuth = true) {
         };
       } catch {
         // Fallback for completely local offline dev when Supabase config is missing
-        const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitmesh_mock_session") : null;
+        const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitdecode_mock_session") : null;
         if (mockSessionStr && mounted) {
           const mockSession = JSON.parse(mockSessionStr);
           setSession(mockSession);
@@ -100,7 +100,7 @@ export function useAuth(requireAuth = true) {
   const signOut = useCallback(async () => {
     try {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("gitmesh_mock_session");
+        localStorage.removeItem("gitdecode_mock_session");
       }
       try {
         const supabase = getSupabase();

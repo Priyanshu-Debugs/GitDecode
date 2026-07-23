@@ -1,5 +1,5 @@
 """
-GitMesh — Agent Prompts (v2)
+GitDecode — Agent Prompts (v2)
 =============================
 Centralized repository for system prompts used by the LangGraph agents.
 

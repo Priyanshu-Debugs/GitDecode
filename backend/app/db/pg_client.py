@@ -1,5 +1,5 @@
 """
-GitMesh — Supabase / PostgreSQL Client
+GitDecode — Supabase / PostgreSQL Client
 ========================================
 Manages the Supabase Python SDK client and provides typed query methods
 for repos, vector chunks (pgvector), and chat history.

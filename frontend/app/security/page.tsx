@@ -45,7 +45,7 @@ const securityPillars: SecurityPillar[] = [
     id: 2,
     title: "Bring Your Own Key (BYOK)",
     badge: "Credential Isolation",
-    description: "Provider keys (Gemini, OpenAI, Anthropic) are stored 100% locally on your browser. Keys are never sent to GitMesh servers for persistence.",
+    description: "Provider keys (Gemini, OpenAI, Anthropic) are stored 100% locally on your browser. Keys are never sent to GitDecode servers for persistence.",
     icon: Key,
     techStack: ["localStorage", "State Encryption", "TLS Transit", "Browser Storage"],
     details: [
@@ -58,7 +58,7 @@ const securityPillars: SecurityPillar[] = [
     id: 3,
     title: "Zero-Retention Ingestion",
     badge: "Transient Storage",
-    description: "GitMesh clones repository assets into volatile temporary folders on the worker disk, extracts structural data, and purges the directory completely.",
+    description: "GitDecode clones repository assets into volatile temporary folders on the worker disk, extracts structural data, and purges the directory completely.",
     icon: Trash2,
     techStack: ["git clone --depth 1", "tempfile.gettempdir()", "shutil.rmtree", "Inngest Workers"],
     details: [
@@ -97,7 +97,7 @@ const securityPillars: SecurityPillar[] = [
     id: 6,
     title: "Data Privacy & GDPR",
     badge: "Compliance",
-    description: "GitMesh enforces strict compliance policies safeguarding code assets. We prioritize local browser isolation and clear tenant data deletion rights.",
+    description: "GitDecode enforces strict compliance policies safeguarding code assets. We prioritize local browser isolation and clear tenant data deletion rights.",
     icon: Shield,
     techStack: ["GDPR Policy", "CCPA Guidelines", "Local Encryption", "Atomic Erasure"],
     details: [
@@ -153,7 +153,7 @@ export default function SecurityPage() {
           <div className={styles.logoWrapper}>
             <Image
               src="/developer-logo-refined.svg"
-              alt="GitMesh Developer Logo"
+              alt="GitDecode Developer Logo"
               width={140}
               height={140}
               priority
@@ -166,10 +166,10 @@ export default function SecurityPage() {
             )}
           </div>
           <p className={styles.label}>security_architecture</p>
-          <h1 className={styles.title}>security.yaml</h1>
+          <h1 className={styles.title}>Security &amp; Data Privacy</h1>
           <p className={styles.subtitle}>
             <span className={styles.comment}># </span>
-            A detailed outline of GitMesh's data protection ciphers, tenant partition policies, and zero-retention infrastructure rules.
+            A detailed outline of GitDecode's data protection ciphers, tenant partition policies, and zero-retention infrastructure rules.
           </p>
         </header>
 
@@ -292,7 +292,7 @@ export default function SecurityPage() {
             <div className={styles.faqCard}>
               <h3 className={styles.faqQuestion}>Do you store my GitHub password or tokens?</h3>
               <p className={styles.faqAnswer}>
-                No. GitMesh uses standard OAuth2 secure checkouts to fetch files. Your credentials are processed transiently in temporary memory or securely managed by GitHub during authentication.
+                No. GitDecode uses standard OAuth2 secure checkouts to fetch files. Your credentials are processed transiently in temporary memory or securely managed by GitHub during authentication.
               </p>
             </div>
 

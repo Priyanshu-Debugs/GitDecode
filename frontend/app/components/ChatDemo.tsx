@@ -172,7 +172,7 @@ export default function ChatDemo() {
             <span className={styles.dot} />
             <span className={styles.dot} />
           </div>
-          <span className={styles.headerTitle}>GitMesh Chat</span>
+          <span className={styles.headerTitle}>GitDecode Chat</span>
         </div>
         <div className={styles.headerRight}>
           <span className={styles.connectedDot} />

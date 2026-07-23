@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   GitMesh Dashboard — Scoped Styles
+   GitDecode Dashboard — Scoped Styles
    Black + Metallic Silver-White Premium Palette, matching the landing page.
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -909,14 +909,14 @@
   stroke-width: 1px;
 }
 
-.gitmeshNodeOuterRect {
+.gitdecodeNodeOuterRect {
   fill: rgba(131, 193, 103, 0.04);
   stroke: rgba(131, 193, 103, 0.25);
   stroke-width: 1.5px;
   animation: glowPulseRect 2s ease-in-out infinite alternate;
 }
 
-.gitmeshNodeInnerRect {
+.gitdecodeNodeInnerRect {
   fill: #050505;
   stroke: var(--color-green);
   stroke-width: 1px;

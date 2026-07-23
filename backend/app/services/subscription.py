@@ -1,5 +1,5 @@
 """
-GitMesh — Subscription Service
+GitDecode — Subscription Service
 ===============================
 Resolves user subscription plan and returns plan limits.
 """

@@ -42,7 +42,7 @@ class ContextCacheManager:
         repo_name = github_url.split("/")[-1]
         
         parts = [
-            f"You are GitMesh, an expert AI software engineer analyzing the '{repo_name}' codebase.",
+            f"You are GitDecode, an expert AI software engineer analyzing the '{repo_name}' codebase.",
             "Always cite file paths and line numbers when answering questions.",
             "\n=== REPOSITORY STRUCTURE / FILE TREE ==="
         ]
@@ -144,7 +144,7 @@ class ContextCacheManager:
                     ),
                     contents=[formatted_content],
                     ttl="3600s",
-                    display_name=f"gitmesh_cache_{repo_id}"
+                    display_name=f"gitdecode_cache_{repo_id}"
                 )
             )
             

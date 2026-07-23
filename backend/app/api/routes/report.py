@@ -1,5 +1,5 @@
 """
-GitMesh — Codebase Report API Router
+GitDecode — Codebase Report API Router
 ======================================
 Endpoints for generating, fetching, deleting, and checking rate limits
 for multi-agent codebase analysis reports via LangGraph & SSE.

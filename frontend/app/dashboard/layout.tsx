@@ -118,7 +118,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   
   const [repos, setRepos] = useState<RepoItem[]>(() => {
     if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("gitmesh_cached_repos");
+      const cached = localStorage.getItem("gitdecode_cached_repos");
       return cached ? JSON.parse(cached) : [];
     }
     return [];
@@ -159,7 +159,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   /**
    * Extracts `username/repoName` from a GitHub URL for use in clean routes.
-   * e.g. "https://github.com/Priyanshu/GitMesh" -> "/dashboard/repo/Priyanshu/GitMesh"
+   * e.g. "https://github.com/Priyanshu/GitDecode" -> "/dashboard/repo/Priyanshu/GitDecode"
    */
   function githubUrlToRepoPath(githubUrl: string): string {
     try {
@@ -318,7 +318,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       const data = await listRepos();
       setRepos(data);
       if (typeof window !== "undefined") {
-        localStorage.setItem("gitmesh_cached_repos", JSON.stringify(data));
+        localStorage.setItem("gitdecode_cached_repos", JSON.stringify(data));
       }
     } catch {
       // ignore
@@ -423,8 +423,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           {!collapsed && (
             <Link href="/" style={{ display: "flex", alignItems: "center" }}>
               <Image
-                src="/gitmesh-logo-vector.svg"
-                alt="GitMesh"
+                src="/gitdecode-logo-vector.svg"
+                alt="GitDecode"
                 width={120}
                 height={32}
                 className={styles.sidebarLogoImage}

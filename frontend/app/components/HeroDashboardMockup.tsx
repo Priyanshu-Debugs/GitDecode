@@ -58,7 +58,7 @@ export default function HeroDashboardMockup() {
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </span>
-              <span className={styles.url}>app.gitmesh.dev/dashboard</span>
+              <span className={styles.url}>app.gitdecode.app/dashboard</span>
             </div>
             <div className={styles.chromeSpacer} />
           </div>

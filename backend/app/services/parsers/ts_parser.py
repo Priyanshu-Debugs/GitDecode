@@ -1,5 +1,5 @@
 """
-GitMesh — TypeScript/JavaScript AST Parser
+GitDecode — TypeScript/JavaScript AST Parser
 ===========================================
 Parses TypeScript and JavaScript source files using Tree-Sitter. Supports TSX
 and JSX formats, chunking code into logical boundaries (classes, interfaces,

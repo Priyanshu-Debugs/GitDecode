@@ -1,5 +1,5 @@
 """
-GitMesh — Multi-Provider LLM Factory
+GitDecode — Multi-Provider LLM Factory
 ======================================
 Creates ephemeral LLM client instances from user-provided API keys.
 Keys are NEVER stored; they exist only in-memory during a single request lifecycle.

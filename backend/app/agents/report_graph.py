@@ -1,5 +1,5 @@
 """
-GitMesh — Report LangGraph Pipeline
+GitDecode — Report LangGraph Pipeline
 =====================================
 Multi-agent state graph orchestrating codebase report generation.
 Pipeline: Planner -> Orchestrator -> Fan-Out Section Workers -> Reducer.

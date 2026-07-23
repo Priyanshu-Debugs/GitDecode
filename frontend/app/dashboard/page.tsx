@@ -72,7 +72,7 @@ function SendIcon() {
 /**
  * Extracts `username/repoName` from a GitHub URL for use in clean routes.
  * Handles URLs with or without .git suffix, trailing slashes, or deep paths.
- * e.g. "https://github.com/Priyanshu/GitMesh" → "/dashboard/repo/Priyanshu/GitMesh"
+ * e.g. "https://github.com/Priyanshu/GitDecode" → "/dashboard/repo/Priyanshu/GitDecode"
  */
 function githubUrlToRepoPath(githubUrl: string): string {
   try {
@@ -200,15 +200,15 @@ function computeSpringLayout(nodes: any[], edges: any[]): LayoutNode[] {
 const MOCK_REPOS = [
   {
     id: 101,
-    name: "gitmesh-runtime",
+    name: "gitdecode-runtime",
     description: "Distributed orchestration engine for indexing code ASTs and resolving reference linkages asynchronously using Python and Celery.",
-    html_url: "https://github.com/gitmesh/gitmesh-runtime",
+    html_url: "https://github.com/gitdecode/gitdecode-runtime",
     stargazers_count: 142,
     forks_count: 18,
     language: "Python",
     default_branch: "main",
     owner: {
-      login: "gitmesh",
+      login: "gitdecode",
       avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
     },
     updated_at: "2026-07-05T12:00:00Z"
@@ -217,13 +217,13 @@ const MOCK_REPOS = [
     id: 102,
     name: "ast-lexer-engine",
     description: "High-performance tree-sitter based lexing backend that tokenizes structures, classes, and scopes for vector indexing.",
-    html_url: "https://github.com/gitmesh/ast-lexer-engine",
+    html_url: "https://github.com/gitdecode/ast-lexer-engine",
     stargazers_count: 98,
     forks_count: 12,
     language: "TypeScript",
     default_branch: "main",
     owner: {
-      login: "gitmesh",
+      login: "gitdecode",
       avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
     },
     updated_at: "2026-07-04T18:30:00Z"
@@ -232,28 +232,28 @@ const MOCK_REPOS = [
     id: 103,
     name: "neo4j-vector-search",
     description: "Surgical context retrieval service linking code dependency graphs in Neo4j with pgvector-based dense semantic searches.",
-    html_url: "https://github.com/gitmesh/neo4j-vector-search",
+    html_url: "https://github.com/gitdecode/neo4j-vector-search",
     stargazers_count: 256,
     forks_count: 34,
     language: "Go",
     default_branch: "main",
     owner: {
-      login: "gitmesh",
+      login: "gitdecode",
       avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
     },
     updated_at: "2026-07-03T09:15:00Z"
   },
   {
     id: 104,
-    name: "gitmesh-web-dashboard",
+    name: "gitdecode-web-dashboard",
     description: "Premium Awwwards-tier visual interface for analyzing codebase topologies, user action timelines, and vector queries.",
-    html_url: "https://github.com/gitmesh/gitmesh-web-dashboard",
+    html_url: "https://github.com/gitdecode/gitdecode-web-dashboard",
     stargazers_count: 64,
     forks_count: 6,
     language: "TypeScript",
     default_branch: "main",
     owner: {
-      login: "gitmesh",
+      login: "gitdecode",
       avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
     },
     updated_at: "2026-07-06T05:00:00Z"
@@ -278,7 +278,7 @@ function DashboardContent() {
   // States
   const [repos, setRepos] = useState<RepoItem[]>(() => {
     if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("gitmesh_cached_repos");
+      const cached = localStorage.getItem("gitdecode_cached_repos");
       return cached ? JSON.parse(cached) : [];
     }
     return [];
@@ -304,7 +304,7 @@ function DashboardContent() {
   }
   const [loading, setLoading] = useState(() => {
     if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("gitmesh_cached_repos");
+      const cached = localStorage.getItem("gitdecode_cached_repos");
       return !cached;
     }
     return true;
@@ -488,7 +488,7 @@ function DashboardContent() {
       const data = await listRepos();
       setRepos(data);
       if (typeof window !== "undefined") {
-        localStorage.setItem("gitmesh_cached_repos", JSON.stringify(data));
+        localStorage.setItem("gitdecode_cached_repos", JSON.stringify(data));
       }
     } catch {
       setRepos([]);
@@ -543,7 +543,7 @@ function DashboardContent() {
       const rawMsg = err instanceof Error ? err.message : "Sync request failed.";
       const displayMsg =
         rawMsg === "Failed to fetch" || rawMsg.includes("Failed to fetch")
-          ? "Unable to reach GitMesh backend API server. Please verify that the backend service is running and accessible."
+          ? "Unable to reach GitDecode backend API server. Please verify that the backend service is running and accessible."
           : rawMsg;
       setSyncError(displayMsg);
       setCustomConfirm({
@@ -1328,7 +1328,7 @@ function DashboardContent() {
                 </div>
                 
                 <p className={styles.confirmModalDesc}>
-                  GitMesh will clone, tokenize Abstract Syntax Trees, map class dependencies, and run vector indexings for:
+                  GitDecode will clone, tokenize Abstract Syntax Trees, map class dependencies, and run vector indexings for:
                 </p>
 
                 <div style={{ marginBottom: "20px" }}>
@@ -1444,7 +1444,7 @@ function DashboardContent() {
             <p className={styles.pageSubtitle} style={{ marginTop: "8px", color: "var(--color-text-secondary)", fontSize: "0.875rem" }}>
               {activeRepo.status === "failed" 
                 ? `Ingestion failed: ${activeRepo.error_message || "Unable to parse repository files."}`
-                : "GitMesh AI agents are parsing files, tokenizing Abstract Syntax Trees, mapping dependencies, and generating embeddings in real-time."
+                : "GitDecode AI agents are parsing files, tokenizing Abstract Syntax Trees, mapping dependencies, and generating embeddings in real-time."
               }
             </p>
           </div>
@@ -1829,7 +1829,7 @@ function DashboardContent() {
                     <ChatMarkdown content={report.report_markdown} />
                     
                     <div className={styles.reportPdfFooter}>
-                      Created by GitMesh
+                      Created by GitDecode
                     </div>
                   </div>
                 </div>

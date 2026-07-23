@@ -1,5 +1,5 @@
 """
-GitMesh — Authentication & Security
+GitDecode — Authentication & Security
 =====================================
 Supabase JWT (HS256) validation and authenticated user extraction.
 

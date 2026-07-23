@@ -86,7 +86,7 @@ const plans: PricingPlan[] = [
       "SAML/SSO dashboard access"
     ],
     buttonText: "contact sales",
-    buttonLink: "mailto:sales@gitmesh.com",
+    buttonLink: "mailto:gitdecode.team@gmail.com",
     recommended: false
   }
 ];
@@ -173,7 +173,7 @@ export default function PricingPage() {
           <div className={styles.logoWrapper}>
             <Image
               src="/developer-logo-refined.svg"
-              alt="GitMesh Developer Logo"
+              alt="GitDecode Developer Logo"
               width={140}
               height={140}
               priority
@@ -189,7 +189,7 @@ export default function PricingPage() {
           <h1 className={styles.title}>Pricing.js</h1>
           <p className={styles.subtitle}>
             <span className={styles.comment}># </span>
-            Deploy GitMesh intelligence for your projects. Flexible models designed for developer workflows.
+            Deploy GitDecode intelligence for your projects. Flexible models designed for developer workflows.
             <br />
             <span className={styles.comment}># [STATUS] Subscriptions are active. Select your plan below to unlock unlimited workspaces and deep AST indexing.</span>
           </p>

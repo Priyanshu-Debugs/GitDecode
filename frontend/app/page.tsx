@@ -78,7 +78,7 @@ export default function Home() {
             <div className={styles.logoWrapper}>
               <Image
                 src="/developer-logo-refined.svg"
-                alt="GitMesh Developer Logo"
+                alt="GitDecode Developer Logo"
                 width={140}
                 height={140}
                 priority
@@ -92,7 +92,7 @@ export default function Home() {
             </div>
 
             <h1 className={styles.heroTitle}>
-              GitMesh<span className={styles.cursor}>▋</span>
+              GitDecode<span className={styles.cursor}>▋</span>
             </h1>
 
             <p className={styles.heroTagline}>
@@ -202,7 +202,7 @@ export default function Home() {
                   </span>
                   <span className={styles.ln}>&nbsp;</span>
                   <span className={styles.ln}>
-                    <span className={styles.codeGreen}>gitmesh:</span>{" "}
+                    <span className={styles.codeGreen}>gitdecode:</span>{" "}
                     Authentication is in
                   </span>
                   <span className={styles.ln}>

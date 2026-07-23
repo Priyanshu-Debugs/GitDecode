@@ -1,5 +1,5 @@
 # =============================================================================
-# GitMesh Backend — Python Dependencies
+# GitDecode Backend — Python Dependencies
 # =============================================================================
 
 # --- Core Framework ---

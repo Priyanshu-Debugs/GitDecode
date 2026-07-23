@@ -16,7 +16,7 @@ function TerminalConsole() {
 
   useEffect(() => {
     const lines = [
-      "git clone https://github.com/gitmesh/ast-lexer-engine.git...",
+      "git clone https://github.com/gitdecode/ast-lexer-engine.git...",
       "Cloning repository structures: 100% complete.",
       "Parsing tree-sitter AST maps...",
       "Found 42 TypeScript source files, 15 modules.",
@@ -73,8 +73,8 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("gitmesh_mock_session");
-      localStorage.removeItem("gitmesh_cached_repos");
+      localStorage.removeItem("gitdecode_mock_session");
+      localStorage.removeItem("gitdecode_cached_repos");
     }
   }, []);
 
@@ -82,8 +82,8 @@ export default function SignInPage() {
     setError("");
     setLoading(true);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("gitmesh_mock_session");
-      localStorage.removeItem("gitmesh_cached_repos");
+      localStorage.removeItem("gitdecode_mock_session");
+      localStorage.removeItem("gitdecode_cached_repos");
     }
     try {
       const supabase = getSupabase();
@@ -108,7 +108,7 @@ export default function SignInPage() {
     const header = { alg: "HS256", typ: "JWT" };
     const payload = {
       sub: "00000000-0000-0000-0000-000000000000",
-      email: "demo@gitmesh.local",
+      email: "demo@gitdecode.local",
       role: "authenticated",
       aud: "authenticated",
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 24 hours
@@ -127,12 +127,12 @@ export default function SignInPage() {
       expires_in: 86400,
       user: {
         id: "00000000-0000-0000-0000-000000000000",
-        email: "demo@gitmesh.local",
+        email: "demo@gitdecode.local",
         role: "authenticated",
       },
     };
 
-    localStorage.setItem("gitmesh_mock_session", JSON.stringify(mockSession));
+    localStorage.setItem("gitdecode_mock_session", JSON.stringify(mockSession));
     window.location.href = "/dashboard";
   };
 
@@ -142,7 +142,7 @@ export default function SignInPage() {
       <div className={styles.visualPanel}>
         <div className={styles.infoWrapper}>
           <div className={styles.infoBrand}>
-            GitMesh
+            GitDecode
           </div>
           <h2 className={styles.infoTitle}>Analyze codebases with context graph intelligence.</h2>
           
@@ -180,7 +180,7 @@ export default function SignInPage() {
 
         <div className={styles.loginCenter}>
           <div className={styles.logo}>
-            <Image src="/developer-logo.svg" alt="GitMesh Logo" width={240} height={240} priority className={styles.logoImage} />
+            <Image src="/developer-logo.svg" alt="GitDecode Logo" width={240} height={240} priority className={styles.logoImage} />
           </div>
 
           <div className={styles.intro}>

@@ -9,7 +9,7 @@ export default function Footer() {
         {/* Logo */}
         <Image
           src="/developer-logo-refined.svg"
-          alt="GitMesh Developer Logo"
+          alt="GitDecode Developer Logo"
           width={64}
           height={64}
           className={styles.footerLogo}
@@ -20,7 +20,7 @@ export default function Footer() {
 
         {/* Terminal prompt */}
         <p className={styles.prompt}>
-          <span className={styles.promptGreen}>~/gitmesh ❯</span>{" "}
+          <span className={styles.promptGreen}>~/gitdecode ❯</span>{" "}
           <span className={styles.cursor}>▋</span>
         </p>
 
@@ -55,7 +55,7 @@ export default function Footer() {
 
         {/* Bottom meta */}
         <p className={styles.meta}>
-          © {new Date().getFullYear()} GitMesh ·{" "}
+          © {new Date().getFullYear()} GitDecode ·{" "}
           <a
             href="https://github.com"
             target="_blank"

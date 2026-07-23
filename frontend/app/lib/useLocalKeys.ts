@@ -1,7 +1,7 @@
 /**
- * GitMesh — Local API Key Management Hook
+ * GitDecode — Local API Key Management Hook
  * =========================================
- * Keys are stored ONLY in the browser's localStorage under "gitmesh_api_keys".
+ * Keys are stored ONLY in the browser's localStorage under "gitdecode_api_keys".
  * They are NEVER sent to the server for storage — only included in chat request payloads.
  * 
  * localStorage schema:
@@ -17,8 +17,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const STORAGE_KEY = "gitmesh_api_keys";
-const PREF_KEY = "gitmesh_preferred_model";
+const STORAGE_KEY = "gitdecode_api_keys";
+const PREF_KEY = "gitdecode_preferred_model";
 
 export interface LLMConfig {
   provider: string;

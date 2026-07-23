@@ -1,5 +1,5 @@
 """
-GitMesh — Chat API Routes
+GitDecode — Chat API Routes
 ============================
 Endpoints for the AI code assistant chat feature.
 

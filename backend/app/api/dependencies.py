@@ -1,5 +1,5 @@
 """
-GitMesh — API Dependencies
+GitDecode — API Dependencies
 ============================
 Aggregation point for all injectable dependencies used by route handlers.
 

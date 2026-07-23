@@ -125,7 +125,7 @@ export default function SettingsPage() {
             <header className={styles.header}>
               <h1 className={styles.title}>API Key Settings</h1>
               <p className={styles.subtitle}>
-                Bring Your Own Key (BYOK). Configure API keys for AI models to use them in GitMesh.
+                Bring Your Own Key (BYOK). Configure API keys for AI models to use them in GitDecode.
               </p>
             </header>
 
@@ -200,14 +200,14 @@ export default function SettingsPage() {
         {activeTab === "about" && (
           <div>
             <header className={styles.header}>
-              <h1 className={styles.title}>About GitMesh BYOK</h1>
+              <h1 className={styles.title}>About GitDecode BYOK</h1>
               <p className={styles.subtitle}>
-                GitMesh uses Vectorless RAG and multi-agent workflows to parse and analyze GitHub codebases.
+                GitDecode uses Vectorless RAG and multi-agent workflows to parse and analyze GitHub codebases.
               </p>
             </header>
             <div style={{ lineHeight: "1.7", color: "var(--color-text-secondary)", fontSize: "0.95rem" }}>
               <p>
-                <strong>Architecture:</strong> Unlike traditional vector RAG, GitMesh parses code AST structures with tree-sitter, builds a JSON dependency graph, and uses graph BFS to assemble exact code context.
+                <strong>Architecture:</strong> Unlike traditional vector RAG, GitDecode parses code AST structures with tree-sitter, builds a JSON dependency graph, and uses graph BFS to assemble exact code context.
               </p>
               <p style={{ marginTop: 12 }}>
                 <strong>BYOK Security:</strong> Your API keys remain strictly on your client device. When you ask a question, the key is included in the request body, processed in-memory by our agent pipeline, and immediately garbage-collected.

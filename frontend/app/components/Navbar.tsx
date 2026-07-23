@@ -51,7 +51,7 @@ export default function Navbar() {
             <Link href="/" className={styles.logoLink}>
               <Image
                 src="/logo.svg"
-                alt="GitMesh"
+                alt="GitDecode"
                 width={80}
                 height={20}
                 priority
