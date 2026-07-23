@@ -1094,4 +1094,118 @@ export async function upgradeUserSubscription(plan: "free" | "pro"): Promise<any
   });
 }
 
+// ══════════════════════════════════════════════════════════════════════
+//  Pro Upgrade Request APIs
+// ══════════════════════════════════════════════════════════════════════
+
+export interface ProRequestData {
+  first_name: string;
+  last_name: string;
+  mobile: string;
+  email: string;
+  address: string;
+  coupon_code: string;
+}
+
+/** Submit a Pro upgrade request */
+export async function submitProRequest(data: ProRequestData): Promise<any> {
+  if (isDemoMode()) {
+    return { status: "submitted", message: "Demo Mode — request simulated." };
+  }
+  return apiFetch<any>("/pro-requests", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Check the current user's Pro request status */
+export async function getProRequestStatus(): Promise<any> {
+  if (isDemoMode()) {
+    return { has_request: false, status: null, request: null };
+  }
+  return apiFetch<any>("/pro-requests/status");
+}
+
+
+// ══════════════════════════════════════════════════════════════════════
+//  Admin Panel APIs
+// ══════════════════════════════════════════════════════════════════════
+
+/** Helper: Get admin auth headers from localStorage */
+function getAdminHeaders(): HeadersInit {
+  const token = typeof window !== "undefined"
+    ? localStorage.getItem("gitmesh_admin_token")
+    : null;
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+/** Admin API fetch wrapper */
+async function adminApiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = getAdminHeaders();
+  const res = await fetch(`${API_BASE}${path}`, {
+    cache: "no-store",
+    ...options,
+    headers: { ...headers, ...(options.headers || {}) },
+  });
+  if (res.status === 204) return undefined as T;
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(body.detail || `API Error: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Admin login — returns JWT token */
+export async function adminLogin(password: string): Promise<{ token: string; expires_in: number }> {
+  const res = await fetch(`${API_BASE}/admin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: "Login failed" }));
+    throw new Error(body.detail || "Invalid password");
+  }
+  return res.json();
+}
+
+/** Get all Pro requests (admin only) */
+export async function adminListProRequests(statusFilter?: string): Promise<any[]> {
+  const query = statusFilter ? `?status_filter=${statusFilter}` : "";
+  return adminApiFetch<any[]>(`/admin/pro-requests${query}`);
+}
+
+/** Get Pro request statistics (admin only) */
+export async function adminGetProRequestStats(): Promise<{
+  total: number; pending: number; approved: number; rejected: number;
+}> {
+  return adminApiFetch<any>("/admin/pro-requests/stats");
+}
+
+/** Approve a Pro request (admin only) */
+export async function adminApproveProRequest(
+  requestId: string,
+  adminNotes?: string
+): Promise<any> {
+  return adminApiFetch<any>(`/admin/pro-requests/${requestId}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ admin_notes: adminNotes || null }),
+  });
+}
+
+/** Reject a Pro request (admin only) */
+export async function adminRejectProRequest(
+  requestId: string,
+  adminNotes?: string
+): Promise<any> {
+  return adminApiFetch<any>(`/admin/pro-requests/${requestId}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ admin_notes: adminNotes || null }),
+  });
+}
+
+
 

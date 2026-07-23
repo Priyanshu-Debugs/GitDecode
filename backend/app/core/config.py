@@ -56,6 +56,18 @@ class Settings(BaseSettings):
     PRO_REPO_LIMIT: int = 999999
     PRO_MONTHLY_REPORT_LIMIT: int = 999999
 
+    # ── Admin Panel ──────────────────────────────────────────────────────
+    ADMIN_PASSWORD: str
+    ADMIN_JWT_SECRET: str = "admin-jwt-secret-changeme"
+
+
+    # ── Email (SMTP) ────────────────────────────────────────────────────
+    ADMIN_EMAIL_ADDRESS: str = ""
+    ADMIN_EMAIL_PASSWORD: str = ""
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+
+
 
 
     # ── Validators ───────────────────────────────────────────────────────

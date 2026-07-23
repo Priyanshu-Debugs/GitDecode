@@ -1,0 +1,420 @@
+/* Login Layout */
+.loginWrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  padding: 24px;
+}
+
+.loginTerminal {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.terminalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-dim);
+}
+
+.terminalTitle {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.65rem;
+}
+
+.terminalBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--font-mono);
+}
+
+.terminalPrompt {
+  color: var(--color-green);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.terminalLog {
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.terminalError {
+  color: var(--color-danger);
+  font-size: 0.82rem;
+  background: rgba(224, 112, 95, 0.08);
+  border: 1px solid rgba(224, 112, 95, 0.2);
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.loginInputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 8px 12px;
+}
+
+.loginInputRow input {
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  width: 100%;
+  outline: none;
+}
+
+.togglePasswordBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: color var(--transition-fast);
+}
+
+.togglePasswordBtn:hover {
+  color: var(--color-text);
+}
+
+
+.loginBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  background: var(--color-green);
+  color: #0e0d0b;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+  margin-top: 8px;
+  border-radius: 0;
+}
+
+.loginBtn:hover {
+  box-shadow: 0 0 16px rgba(131, 193, 103, 0.3);
+}
+
+.loginBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dashboard Layout */
+.adminWrap {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 32px 24px;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+}
+
+.topBarLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adminTitle {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.adminLabel {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.logoutBtn {
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--color-dim);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all var(--transition-fast);
+  border-radius: 0;
+}
+
+.logoutBtn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-hover);
+}
+
+/* Stats Row */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.statCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.statLabel {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Filter Tabs */
+.filterTabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+}
+
+.filterTab {
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--color-dim);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-fast);
+  border-radius: 0;
+}
+
+.filterTab:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-hover);
+}
+
+.filterTabActive {
+  color: var(--color-text);
+  border-color: var(--color-green);
+  background: var(--color-panel);
+  font-weight: bold;
+}
+
+/* Request Cards List */
+.requestList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.requestCard {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color var(--transition-fast);
+}
+
+.requestCard:hover {
+  border-color: var(--color-border-hover);
+}
+
+.requestHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+}
+
+.requestId {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-dim);
+  font-weight: 600;
+}
+
+.statusBadge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: bold;
+  padding: 3px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status_pending {
+  color: var(--color-secondary-accent);
+  background: rgba(216, 166, 87, 0.08);
+  border: 1px solid rgba(216, 166, 87, 0.2);
+}
+
+.status_approved {
+  color: var(--color-green);
+  background: rgba(131, 193, 103, 0.08);
+  border: 1px solid rgba(131, 193, 103, 0.2);
+}
+
+.status_rejected {
+  color: var(--color-danger);
+  background: rgba(224, 112, 95, 0.08);
+  border: 1px solid rgba(224, 112, 95, 0.2);
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 24px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.infoLabel {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.infoValue {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.approveBtn {
+  padding: 10px 20px;
+  background: var(--color-green);
+  color: #0e0d0b;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border-radius: 0;
+}
+
+.approveBtn:hover:not(:disabled) {
+  box-shadow: 0 0 16px rgba(131, 193, 103, 0.3);
+}
+
+.approveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rejectBtn {
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border-radius: 0;
+}
+
+.rejectBtn:hover:not(:disabled) {
+  background: rgba(224, 112, 95, 0.1);
+}
+
+.rejectBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.emptyState {
+  padding: 48px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-dim);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+}
+
+@media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+}

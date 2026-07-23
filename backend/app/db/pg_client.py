@@ -910,5 +910,99 @@ class SupabasePGClient:
             logger.warning("Failed to upsert subscription in database: %s", str(e))
             return {}
 
+    # ══════════════════════════════════════════════════════════════════════
+    #  Pro Upgrade Requests
+    # ══════════════════════════════════════════════════════════════════════
+
+    async def insert_pro_request(self, data: dict) -> dict:
+        """Insert a new Pro upgrade request."""
+        try:
+            response = (
+                self._client.table("pro_requests")
+                .insert(data)
+                .execute()
+            )
+            return response.data[0] if response and response.data else {}
+        except Exception as e:
+            logger.error("Failed to insert pro request: %s", str(e))
+            raise
+
+    async def get_pro_request_by_user(self, user_id: str) -> dict | None:
+        """Get the most recent Pro request for a user."""
+        try:
+            response = (
+                self._client.table("pro_requests")
+                .select("*")
+                .eq("user_id", user_id)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if response and response.data and len(response.data) > 0:
+                return response.data[0]
+            return None
+        except Exception as e:
+            logger.warning("Failed to fetch pro request for user %s: %s", user_id, str(e))
+            return None
+
+    async def list_pro_requests(self, status_filter: str | None = None) -> list[dict]:
+        """List all Pro requests, optionally filtered by status."""
+        try:
+            query = (
+                self._client.table("pro_requests")
+                .select("*")
+                .order("created_at", desc=True)
+            )
+            if status_filter:
+                query = query.eq("status", status_filter)
+            response = query.execute()
+            return response.data if response and response.data else []
+        except Exception as e:
+            logger.error("Failed to list pro requests: %s", str(e))
+            return []
+
+    async def update_pro_request_status(
+        self, request_id: str, status: str, admin_notes: str | None = None
+    ) -> dict:
+        """Update a Pro request's status to 'approved' or 'rejected'."""
+        from datetime import datetime, timezone
+        update_data = {
+            "status": status,
+            "reviewed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if admin_notes is not None:
+            update_data["admin_notes"] = admin_notes
+        try:
+            response = (
+                self._client.table("pro_requests")
+                .update(update_data)
+                .eq("id", request_id)
+                .execute()
+            )
+            return response.data[0] if response and response.data else {}
+        except Exception as e:
+            logger.error("Failed to update pro request %s: %s", request_id, str(e))
+            raise
+
+    async def get_pro_request_stats(self) -> dict:
+        """Get aggregate counts of Pro requests grouped by status."""
+        try:
+            response = (
+                self._client.table("pro_requests")
+                .select("status")
+                .execute()
+            )
+            rows = response.data if response and response.data else []
+            stats = {"total": len(rows), "pending": 0, "approved": 0, "rejected": 0}
+            for row in rows:
+                s = row.get("status", "")
+                if s in stats:
+                    stats[s] += 1
+            return stats
+        except Exception as e:
+            logger.error("Failed to get pro request stats: %s", str(e))
+            return {"total": 0, "pending": 0, "approved": 0, "rejected": 0}
+
+
 
 

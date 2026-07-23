@@ -31,6 +31,8 @@ from app.api.routes.chat import router as chat_router
 from app.api.routes.providers import router as providers_router
 from app.api.routes.report import router as report_router
 from app.api.routes.subscription import router as subscription_router
+from app.api.routes.pro_requests import router as pro_requests_router
+from app.api.routes.admin import router as admin_router
 
 
 # ── Logging ──────────────────────────────────────────────────────────
@@ -108,6 +110,8 @@ app.include_router(chat_router, prefix=settings.API_V1_PREFIX)
 app.include_router(providers_router, prefix=settings.API_V1_PREFIX)
 app.include_router(report_router, prefix=settings.API_V1_PREFIX)
 app.include_router(subscription_router, prefix=settings.API_V1_PREFIX)
+app.include_router(pro_requests_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_router, prefix=settings.API_V1_PREFIX)
 
 
 # ── Inngest Event Server ────────────────────────────────────────────

@@ -11,7 +11,8 @@ import styles from "./page.module.css";
 import { Check, Terminal, ShieldAlert, Cpu, Heart, Rocket, Building } from "lucide-react";
 import { useAuth } from "@/app/lib/useAuth";
 import { useSubscription } from "@/app/lib/useSubscription";
-import { upgradeUserSubscription } from "@/app/lib/api";
+import { upgradeUserSubscription, getProRequestStatus } from "@/app/lib/api";
+
 
 
 interface PricingPlan {
@@ -94,11 +95,24 @@ export default function PricingPage() {
   const router = useRouter();
   const { user } = useAuth(false);
   const { subscription, refreshSubscription } = useSubscription();
+  const [proRequestStatus, setProRequestStatus] = useState<string | null>(null);
   
   // State for the developer speech bubble
   const [showBubble, setShowBubble] = useState(false);
   const [bubbleText, setBubbleText] = useState("");
   const bubbleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      getProRequestStatus()
+        .then((res) => {
+          if (res && res.has_request) {
+            setProRequestStatus(res.status);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   const handlePlanAction = async (planId: string) => {
     if (!user) {
@@ -113,14 +127,14 @@ export default function PricingPage() {
         }
       } else if (planId === "developer") {
         if (subscription?.plan !== "pro") {
-          await upgradeUserSubscription("pro");
-          await refreshSubscription();
+          router.push("/pricing/checkout");
         }
       }
     } catch (err) {
       console.error("Failed to update subscription:", err);
     }
   };
+
 
   useEffect(() => {
     const handleQuoteEvent = (e: Event) => {
@@ -264,12 +278,17 @@ export default function PricingPage() {
                           <button className={styles.buyButton} disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
                             Current Plan
                           </button>
+                        ) : proRequestStatus === "pending" ? (
+                          <button className={styles.buyButton} disabled style={{ opacity: 0.8, cursor: "not-allowed", background: "var(--color-secondary-accent)", color: "var(--color-primary-text)" }}>
+                            Request Pending
+                          </button>
                         ) : (
                           <button className={styles.buyButton} onClick={() => handlePlanAction("developer")} style={{ background: "var(--color-primary)", color: "var(--color-primary-text)" }}>
                             Upgrade to Pro
                           </button>
                         )
                       ) : (
+
                         <Link href={plan.buttonLink} className={styles.buyButton}>
                           {plan.buttonText}
                         </Link>
