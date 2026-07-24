@@ -269,10 +269,58 @@ export async function getRateLimitStatus(repoId: string): Promise<{ remaining_da
   return apiFetch<{ remaining_daily: number, remaining_monthly: number, is_developer: boolean, is_pro?: boolean, plan?: string }>(`/chat/rate-limit-status?repo_id=${repoId}`);
 }
 
+/** Get user's GitHub provider token from active session */
+export async function getProviderToken(): Promise<string | undefined> {
+  try {
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.provider_token || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Check accessibility of a repository (public or private) */
+export async function checkRepoAccess(
+  repoUrl: string,
+  githubToken?: string
+): Promise<{
+  accessible: boolean;
+  private?: boolean;
+  name?: string;
+  full_name?: string;
+  owner?: string;
+  description?: string;
+  default_branch?: string;
+  stargazers_count?: number;
+  language?: string;
+  owner_avatar_url?: string;
+  html_url?: string;
+  error_message?: string;
+}> {
+  if (isDemoMode()) {
+    return {
+      accessible: true,
+      private: false,
+      name: repoUrl.split("/").pop() || "repo",
+      full_name: repoUrl.replace("https://github.com/", ""),
+      description: "Demo Mode repository check.",
+      default_branch: "main",
+      language: "TypeScript",
+    };
+  }
+  const token = githubToken || (await getProviderToken());
+  return apiFetch("/repos/check-access", {
+    method: "POST",
+    body: JSON.stringify({ repo_url: repoUrl, github_token: token }),
+  });
+}
+
 /** Initiate a repo sync */
 export async function syncRepo(
   repoUrl: string,
-  branch = "main"
+  branch = "main",
+  githubToken?: string
 ): Promise<RepoSyncResponse> {
   if (isDemoMode()) {
     const list = getMockRepos();
@@ -345,9 +393,36 @@ export async function syncRepo(
       queued_at: new Date().toISOString()
     };
   }
+  const token = githubToken || (await getProviderToken());
   return apiFetch<RepoSyncResponse>("/repos/sync", {
     method: "POST",
-    body: JSON.stringify({ repo_url: repoUrl, branch }),
+    body: JSON.stringify({ repo_url: repoUrl, branch, github_token: token }),
+  });
+}
+
+/** Cancel an active repo sync */
+export async function cancelRepoSync(
+  repoId: string
+): Promise<RepoSyncResponse> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const repo = list.find((r) => r.id === repoId);
+    if (repo) {
+      repo.status = "failed";
+      repo.detailed_status = "cancelled";
+      repo.error_message = "Ingestion cancelled by user.";
+      localStorage.setItem("gitdecode_mock_repos", JSON.stringify(list));
+    }
+    return {
+      repo_id: repoId,
+      status: "failed",
+      detailed_status: "cancelled",
+      message: "Ingestion cancelled by user.",
+      queued_at: new Date().toISOString()
+    };
+  }
+  return apiFetch<RepoSyncResponse>(`/repos/${repoId}/cancel`, {
+    method: "POST",
   });
 }
 

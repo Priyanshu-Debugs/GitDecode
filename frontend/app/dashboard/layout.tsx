@@ -331,32 +331,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [fetchLayoutRepos]);
 
-  // Load user public GitHub repos
-  useEffect(() => {
-    if (!user) return;
-    const username = user.user_metadata?.preferred_username || user.user_metadata?.user_name;
-    if (!username) return;
 
-    async function getGitHub() {
-      setGithubLoading(true);
-      try {
-        const headers: HeadersInit = {};
-        if (session?.provider_token) {
-          headers["Authorization"] = `token ${session.provider_token}`;
-        }
-        const res = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setGithubRepos(data);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setGithubLoading(false);
-      }
-    }
-    getGitHub();
-  }, [user]);
 
   const handleSync = async (url: string, branch: string) => {
     setSyncError("");

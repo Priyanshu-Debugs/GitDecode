@@ -16,6 +16,9 @@ import { useSubscription } from "@/app/lib/useSubscription";
 import {
   listRepos,
   syncRepo,
+  cancelRepoSync,
+  checkRepoAccess,
+  getProviderToken,
   getDependencyGraph,
   getCallGraph,
   getClassGraph,
@@ -310,15 +313,65 @@ function DashboardContent() {
     return true;
   });
 
+  // Terminal URL Bar states
+  const [terminalUrlInput, setTerminalUrlInput] = useState("");
+  const [urlChecking, setUrlChecking] = useState(false);
+  const [urlCheckResult, setUrlCheckResult] = useState<any | null>(null);
+  const [urlCheckError, setUrlCheckError] = useState<string | null>(null);
+  const [urlPreviewBranch, setUrlPreviewBranch] = useState("main");
+
   // GitHub integration & selector states
   const [githubRepos, setGithubRepos] = useState<any[]>([]);
   const [githubLoading, setGithubLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<"all" | "synced" | "available" | "processing">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "synced" | "processing" | "available">("all");
   const [selectedRepoForSync, setSelectedRepoForSync] = useState<any | null>(null);
   const [syncBranch, setSyncBranch] = useState("main");
   const [syncError, setSyncError] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
+  const [cancellingRepoId, setCancellingRepoId] = useState<string | null>(null);
   const { getActiveLLMConfig } = useLocalKeys();
+
+  const handleCancelSync = async (repoId: string) => {
+    setCancellingRepoId(repoId);
+    try {
+      await cancelRepoSync(repoId);
+      fetchRepos();
+    } catch (err) {
+      setCustomConfirm({
+        isOpen: true,
+        title: "Cancellation Error",
+        message: err instanceof Error ? err.message : "Failed to Cancel.",
+        confirmText: "Close",
+        onConfirm: () => {},
+      });
+    } finally {
+      setCancellingRepoId(null);
+    }
+  };
+
+  const handleTerminalUrlCheck = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const url = terminalUrlInput.trim();
+    if (!url) return;
+
+    setUrlChecking(true);
+    setUrlCheckError(null);
+    setUrlCheckResult(null);
+
+    try {
+      const res = await checkRepoAccess(url);
+      if (res.accessible) {
+        setUrlCheckResult(res);
+        setUrlPreviewBranch(res.default_branch || "main");
+      } else {
+        setUrlCheckError(res.error_message || "Repository not found or access denied.");
+      }
+    } catch (err) {
+      setUrlCheckError(err instanceof Error ? err.message : "Failed to verify repository access.");
+    } finally {
+      setUrlChecking(false);
+    }
+  };
 
   // Premium Alert / Confirmation dialog states
   const [customConfirm, setCustomConfirm] = useState<{
@@ -920,38 +973,50 @@ function DashboardContent() {
   // ── Unified Repo Selector Dashboard Renderer ──
   const renderRepoSelectorDashboard = () => {
     const activeSyncsAndCompleted = repos;
-    const githubListToUse = githubRepos.length > 0 ? githubRepos : MOCK_REPOS;
+    const githubListToUse = githubRepos;
     const displayRepos: any[] = [];
-    
+
     // 1. Add all synced repos
-    activeSyncsAndCompleted.forEach(sr => {
-      const githubMatch = githubListToUse.find(gr => gr.html_url === sr.github_url);
+    activeSyncsAndCompleted.forEach((sr) => {
+      const githubMatch = githubListToUse.find((gr) => gr.html_url === sr.github_url);
+      const parts = sr.github_url.replace(/\.git$/, "").replace(/\/$/, "").split("/");
+      const owner = githubMatch?.owner?.login || parts[parts.length - 2] || "";
+      const avatarUrl = githubMatch?.owner?.avatar_url || (owner ? `https://github.com/${owner}.png` : null);
       displayRepos.push({
         id: sr.id,
-        name: githubMatch?.name || sr.github_url.split("/").pop() || "repository",
-        owner: githubMatch?.owner?.login || sr.github_url.split("/").slice(-2)[0] || "",
-        avatar_url: githubMatch?.owner?.avatar_url || null,
-        description: githubMatch?.description || (sr.status === "completed" ? "Successfully indexed codebase graph." : "Codebase repository"),
+        name: githubMatch?.name || parts[parts.length - 1] || "repository",
+        owner,
+        avatar_url: avatarUrl,
+        description:
+          githubMatch?.description ||
+          (sr.status === "completed"
+            ? "Successfully indexed codebase graph."
+            : "Codebase repository"),
         stargazers_count: githubMatch?.stargazers_count || 0,
         forks_count: githubMatch?.forks_count || 0,
-        language: githubMatch?.language || "Markdown",
+        language: githubMatch?.language || "TypeScript",
         github_url: sr.github_url,
         branch: sr.branch,
         status: sr.status,
         detailed_status: sr.detailed_status,
-        isSynced: true
+        isSynced: true,
+        private: githubMatch?.private ?? false,
       });
     });
-    
-    // 2. Add GitHub repos that aren't synced yet
-    githubListToUse.forEach(gr => {
-      const isAlreadySynced = activeSyncsAndCompleted.some(sr => sr.github_url === gr.html_url);
+
+    // 2. Add public GitHub repos that aren't synced yet
+    githubListToUse.forEach((gr) => {
+      const isAlreadySynced = activeSyncsAndCompleted.some(
+        (sr) => sr.github_url === gr.html_url
+      );
       if (!isAlreadySynced) {
+        const owner = gr.owner?.login || "";
+        const avatarUrl = gr.owner?.avatar_url || (owner ? `https://github.com/${owner}.png` : null);
         displayRepos.push({
           id: `github-${gr.id}`,
           name: gr.name,
-          owner: gr.owner?.login || "",
-          avatar_url: gr.owner?.avatar_url || null,
+          owner,
+          avatar_url: avatarUrl,
           description: gr.description || "Public source repository available on GitHub.",
           stargazers_count: gr.stargazers_count || 0,
           forks_count: gr.forks_count || 0,
@@ -959,25 +1024,31 @@ function DashboardContent() {
           github_url: gr.html_url,
           branch: gr.default_branch || "main",
           status: "not_connected",
-          isSynced: false
+          isSynced: false,
+          private: gr.private ?? false,
         });
       }
     });
 
-    // 3. Filter displayRepos based on searchQuery
-    const searchedRepos = displayRepos.filter(repo => {
-      const matchQuery = repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         repo.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (repo.description && repo.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                         (repo.language && repo.language.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+    // Filter displayRepos based on searchQuery & activeFilter
+    const searchedRepos = displayRepos.filter((repo) => {
+      const matchQuery =
+        repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        repo.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (repo.description &&
+          repo.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (repo.language &&
+          repo.language.toLowerCase().includes(searchQuery.toLowerCase()));
+
       if (!matchQuery) return false;
-      
+
       if (activeFilter === "synced") {
         return repo.isSynced && repo.status === "completed";
       }
       if (activeFilter === "processing") {
-        return repo.isSynced && (repo.status === "processing" || repo.status === "queued");
+        return (
+          repo.isSynced && (repo.status === "processing" || repo.status === "queued")
+        );
       }
       if (activeFilter === "available") {
         return !repo.isSynced;
@@ -985,7 +1056,7 @@ function DashboardContent() {
       return true; // "all"
     });
 
-    const getLangColor = (lang: string) => {
+    const getLangColor = (lang?: string) => {
       const colors: { [key: string]: string } = {
         TypeScript: "#3178c6",
         JavaScript: "#f1e05a",
@@ -995,22 +1066,56 @@ function DashboardContent() {
         Java: "#b07219",
         "C++": "#f34b7d",
         HTML: "#e34c26",
-        CSS: "#563d7c"
+        CSS: "#563d7c",
       };
-      return colors[lang] || "#888888";
+      return colors[lang || "TypeScript"] || "#888888";
     };
 
     const activeReposCount = repos.length;
     const isAtLimit = !subscriptionLoading && !isPro && activeReposCount >= 2;
 
     return (
-      <div className={styles.repoDashboardContainer} style={{ padding: "40px 48px", overflowY: "auto", width: "100%", height: "100%", background: "var(--color-bg)", position: "relative" }}>
+      <div
+        className={styles.repoDashboardContainer}
+        style={{
+          padding: "40px 48px",
+          overflowY: "auto",
+          width: "100%",
+          height: "100%",
+          background: "var(--color-bg)",
+          position: "relative",
+        }}
+      >
         {/* repeating dot mesh grid background */}
         <div className={styles.dotMeshGrid} />
         {/* Glow Effects in Background */}
-        <div style={{ position: "absolute", top: "-10%", left: "30%", width: "450px", height: "450px", background: "radial-gradient(circle, rgba(200, 204, 212, 0.08) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-        <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "350px", height: "350px", background: "radial-gradient(circle, rgba(200, 204, 212, 0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-        
+        <div
+          style={{
+            position: "absolute",
+            top: "-10%",
+            left: "30%",
+            width: "450px",
+            height: "450px",
+            background:
+              "radial-gradient(circle, rgba(200, 204, 212, 0.08) 0%, transparent 70%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10%",
+            right: "10%",
+            width: "350px",
+            height: "350px",
+            background:
+              "radial-gradient(circle, rgba(200, 204, 212, 0.04) 0%, transparent 70%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
         {/* Hero Section */}
         <div className={styles.dashboardHero} style={{ zIndex: 1, position: "relative" }}>
           <h1 className={styles.dashboardHeroTitle}>Agent Workspace</h1>
@@ -1018,9 +1123,163 @@ function DashboardContent() {
             Connect, analyze, and traverse your codebase graphs. Ask context-grounded questions using your workspace repository nodes.
           </p>
         </div>
-        
+
+        {/* ── Terminal-Style URL Bar ── */}
+        <div className={styles.dashboardUrlContainer}>
+          <form onSubmit={handleTerminalUrlCheck} className={styles.dashboardUrlForm}>
+            <div className={styles.dashboardUrlInputWrap}>
+              <span className={styles.dashboardUrlPrompt}>$</span>
+              <input
+                type="text"
+                value={terminalUrlInput}
+                onChange={(e) => {
+                  setTerminalUrlInput(e.target.value);
+                  if (urlCheckResult || urlCheckError) {
+                    setUrlCheckResult(null);
+                    setUrlCheckError(null);
+                  }
+                }}
+                placeholder="https://github.com/owner/repository"
+                className={styles.dashboardUrlInput}
+                disabled={urlChecking || syncLoading}
+                aria-label="GitHub repository URL"
+              />
+              <button
+                type="submit"
+                className={styles.dashboardUrlSubmit}
+                disabled={urlChecking || !terminalUrlInput.trim() || syncLoading}
+                title="Verify Repository Access"
+              >
+                {urlChecking ? "..." : "→"}
+              </button>
+            </div>
+          </form>
+
+          {/* Verification Error */}
+          {urlCheckError && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                marginTop: "10px",
+                padding: "10px 14px",
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "var(--radius-md, 8px)",
+                color: "#f87171",
+                fontSize: "0.8125rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{urlCheckError}</span>
+            </motion.div>
+          )}
+
+          {/* Repo Preview Card */}
+          {urlCheckResult && (
+            <motion.div
+              className={styles.repoPreviewCard}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className={styles.repoPreviewHeader}>
+                <div className={styles.repoPreviewTitleRow}>
+                  {urlCheckResult.owner_avatar_url ? (
+                    <img
+                      src={urlCheckResult.owner_avatar_url}
+                      alt={urlCheckResult.owner || "Owner"}
+                      className={styles.repoPreviewAvatar}
+                    />
+                  ) : (
+                    <div
+                      className={styles.repoPreviewAvatar}
+                      style={{
+                        background: "rgba(255,255,255,0.1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {(urlCheckResult.name || "R").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div className={styles.repoPreviewTitle}>{urlCheckResult.full_name || urlCheckResult.name}</div>
+                  </div>
+                </div>
+
+                <span
+                  className={`${styles.tagBadge} ${
+                    urlCheckResult.private ? styles.tagPrivate : styles.tagPublic
+                  }`}
+                >
+                  {urlCheckResult.private ? "Private" : "Public"}
+                </span>
+              </div>
+
+              {urlCheckResult.description && (
+                <p className={styles.repoPreviewDesc}>{urlCheckResult.description}</p>
+              )}
+
+              <div className={styles.repoPreviewMeta}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)" }}>Branch:</span>
+                  <input
+                    type="text"
+                    value={urlPreviewBranch}
+                    onChange={(e) => setUrlPreviewBranch(e.target.value)}
+                    className={styles.repoPreviewBranchInput}
+                    placeholder="main"
+                  />
+                </div>
+
+                {urlCheckResult.language && (
+                  <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: getLangColor(urlCheckResult.language) }} />
+                    {urlCheckResult.language}
+                  </span>
+                )}
+
+                <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setUrlCheckResult(null);
+                      setTerminalUrlInput("");
+                    }}
+                    style={{ height: 32, fontSize: "0.75rem" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={syncLoading || isAtLimit}
+                    onClick={() => {
+                      const urlToSync = urlCheckResult.html_url || terminalUrlInput.trim();
+                      handleSyncRepo(urlToSync, urlPreviewBranch);
+                      setUrlCheckResult(null);
+                      setTerminalUrlInput("");
+                    }}
+                    style={{ height: 32, fontSize: "0.75rem" }}
+                  >
+                    {syncLoading ? "Initiating..." : "Connect & Index"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
         {isAtLimit && (
-          <motion.div 
+          <motion.div
             className={styles.limitBanner}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1028,7 +1287,15 @@ function DashboardContent() {
           >
             <div className={styles.limitBannerContent}>
               <h3 className={styles.limitBannerTitle}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--color-secondary-accent, #d8a657)" }}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  style={{ color: "var(--color-secondary-accent, #d8a657)" }}
+                >
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                   <line x1="12" y1="9" x2="12" y2="13" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -1039,10 +1306,7 @@ function DashboardContent() {
                 You can only connect 2 repositories on the Free Plan. Upgrade your subscription to connect unlimited repositories.
               </p>
             </div>
-            <button 
-              className={styles.limitBannerBtn}
-              onClick={() => router.push("/pricing")}
-            >
+            <button className={styles.limitBannerBtn} onClick={() => router.push("/pricing")}>
               <span>View Pricing & Upgrade</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -1055,10 +1319,10 @@ function DashboardContent() {
         {/* Quick Bento Stats Section */}
         <div className={styles.statsRow} style={{ zIndex: 1, position: "relative" }}>
           {[
-            { value: repos.filter(r => r.status === "completed").length, label: "Connected Codebases" },
-            { value: repos.filter(r => r.status === "processing" || r.status === "queued").length, label: "Ingesting Tasks" },
-            { value: githubRepos.length || MOCK_REPOS.length, label: "GitHub Repos Available" },
-            { value: repos.filter(r => r.status === "completed").length > 0 ? `${repos.filter(r => r.status === "completed").length * 3 + 2}k Nodes` : "0 Nodes", label: "Total AST Entities" },
+            { value: repos.filter((r) => r.status === "completed").length, label: "Connected Codebases" },
+            { value: repos.filter((r) => r.status === "processing" || r.status === "queued").length, label: "Ingesting Tasks" },
+            { value: githubRepos.length, label: "GitHub Repos Available" },
+            { value: repos.filter((r) => r.status === "completed").length > 0 ? `${repos.filter((r) => r.status === "completed").length * 3 + 2}k Nodes` : "0 Nodes", label: "Total AST Entities" },
           ].map((stat, idx) => (
             <motion.div
               key={idx}
@@ -1110,294 +1374,198 @@ function DashboardContent() {
               className={`${styles.filterTabBtn} ${activeFilter === "available" ? styles.filterTabBtnActive : ""}`}
               onClick={() => setActiveFilter("available")}
             >
-              GitHub Available
+              Public Available
             </button>
           </div>
         </div>
 
         {/* Repos Cards Grid */}
         <div className={styles.repoGrid} style={{ zIndex: 1, position: "relative", paddingBottom: "40px" }}>
-          {searchedRepos.map((repo, idx) => {
-            const firstLetter = repo.name.charAt(0).toUpperCase();
-            
-            return (
-              <motion.div
-                key={repo.id}
-                className={styles.repoCardOuter}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -6, scale: 1.01 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 18,
-                  opacity: { duration: 0.35, delay: idx * 0.04 }
-                }}
-              >
-                <div className={styles.repoCardInner}>
-                  {/* Decorative card cover */}
-                  <div className={styles.repoCardCover}>
-                    <div className={styles.repoCardCoverGrid} />
-                    <div className={styles.repoCardCoverOctocat}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                      </svg>
-                    </div>
-                  </div>
+          {searchedRepos.length > 0 ? (
+            searchedRepos.map((repo, idx) => {
+              const firstLetter = repo.name.charAt(0).toUpperCase();
 
-                  {/* Overlapping Avatar */}
-                  <div className={styles.repoCardAvatarContainer}>
-                    {repo.avatar_url ? (
-                      <img src={repo.avatar_url} alt={repo.owner} className={styles.repoCardAvatar} />
-                    ) : (
-                      <div className={styles.repoCardAvatarPlaceholder}>{firstLetter}</div>
-                    )}
-                  </div>
-
-                  {/* Body Content */}
-                  <div className={styles.repoCardContent}>
-                    <div className={styles.repoCardHeaderInfo}>
-                      <h3 className={styles.repoCardTitle} title={repo.name}>{repo.name}</h3>
-                      <span className={styles.repoCardOwner}>{repo.owner}</span>
-                    </div>
-
-                    <p className={styles.repoCardDescription} title={repo.description}>
-                      {repo.description}
-                    </p>
-
-                    {/* Meta Row: Language, stars, branch */}
-                    <div className={styles.repoCardMetaRow}>
-                      <span className={styles.repoCardLanguage}>
-                        <span className={styles.repoCardLanguageDot} style={{ background: getLangColor(repo.language) }} />
-                        {repo.language}
-                      </span>
-                      {repo.stargazers_count > 0 && (
-                        <span className={styles.repoCardMetaItem}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#f59e0b" }}>
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                          {repo.stargazers_count}
-                        </span>
-                      )}
-                      <span className={styles.repoCardMetaItem} style={{ fontFamily: "var(--font-mono)", fontSize: "0.625rem" }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
-                          <path d="M18 9a9 9 0 0 1-9 9" />
+              return (
+                <motion.div
+                  key={repo.id}
+                  className={styles.repoCardOuter}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ y: -6, scale: 1.01 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 18,
+                    opacity: { duration: 0.35, delay: idx * 0.04 },
+                  }}
+                >
+                  <div className={styles.repoCardInner}>
+                    {/* Decorative card cover */}
+                    <div className={styles.repoCardCover}>
+                      <div className={styles.repoCardCoverGrid} />
+                      <div className={styles.repoCardCoverOctocat}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                         </svg>
-                        {repo.branch}
-                      </span>
+                      </div>
                     </div>
 
-                    {/* Footer Actions & Status Badge */}
-                    <div className={styles.repoCardFooter}>
-                      {repo.status === "completed" && (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Overlapping Avatar */}
+                    <div className={styles.repoCardAvatarContainer}>
+                      {repo.avatar_url ? (
+                        <img src={repo.avatar_url} alt={repo.owner} className={styles.repoCardAvatar} />
+                      ) : (
+                        <div className={styles.repoCardAvatarPlaceholder}>{firstLetter}</div>
+                      )}
+                    </div>
+
+                    {/* Body Content */}
+                    <div className={styles.repoCardContent}>
+                      <div className={styles.repoCardHeaderInfo}>
+                        <h3 className={styles.repoCardTitle} title={repo.name}>
+                          {repo.name}
+                        </h3>
+                        <span className={styles.repoCardOwner}>{repo.owner}</span>
+                      </div>
+
+                      <p className={styles.repoCardDescription} title={repo.description}>
+                        {repo.description}
+                      </p>
+
+                      {/* Meta Row: Language, stars, branch */}
+                      <div className={styles.repoCardMetaRow}>
+                        <span className={styles.repoCardLanguage}>
+                          <span className={styles.repoCardLanguageDot} style={{ background: getLangColor(repo.language) }} />
+                          {repo.language}
+                        </span>
+                        {repo.stargazers_count > 0 && (
+                          <span className={styles.repoCardMetaItem}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#f59e0b" }}>
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                            {repo.stargazers_count}
+                          </span>
+                        )}
+                        <span className={styles.repoCardMetaItem} style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem" }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
+                            <path d="M18 9a9 9 0 0 1-9 9" />
+                          </svg>
+                          {repo.branch}
+                        </span>
+                      </div>
+
+                      {/* Footer Actions & Status Badge */}
+                      <div className={styles.repoCardFooter}>
+                        {repo.status === "completed" && (
+                          <>
                             <span className={`${styles.repoCardBadge} ${styles.badgeCompleted}`}>
                               <span className={`${styles.pulseLightDot} ${styles.pulseDotGreen}`} />
                               Connected
                             </span>
-                          </div>
-                          
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
-                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
-                          >
-                            Explore Workspace
-                          </button>
-                        </>
-                      )}
 
-                      {(repo.status === "processing" || repo.status === "queued") && (
-                        <>
-                          <span className={`${styles.repoCardBadge} ${styles.badgeProcessing}`}>
-                            <span className={`${styles.pulseLightDot} ${styles.pulseDotOrange}`} />
-                            Ingesting
-                          </span>
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
-                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
-                          >
-                            Track Progress
-                          </button>
-                        </>
-                      )}
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
+                              style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                            >
+                              Explore Workspace
+                            </button>
+                          </>
+                        )}
 
-                      {repo.status === "failed" && (
-                        <>
-                          <span className={`${styles.repoCardBadge} ${styles.badgeFailed}`}>
-                            <span className={`${styles.pulseLightDot} ${styles.pulseDotRed}`} />
-                            Failed
-                          </span>
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => {
-                              setSelectedRepoForSync({ ...repo, isCustom: false });
-                              setSyncBranch(repo.branch || "main");
-                            }}
-                            style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
-                          >
-                            Re-Sync
-                          </button>
-                        </>
-                      )}
+                        {(repo.status === "processing" || repo.status === "queued") && (
+                          <>
+                            <span className={`${styles.repoCardBadge} ${styles.badgeProcessing}`}>
+                              <span className={`${styles.pulseLightDot} ${styles.pulseDotOrange}`} />
+                              Ingesting
+                            </span>
+                            <div style={{ display: "flex", gap: "6px" }}>
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
+                                style={{ height: 28, padding: "0 10px", fontSize: "0.75rem" }}
+                              >
+                                Track
+                              </button>
+                              <button
+                                className={`${styles.cancelIngestionBtn} ${styles.cancelIngestionBtnSmall}`}
+                                disabled={cancellingRepoId === repo.id}
+                                onClick={() => handleCancelSync(repo.id)}
+                                title="Cancel"
+                              >
+                                {cancellingRepoId === repo.id ? "..." : "Cancel"}
+                              </button>
+                            </div>
+                          </>
+                        )}
 
-                      {repo.status === "not_connected" && (
-                        <>
-                          <span className={`${styles.repoCardBadge} ${styles.badgeNotConnected}`}>
-                            <span className={`${styles.pulseLightDot} ${styles.pulseDotGray}`} />
-                            Available
-                          </span>
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => {
-                              setSelectedRepoForSync({ ...repo, isCustom: false });
-                              setSyncBranch(repo.branch || "main");
-                            }}
-                            disabled={isAtLimit}
-                            title={isAtLimit ? "Free plan limited to 2 repos. Upgrade to Pro for unlimited." : ""}
-                            style={{ 
-                              height: 28, 
-                              padding: "0 12px", 
-                              fontSize: "0.75rem",
-                              opacity: isAtLimit ? 0.5 : 1,
-                              cursor: isAtLimit ? "not-allowed" : "pointer"
-                            }}
-                          >
-                            Connect
-                          </button>
-                        </>
-                      )}
+                        {repo.status === "failed" && (
+                          <>
+                            <span className={`${styles.repoCardBadge} ${styles.badgeFailed}`}>
+                              <span className={`${styles.pulseLightDot} ${styles.pulseDotRed}`} />
+                              Failed
+                            </span>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleSyncRepo(repo.github_url, repo.branch)}
+                              style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                            >
+                              Re-Sync
+                            </button>
+                          </>
+                        )}
+
+                        {repo.status === "not_connected" && (
+                          <>
+                            <span className={`${styles.repoCardBadge} ${styles.badgeNotConnected}`}>
+                              <span className={`${styles.pulseLightDot} ${styles.pulseDotGray}`} />
+                              Available
+                            </span>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleSyncRepo(repo.github_url, repo.branch)}
+                              disabled={isAtLimit}
+                              title={isAtLimit ? "Free plan limited to 2 repos. Upgrade to Pro for unlimited." : ""}
+                              style={{
+                                height: 28,
+                                padding: "0 12px",
+                                fontSize: "0.75rem",
+                                opacity: isAtLimit ? 0.5 : 1,
+                                cursor: isAtLimit ? "not-allowed" : "pointer",
+                              }}
+                            >
+                              Connect
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {/* Plus Custom Connection Card */}
-          <motion.div
-            className={styles.customConnectCardOuter}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -6, scale: 1.01 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 18,
-              opacity: { duration: 0.35, delay: searchedRepos.length * 0.04 }
-            }}
-          >
+                </motion.div>
+              );
+            })
+          ) : (
             <div
-              className={styles.customConnectCardInner}
-              onClick={() => {
-                if (isAtLimit) return;
-                setSelectedRepoForSync({ name: "Custom Repository", html_url: "", isCustom: true });
-                setSyncBranch("main");
-              }}
               style={{
-                opacity: isAtLimit ? 0.5 : 1,
-                cursor: isAtLimit ? "not-allowed" : "pointer"
+                gridColumn: "1 / -1",
+                padding: "48px 24px",
+                textAlign: "center",
+                background: "rgba(22, 20, 16, 0.5)",
+                border: "1px dashed var(--color-border)",
+                borderRadius: "var(--radius-lg, 10px)",
               }}
-              title={isAtLimit ? "Free plan limited to 2 repos. Upgrade to Pro for unlimited." : ""}
             >
-              <div className={styles.customConnectIconWrapper}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </div>
-              <h3 className={styles.customConnectTitle}>Connect Custom Repository</h3>
-              <p className={styles.customConnectDesc}>Import any public Git repository via URL and custom branch.</p>
+              <p style={{ color: "var(--color-text-secondary)", fontSize: "0.875rem", marginBottom: "8px" }}>
+                No repositories found.
+              </p>
+              <p style={{ color: "var(--color-text-tertiary)", fontSize: "0.75rem" }}>
+                Paste any Public or Private GitHub URL into the terminal bar above to connect a repository.
+              </p>
             </div>
-          </motion.div>
+          )}
         </div>
 
-        {/* Confirmation branch selection modal */}
-        {selectedRepoForSync && (
-          <div className={styles.modalOverlay} onClick={() => setSelectedRepoForSync(null)}>
-            <div className={styles.confirmModalOuter} onClick={(e) => e.stopPropagation()}>
-              <div className={styles.confirmModalInner}>
-                <div className={styles.confirmModalHeader}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: "#c8ccd4" }}>
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
-                  <h3 className={styles.confirmModalTitle}>Connect Codebase</h3>
-                </div>
-                
-                <p className={styles.confirmModalDesc}>
-                  GitDecode will clone, tokenize Abstract Syntax Trees, map class dependencies, and run vector indexings for:
-                </p>
-
-                <div style={{ marginBottom: "20px" }}>
-                  {selectedRepoForSync.isCustom ? (
-                    <div className={styles.confirmModalForm}>
-                      <span className={styles.confirmModalLabel}>Git Repository URL</span>
-                      <input
-                        type="url"
-                        className={styles.confirmModalInput}
-                        placeholder="https://github.com/owner/repo"
-                        value={selectedRepoForSync.html_url}
-                        onChange={(e) => setSelectedRepoForSync({ ...selectedRepoForSync, html_url: e.target.value })}
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <span className={styles.confirmModalLabel}>Repository Source</span>
-                      <span className={styles.confirmModalRepoName}>{selectedRepoForSync.owner}/{selectedRepoForSync.name}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.confirmModalForm}>
-                  <span className={styles.confirmModalLabel}>Target Branch</span>
-                  <input
-                    type="text"
-                    className={styles.confirmModalInput}
-                    placeholder="main"
-                    value={syncBranch}
-                    onChange={(e) => setSyncBranch(e.target.value)}
-                    autoFocus={!selectedRepoForSync.isCustom}
-                  />
-                </div>
-
-                <div className={styles.confirmModalFooter}>
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setSelectedRepoForSync(null)}
-                    disabled={syncLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => {
-                      if (selectedRepoForSync.isCustom && !selectedRepoForSync.html_url.trim()) {
-                        setCustomConfirm({
-                          isOpen: true,
-                          title: "Invalid URL",
-                          message: "Please enter a valid Git Repository URL to start indexing.",
-                          confirmText: "Close",
-                          onConfirm: () => {}
-                        });
-                        return;
-                      }
-                      const url = selectedRepoForSync.isCustom ? selectedRepoForSync.html_url : selectedRepoForSync.github_url;
-                      handleSyncRepo(url, syncBranch);
-                      setSelectedRepoForSync(null);
-                    }}
-                    disabled={syncLoading}
-                  >
-                    {syncLoading ? "Initiating..." : "Connect & Index"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         {renderCustomConfirm()}
       </div>
     );
@@ -1451,8 +1619,34 @@ function DashboardContent() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span className={`${styles.statusBadge} ${activeRepo.status === "failed" ? styles.statusFailed : styles.statusProcessing}`}>
               <span className={`${styles.statusDot} ${activeRepo.status === "failed" ? styles.statusDotFailed : styles.statusDotProcessing}`} />
-              {activeRepo.status === "failed" ? "Failed" : activeRepo.detailed_status || "Processing"}
+              {activeRepo.status === "failed" ? (activeRepo.detailed_status === "cancelled" ? "Ingestion Cancelled" : "Failed") : activeRepo.detailed_status || "Processing"}
             </span>
+
+            {(activeRepo.status === "queued" || activeRepo.status === "processing") && (
+              <button
+                className={styles.cancelIngestionBtn}
+                disabled={cancellingRepoId === activeRepo.id}
+                onClick={() => handleCancelSync(activeRepo.id)}
+                title="Cancel"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                {cancellingRepoId === activeRepo.id ? "Cancelling..." : "Cancel"}
+              </button>
+            )}
+
+            {activeRepo.status === "failed" && (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => handleSyncRepo(activeRepo.github_url, activeRepo.branch)}
+                style={{ height: 34, padding: "0 16px", fontSize: "0.8125rem" }}
+              >
+                Re-Sync Repo
+              </button>
+            )}
           </div>
         </div>
 

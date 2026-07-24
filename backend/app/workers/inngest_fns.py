@@ -179,6 +179,13 @@ async def sync_github_repository(
     user_id = event_data["user_id"]
     repo_url = event_data["repo_url"]
     branch = event_data.get("branch", "main")
+    github_token = event_data.get("github_token")
+
+    # If github_token is provided, convert URL to authenticated HTTPS URL
+    clone_url = repo_url
+    if github_token and "github.com/" in repo_url:
+        clean_target = repo_url.replace("https://github.com/", "").rstrip("/").removesuffix(".git")
+        clone_url = f"https://x-access-token:{github_token}@github.com/{clean_target}.git"
 
     settings = get_settings()
 
@@ -210,14 +217,20 @@ async def sync_github_repository(
                 branch,
                 temp_dir,
             )
+            git_env = os.environ.copy()
+            git_env["GIT_TERMINAL_PROMPT"] = "0"
+            git_env["GCM_INTERACTIVE"] = "never"
+
             cmd = [
                 "git",
+                "-c",
+                "credential.helper=",
                 "clone",
                 "--depth",
                 "1",
                 "--branch",
                 branch,
-                repo_url,
+                clone_url,
                 temp_dir,
             ]
             
@@ -225,6 +238,7 @@ async def sync_github_repository(
                 return subprocess.run(
                     git_cmd,
                     capture_output=True,
+                    env=git_env,
                 )
 
             result = await asyncio.to_thread(run_git_clone, cmd)
@@ -240,10 +254,12 @@ async def sync_github_repository(
 
                 fallback_cmd = [
                     "git",
+                    "-c",
+                    "credential.helper=",
                     "clone",
                     "--depth",
                     "1",
-                    repo_url,
+                    clone_url,
                     temp_dir,
                 ]
                 result = await asyncio.to_thread(run_git_clone, fallback_cmd)
@@ -258,6 +274,9 @@ async def sync_github_repository(
 
         # Update detailed_status to 'parsing'
         async def update_to_parsing() -> dict[str, Any]:
+            repo = await pg_client.get_repo_by_id(repo_id, user_id)
+            if repo and repo.get("detailed_status") == "cancelled":
+                raise RuntimeError("Ingestion cancelled by user.")
             return await pg_client.update_repo_status(
                 repo_id, user_id, "processing", detailed_status="parsing"
             )

@@ -24,7 +24,8 @@ from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
 from app.core.config import settings
 from app.services.subscription import get_user_plan, get_plan_limits
-from app.schemas.requests import RepoSyncRequest
+from app.schemas.requests import RepoSyncRequest, RepoAccessCheckRequest
+from app.services.github_access import check_repo_access
 from app.schemas.responses import (
     RepoSyncResponse,
     RepoListItem,
@@ -90,6 +91,19 @@ def flatten_nodes(nodes_list: list[dict]) -> list[dict]:
 
 
 @router.post(
+    "/check-access",
+    summary="Check access to a GitHub repository",
+    description="Validates if a GitHub repository (public or private) is accessible.",
+)
+async def check_access(
+    request: RepoAccessCheckRequest,
+    user: AuthenticatedUser = Depends(require_auth),
+):
+    """Check if repository URL is accessible (public or private)."""
+    return await check_repo_access(str(request.repo_url), request.github_token)
+
+
+@router.post(
     "/sync",
     response_model=RepoSyncResponse,
     status_code=status.HTTP_201_CREATED,
@@ -151,15 +165,19 @@ async def sync_repo(
             )
 
         # Dispatch Inngest event to trigger the ingestion pipeline
+        event_data = {
+            "repo_id": repo_row["id"],
+            "user_id": user.id,
+            "repo_url": str(request.repo_url),
+            "branch": request.branch,
+        }
+        if request.github_token:
+            event_data["github_token"] = request.github_token
+
         await inngest_client.send(
             inngest.Event(
                 name="repo/sync.requested",
-                data={
-                    "repo_id": repo_row["id"],
-                    "user_id": user.id,
-                    "repo_url": str(request.repo_url),
-                    "branch": request.branch,
-                },
+                data=event_data,
             )
         )
 
@@ -176,6 +194,54 @@ async def sync_repo(
         with open("sync_error.log", "a") as f:
             f.write(traceback.format_exc() + "\n")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@router.post(
+    "/{repo_id}/cancel",
+    response_model=RepoSyncResponse,
+    summary="Cancel active repository sync",
+    description="Cancels an in-flight repository ingestion pipeline.",
+)
+async def cancel_repo_sync(
+    repo_id: UUID,
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> RepoSyncResponse:
+    """Cancel an ongoing repository ingestion job."""
+    import os, shutil, tempfile
+    str_id = str(repo_id)
+    repo = await pg.get_repo_by_id(str_id, user.id)
+    if not repo:
+        raise HTTPException(status_code=404, detail="Repository not found.")
+
+    current_status = repo.get("status")
+    if current_status not in ("queued", "processing"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Repository is not currently processing (status: {current_status})."
+        )
+
+    # Mark as failed/cancelled
+    updated = await pg.update_repo_status(
+        repo_id=str_id,
+        user_id=user.id,
+        status="failed",
+        detailed_status="cancelled",
+        error_message="Ingestion cancelled by user.",
+    )
+
+    # Clean up temp clone files
+    temp_dir = os.path.join(tempfile.gettempdir(), f"gitdecode_{str_id}")
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    return RepoSyncResponse(
+        repo_id=str_id,
+        status="failed",
+        detailed_status="cancelled",
+        message="Ingestion cancelled by user.",
+        queued_at=updated.get("created_at", datetime.now(timezone.utc)),
+    )
 
 
 @router.get(

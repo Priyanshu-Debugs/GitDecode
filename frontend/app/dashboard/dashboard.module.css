@@ -4224,3 +4224,217 @@
 .hideScrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ── Terminal URL Input Bar & Preview Card ────────────────────────── */
+.dashboardUrlContainer {
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 720px;
+}
+
+.dashboardUrlForm {
+  width: 100%;
+}
+
+.dashboardUrlInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(18, 16, 14, 0.85);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 18px;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.dashboardUrlInputWrap:focus-within {
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.dashboardUrlPrompt {
+  color: var(--color-green);
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.dashboardUrlInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--color-white);
+  line-height: 1.5;
+}
+
+.dashboardUrlInput::placeholder {
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+}
+
+.dashboardUrlSubmit {
+  background: transparent;
+  border: none;
+  color: var(--color-green);
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 6px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dashboardUrlSubmit:hover:not(:disabled) {
+  transform: translateX(4px);
+}
+
+.dashboardUrlSubmit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Repo Preview Card */
+.repoPreviewCard {
+  margin-top: 14px;
+  background: rgba(22, 20, 16, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg, 10px);
+  padding: 20px 24px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: fadeInDown 0.25s ease-out;
+}
+
+.repoPreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.repoPreviewTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.repoPreviewAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.repoPreviewTitle {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.repoPreviewDesc {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.repoPreviewMeta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.repoPreviewBranchInput {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-white);
+  outline: none;
+  width: 110px;
+}
+
+.repoPreviewBranchInput:focus {
+  border-color: var(--color-green);
+}
+
+/* Visibility Text Tag Badges */
+.tagBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tagPrivate {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.tagPublic {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* Cancel Ingestion Button */
+.cancelIngestionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md, 8px);
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.cancelIngestionBtn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.cancelIngestionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelIngestionBtnSmall {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm, 6px);
+}
+

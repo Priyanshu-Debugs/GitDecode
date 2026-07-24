@@ -141,6 +141,14 @@ class SupabasePGClient:
         )
         return response.data
 
+    async def get_repo_by_id(
+        self,
+        repo_id: str,
+        user_id: str,
+    ) -> dict[str, Any] | None:
+        """Fetch a single repository by ID, scoped to the user (alias for get_repo)."""
+        return await self.get_repo(repo_id, user_id)
+
     async def get_repo_by_url(
         self,
         user_id: str,

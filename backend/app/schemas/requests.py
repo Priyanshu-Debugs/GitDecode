@@ -11,18 +11,28 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator, HttpUrl
 
 
+class RepoAccessCheckRequest(BaseModel):
+    """Request body for checking access to a GitHub repository."""
+    model_config = ConfigDict(extra="ignore")
+
+    repo_url: HttpUrl
+    github_token: str | None = None
+
+
 class RepoSyncRequest(BaseModel):
     """Request body for initiating a repository sync/ingestion.
 
     Attributes:
         repo_url: A valid GitHub HTTPS URL pointing to a repository.
         branch: The branch to sync. Defaults to ``"main"``.
+        github_token: Optional GitHub access token for cloning private repositories.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     repo_url: HttpUrl
     branch: str = Field(default="main", min_length=1, max_length=255)
+    github_token: str | None = None
 
     @field_validator("repo_url")
     @classmethod
