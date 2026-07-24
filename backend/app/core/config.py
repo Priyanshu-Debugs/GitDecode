@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     )
 
     # ── Application ──────────────────────────────────────────────────────
+    INNGEST_APP_ID: str = "gitdecode"
     PROJECT_NAME: str = "GitDecode"
     API_V1_PREFIX: str = "/api/v1"
     DEBUG: bool = False
