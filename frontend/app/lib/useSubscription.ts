@@ -23,23 +23,42 @@ const DEFAULT_FREE_LIMITS = {
   monthly_report_limit: 2,
 };
 
+const SUBSC_CACHE_KEY = "gitdecode_cached_subscription";
+
 export function useSubscription() {
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem(SUBSC_CACHE_KEY);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          // invalid cache JSON
+        }
+      }
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState<boolean>(() => !subscription);
 
   const refreshSubscription = async () => {
     try {
       const info = await getUserSubscription();
       setSubscription(info);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SUBSC_CACHE_KEY, JSON.stringify(info));
+      }
     } catch (err) {
       console.error("Failed to fetch user subscription, falling back to default free plan:", err);
-      setSubscription({
-        plan: "free",
-        is_pro: false,
-        limits: DEFAULT_FREE_LIMITS,
-        started_at: null,
-        expires_at: null,
-      });
+      if (!subscription) {
+        setSubscription({
+          plan: "free",
+          is_pro: false,
+          limits: DEFAULT_FREE_LIMITS,
+          started_at: null,
+          expires_at: null,
+        });
+      }
     } finally {
       setLoading(false);
     }

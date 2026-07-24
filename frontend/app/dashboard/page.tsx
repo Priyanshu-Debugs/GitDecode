@@ -267,7 +267,7 @@ const MOCK_REPOS = [
 
 function DashboardContent() {
   const { user, session } = useAuth(true);
-  const { subscription, isPro } = useSubscription();
+  const { subscription, isPro, loading: subscriptionLoading } = useSubscription();
   const router = useRouter();
 
   // Read Selection from URL params
@@ -1001,7 +1001,7 @@ function DashboardContent() {
     };
 
     const activeReposCount = repos.length;
-    const isAtLimit = !isPro && activeReposCount >= 2;
+    const isAtLimit = !subscriptionLoading && !isPro && activeReposCount >= 2;
 
     return (
       <div className={styles.repoDashboardContainer} style={{ padding: "40px 48px", overflowY: "auto", width: "100%", height: "100%", background: "var(--color-bg)", position: "relative" }}>

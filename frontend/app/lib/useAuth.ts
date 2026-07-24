@@ -101,6 +101,8 @@ export function useAuth(requireAuth = true) {
     try {
       if (typeof window !== "undefined") {
         localStorage.removeItem("gitdecode_mock_session");
+        localStorage.removeItem("gitdecode_cached_subscription");
+        localStorage.removeItem("gitdecode_cached_repos");
       }
       try {
         const supabase = getSupabase();
