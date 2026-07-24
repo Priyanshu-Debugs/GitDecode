@@ -111,10 +111,10 @@ export default function DeveloperPage() {
                 {/* Logo Avatar Frame with popover speech bubble */}
                 <div className={styles.avatarWrapper}>
                   <Image
-                    src="/developer-logo-refined.svg"
+                    src="/developers.svg"
                     alt={`${dev.name} Avatar`}
-                    width={70}
-                    height={70}
+                    width={180}
+                    height={180}
                     className={styles.avatarImage}
                   />
                   {activeSpeaker === index && (

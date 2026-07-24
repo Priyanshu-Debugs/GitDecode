@@ -130,8 +130,8 @@
 .avatarWrapper {
   position: relative;
   flex-shrink: 0;
-  width: 76px;
-  height: 76px;
+  width: 190px;
+  height: 190px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,7 +140,7 @@
 
 .avatarImage {
   object-fit: contain;
-  opacity: 0.85;
+  opacity: 1;
 }
 
 /* Downward speech bubble pointing to photo */
