@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Fragment } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -64,6 +64,7 @@ export default function HowItWorksPage() {
   const [typingUrl, setTypingUrl] = useState("");
   const targetUrl = "https://github.com/Priyanshu-Debugs/GitDecode";
 
+  // Step 1 Infinite Loop
   useEffect(() => {
     if (activeStepId !== 1) {
       setCloneOutput([]);
@@ -73,21 +74,7 @@ export default function HowItWorksPage() {
 
     let urlTimeout: NodeJS.Timeout;
     let printInterval: NodeJS.Timeout;
-    let index = 0;
-
-    // Simulating developer typing the URL
-    const type = () => {
-      if (index < targetUrl.length) {
-        setTypingUrl(targetUrl.slice(0, index + 1));
-        index++;
-        urlTimeout = setTimeout(type, 60);
-      } else {
-        // Start terminal printing
-        printTerminalLines();
-      }
-    };
-
-    urlTimeout = setTimeout(type, 500);
+    let resetTimeout: NodeJS.Timeout;
 
     const terminalLines = [
       "Cloning into 'GitDecode'...",
@@ -103,6 +90,24 @@ export default function HowItWorksPage() {
       "Repository connect & shallow clone completed in 1.42s."
     ];
 
+    const startCycle = () => {
+      setCloneOutput([]);
+      setTypingUrl("");
+      let index = 0;
+
+      const type = () => {
+        if (index < targetUrl.length) {
+          setTypingUrl(targetUrl.slice(0, index + 1));
+          index++;
+          urlTimeout = setTimeout(type, 50);
+        } else {
+          printTerminalLines();
+        }
+      };
+
+      urlTimeout = setTimeout(type, 400);
+    };
+
     const printTerminalLines = () => {
       let lineIndex = 0;
       printInterval = setInterval(() => {
@@ -111,15 +116,172 @@ export default function HowItWorksPage() {
           lineIndex++;
         } else {
           clearInterval(printInterval);
+          resetTimeout = setTimeout(() => {
+            startCycle();
+          }, 2500);
         }
-      }, 300);
+      }, 250);
     };
+
+    startCycle();
 
     return () => {
       clearTimeout(urlTimeout);
       if (printInterval) clearInterval(printInterval);
+      if (resetTimeout) clearTimeout(resetTimeout);
       setCloneOutput([]);
       setTypingUrl("");
+    };
+  }, [activeStepId]);
+
+  // Step 2 Loop (AST Node & Graph Pulse)
+  const [astActiveIndex, setAstActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (activeStepId !== 2) return;
+    const interval = setInterval(() => {
+      setAstActiveIndex((prev) => (prev + 1) % 4);
+    }, 1300);
+    return () => clearInterval(interval);
+  }, [activeStepId]);
+
+  // Step 3 Loop (Vectorless Graph RAG Query & Traversal)
+  const [ragPhase, setRagPhase] = useState(0);
+  const [ragQueryText, setRagQueryText] = useState("");
+  const targetRagQuery = "Trace where user login handles session creation";
+
+  useEffect(() => {
+    if (activeStepId !== 3) {
+      setRagPhase(0);
+      setRagQueryText("");
+      return;
+    }
+
+    let charIndex = 0;
+    let typeTimeout: NodeJS.Timeout;
+    let phaseTimeout1: NodeJS.Timeout;
+    let phaseTimeout2: NodeJS.Timeout;
+    let phaseTimeout3: NodeJS.Timeout;
+    let loopTimeout: NodeJS.Timeout;
+
+    const startRagCycle = () => {
+      setRagPhase(0);
+      setRagQueryText("");
+      charIndex = 0;
+
+      const typeQuery = () => {
+        if (charIndex < targetRagQuery.length) {
+          setRagQueryText(targetRagQuery.slice(0, charIndex + 1));
+          charIndex++;
+          typeTimeout = setTimeout(typeQuery, 40);
+        } else {
+          phaseTimeout1 = setTimeout(() => setRagPhase(1), 500);
+          phaseTimeout2 = setTimeout(() => setRagPhase(2), 1500);
+          phaseTimeout3 = setTimeout(() => setRagPhase(3), 2500);
+          loopTimeout = setTimeout(() => {
+            startRagCycle();
+          }, 5500);
+        }
+      };
+
+      typeTimeout = setTimeout(typeQuery, 300);
+    };
+
+    startRagCycle();
+
+    return () => {
+      clearTimeout(typeTimeout);
+      clearTimeout(phaseTimeout1);
+      clearTimeout(phaseTimeout2);
+      clearTimeout(phaseTimeout3);
+      clearTimeout(loopTimeout);
+    };
+  }, [activeStepId]);
+
+  // Step 4 Loop (Multi-Agent Pipeline Active Node Routing)
+  const [activeAgentIndex, setActiveAgentIndex] = useState(0);
+
+  useEffect(() => {
+    if (activeStepId !== 4) return;
+    const interval = setInterval(() => {
+      setActiveAgentIndex((prev) => (prev + 1) % 4);
+    }, 1400);
+    return () => clearInterval(interval);
+  }, [activeStepId]);
+
+  // Step 5 Loop (Explore & Streamed AI Responses)
+  const [chatPhase, setChatPhase] = useState(0);
+  const [chatTypedQuestion, setChatTypedQuestion] = useState("");
+  const [chatStreamedAnswer, setChatStreamedAnswer] = useState("");
+  const targetQuestion = "Where is auth initialized?";
+  const targetAnswer = "Authentication is initialized using Supabase client library inside lib/supabase.ts.";
+
+  useEffect(() => {
+    if (activeStepId !== 5) {
+      setChatPhase(0);
+      setChatTypedQuestion("");
+      setChatStreamedAnswer("");
+      return;
+    }
+
+    let qIndex = 0;
+    let aIndex = 0;
+    let timer1: NodeJS.Timeout;
+    let timer2: NodeJS.Timeout;
+    let timer3: NodeJS.Timeout;
+    let streamInterval: NodeJS.Timeout;
+    let loopTimeout: NodeJS.Timeout;
+
+    const startChatCycle = () => {
+      setChatPhase(0);
+      setChatTypedQuestion("");
+      setChatStreamedAnswer("");
+      qIndex = 0;
+      aIndex = 0;
+
+      const typeQuestion = () => {
+        if (qIndex < targetQuestion.length) {
+          setChatTypedQuestion(targetQuestion.slice(0, qIndex + 1));
+          qIndex++;
+          timer1 = setTimeout(typeQuestion, 45);
+        } else {
+          // Question typed -> Thinking phase
+          timer2 = setTimeout(() => {
+            setChatPhase(1); // thinking
+            timer3 = setTimeout(() => {
+              setChatPhase(2); // streaming
+              streamAnswer();
+            }, 1200);
+          }, 400);
+        }
+      };
+
+      const streamAnswer = () => {
+        streamInterval = setInterval(() => {
+          if (aIndex < targetAnswer.length) {
+            setChatStreamedAnswer(targetAnswer.slice(0, aIndex + 1));
+            aIndex++;
+          } else {
+            clearInterval(streamInterval);
+            setChatPhase(3); // citations reveal
+            loopTimeout = setTimeout(() => {
+              startChatCycle();
+            }, 3500);
+          }
+        }, 25);
+      };
+
+      timer1 = setTimeout(typeQuestion, 300);
+    };
+
+    startChatCycle();
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      if (streamInterval) clearInterval(streamInterval);
+      if (loopTimeout) clearTimeout(loopTimeout);
     };
   }, [activeStepId]);
 
@@ -221,20 +383,28 @@ export default function HowItWorksPage() {
           </div>
         );
       case 2: // AST parsing & building graph
+        const astNodes = [
+          { name: "layout.tsx", file: "app/layout.tsx" },
+          { name: "page.tsx", file: "app/page.tsx" },
+          { name: "auth.ts", file: "lib/auth.ts" },
+          { name: "api.ts", file: "services/api.ts" }
+        ];
+
         return (
           <div className={styles.visualizerContainer}>
             <div className={styles.astVisualizer}>
               <div className={styles.fileNodeRow}>
-                <div className={styles.astCard}>
+                <div className={`${styles.astCard} ${styles.glowGreenBorder}`}>
                   <div className={styles.astCardHeader}>
                     <FileCode size={14} className={styles.codeVal} />
-                    <span>auth.ts</span>
+                    <span>{astNodes[astActiveIndex].name}</span>
                   </div>
                   <pre className={styles.astPre}>
                     <code>
-                      {"export class AuthProvider {\n"}
-                      {"  login() { ... }\n"}
-                      {"}"}
+                      {astActiveIndex === 0 && "export default function RootLayout() { ... }"}
+                      {astActiveIndex === 1 && "export default function HomePage() { ... }"}
+                      {astActiveIndex === 2 && "export class AuthProvider {\n  login() { ... }\n}"}
+                      {astActiveIndex === 3 && "export async function fetchApi() { ... }"}
                     </code>
                   </pre>
                 </div>
@@ -242,37 +412,45 @@ export default function HowItWorksPage() {
                   <motion.div
                     className={styles.astPulse}
                     animate={{ left: ["0%", "100%"] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
                   />
                   <span>Tree-Sitter AST Parser</span>
                 </div>
-                <div className={styles.astCard}>
+                <div className={`${styles.astCard} ${styles.glowAmberBorder}`}>
                   <div className={styles.astCardHeader}>
                     <Layers size={14} className={styles.codeDim} />
-                    <span>AST Node Representation</span>
+                    <span>AST Node Syntax Tree</span>
                   </div>
                   <pre className={styles.astPre}>
                     <code>
-                      {"{\n"}
-                      {"  type: 'ExportNamedDeclaration',\n"}
-                      {"  name: 'AuthProvider',\n"}
-                      {"  methods: ['login']\n"}
-                      {"}"}
+                      {astActiveIndex === 0 && "{\n  type: 'Program',\n  body: ['RootLayout']\n}"}
+                      {astActiveIndex === 1 && "{\n  type: 'ExportDefault',\n  name: 'HomePage'\n}"}
+                      {astActiveIndex === 2 && "{\n  type: 'ClassDeclaration',\n  name: 'AuthProvider'\n}"}
+                      {astActiveIndex === 3 && "{\n  type: 'AsyncFunction',\n  name: 'fetchApi'\n}"}
                     </code>
                   </pre>
                 </div>
               </div>
 
               <div className={styles.graphPreview}>
-                <span className={styles.previewLabel}>Auto-Compiled Dependency Tree</span>
+                <span className={styles.previewLabel}>Auto-Compiled Dependency Tree (Parsing Live...)</span>
                 <div className={styles.graphNodes}>
-                  <div className={`${styles.gNode} ${styles.activeGNode}`}>layout.tsx</div>
-                  <div className={styles.gLine}></div>
-                  <div className={`${styles.gNode} ${styles.activeGNode}`}>page.tsx</div>
-                  <div className={styles.gLine}></div>
-                  <div className={styles.gNode}>auth.ts</div>
-                  <div className={styles.gLine}></div>
-                  <div className={styles.gNode}>api.ts</div>
+                  {astNodes.map((n, idx) => (
+                    <React.Fragment key={n.name}>
+                      <div
+                        className={`${styles.gNode} ${idx === astActiveIndex ? styles.activeGNode : ""}`}
+                        style={{
+                          transform: idx === astActiveIndex ? "scale(1.08)" : "scale(1)",
+                          transition: "all 0.3s ease",
+                          borderColor: idx === astActiveIndex ? "var(--color-green)" : "var(--color-border)",
+                          boxShadow: idx === astActiveIndex ? "0 0 12px rgba(131, 193, 103, 0.4)" : "none"
+                        }}
+                      >
+                        {n.name}
+                      </div>
+                      {idx < astNodes.length - 1 && <div className={styles.gLine} />}
+                    </React.Fragment>
+                  ))}
                 </div>
               </div>
             </div>
@@ -287,42 +465,65 @@ export default function HowItWorksPage() {
             <div className={styles.ragVisualizer}>
               <div className={styles.queryInputBox}>
                 <Search size={16} className={styles.codeDim} />
-                <span>"Trace where user login handles session creation"</span>
+                <span>{ragQueryText}<span className={styles.terminalCursor}>▋</span></span>
               </div>
               <div className={styles.arrowIcon}>
-                <Cpu size={20} className={styles.codeClass} />
-                <span>AST Router Routing</span>
+                <Cpu size={20} className={ragPhase >= 1 ? styles.codeVal : styles.codeClass} />
+                <span>{ragPhase === 0 ? "Awaiting Query..." : "AST Graph Traversal Active"}</span>
               </div>
               <div className={styles.ragGraphGrid}>
-                {/* Router traversing nodes */}
+                {/* Depth 1 */}
                 <div className={styles.depthNodeCol}>
                   <span className={styles.depthBadge}>Depth-1 (Source Code)</span>
-                  <div className={`${styles.ragNodeCard} ${styles.glowGreenBorder}`}>
+                  <div
+                    className={`${styles.ragNodeCard} ${ragPhase >= 1 ? styles.glowGreenBorder : ""}`}
+                    style={{ transition: "all 0.3s ease", opacity: ragPhase >= 1 ? 1 : 0.4 }}
+                  >
                     <div className={styles.ragNodeHeader}>
-                      <span className={styles.nodeStatusDot} style={{ backgroundColor: "var(--color-green)" }} />
+                      <span
+                        className={styles.nodeStatusDot}
+                        style={{ backgroundColor: ragPhase >= 1 ? "var(--color-green)" : "var(--color-dim)" }}
+                      />
                       <span>auth/provider.ts</span>
                     </div>
-                    <span className={styles.ragNodeDesc}>Matches query targets. Full content loaded into context window.</span>
+                    <span className={styles.ragNodeDesc}>
+                      {ragPhase >= 1 ? "Matches query target. Full context loaded into LLM window." : "Standby for traversal..."}
+                    </span>
                   </div>
                 </div>
+                {/* Depth 2 */}
                 <div className={styles.depthNodeCol}>
                   <span className={styles.depthBadge}>Depth-2 (AST Signatures)</span>
-                  <div className={`${styles.ragNodeCard} ${styles.glowAmberBorder}`}>
+                  <div
+                    className={`${styles.ragNodeCard} ${ragPhase >= 2 ? styles.glowAmberBorder : ""}`}
+                    style={{ transition: "all 0.3s ease", opacity: ragPhase >= 2 ? 1 : 0.4 }}
+                  >
                     <div className={styles.ragNodeHeader}>
-                      <span className={styles.nodeStatusDot} style={{ backgroundColor: "var(--color-secondary-accent)" }} />
+                      <span
+                        className={styles.nodeStatusDot}
+                        style={{ backgroundColor: ragPhase >= 2 ? "var(--color-secondary-accent)" : "var(--color-dim)" }}
+                      />
                       <span>lib/supabase.ts</span>
                     </div>
-                    <span className={styles.ragNodeDesc}>Direct dependency. Function signatures & exports loaded for imports verification.</span>
+                    <span className={styles.ragNodeDesc}>
+                      {ragPhase >= 2 ? "Direct dependency. Method signatures loaded for validation." : "Standby for traversal..."}
+                    </span>
                   </div>
                 </div>
+                {/* Depth 3 */}
                 <div className={styles.depthNodeCol}>
                   <span className={styles.depthBadge}>Depth-3 (Excluded)</span>
-                  <div className={styles.ragNodeCard} style={{ opacity: 0.4 }}>
+                  <div
+                    className={styles.ragNodeCard}
+                    style={{ opacity: ragPhase >= 3 ? 0.4 : 0.2, transition: "all 0.3s ease" }}
+                  >
                     <div className={styles.ragNodeHeader}>
                       <span className={styles.nodeStatusDot} style={{ backgroundColor: "var(--color-dim)" }} />
                       <span>utils/logger.ts</span>
                     </div>
-                    <span className={styles.ragNodeDesc}>Transitive logger helper. Excluded to optimize LLM tokens count.</span>
+                    <span className={styles.ragNodeDesc}>
+                      {ragPhase >= 3 ? "Transitive helper. Excluded to minimize LLM token usage." : "Standby for evaluation..."}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -333,30 +534,42 @@ export default function HowItWorksPage() {
           </div>
         );
       case 4: // Multi-Agent Pipeline
+        const agents = [
+          { name: "Code QA Agent", desc: "Handles detailed code reasoning and syntax questions." },
+          { name: "Visualizer Agent", desc: "Compiles call hierarchies into clean Mermaid flowcharts." },
+          { name: "Blast Radius Agent", desc: "Performs static impact analysis for proposed code modifications." },
+          { name: "Repo Summary Agent", desc: "Generates high-level project summaries and developer onboarding maps." }
+        ];
+
         return (
           <div className={styles.visualizerContainer}>
             <div className={styles.pipelineVisualizer}>
               <div className={styles.agentCenterNode}>
                 <div className={styles.agentBadge}>LangGraph Supervisor</div>
-                <div className={styles.agentPrompt}>Routes queries to specialist nodes</div>
+                <div className={styles.agentPrompt}>Routing query to → {agents[activeAgentIndex].name}</div>
               </div>
               <div className={styles.agentBranches}>
-                <div className={styles.agentBranchCard}>
-                  <div className={styles.agentBranchHeader}>Code QA Agent</div>
-                  <p>Handles detailed code reasoning and syntax questions.</p>
-                </div>
-                <div className={styles.agentBranchCard}>
-                  <div className={styles.agentBranchHeader}>Visualizer Agent</div>
-                  <p>Compiles call hierarchies into clean Mermaid flowcharts.</p>
-                </div>
-                <div className={styles.agentBranchCard}>
-                  <div className={styles.agentBranchHeader}>Blast Radius Agent</div>
-                  <p>Performs static impact analysis for proposed code modifications.</p>
-                </div>
-                <div className={styles.agentBranchCard}>
-                  <div className={styles.agentBranchHeader}>Repo Summary Agent</div>
-                  <p>Generates high-level project summaries and developer onboarding maps.</p>
-                </div>
+                {agents.map((agent, idx) => {
+                  const isActive = idx === activeAgentIndex;
+                  return (
+                    <div
+                      key={agent.name}
+                      className={styles.agentBranchCard}
+                      style={{
+                        borderColor: isActive ? "var(--color-green)" : "var(--color-border)",
+                        background: isActive ? "rgba(131, 193, 103, 0.05)" : "var(--color-panel)",
+                        transform: isActive ? "translateY(-3px)" : "none",
+                        boxShadow: isActive ? "0 0 16px rgba(131, 193, 103, 0.2)" : "none",
+                        transition: "all 0.3s ease"
+                      }}
+                    >
+                      <div className={styles.agentBranchHeader} style={{ color: isActive ? "var(--color-green)" : "var(--color-text)" }}>
+                        {agent.name} {isActive && ""}
+                      </div>
+                      <p>{agent.desc}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <p className={styles.visualizerCaption}>
@@ -374,24 +587,33 @@ export default function HowItWorksPage() {
               </div>
               <div className={styles.chatContent}>
                 <div className={styles.chatMsgUser}>
-                  <span>Where is auth initialized?</span>
+                  <span>{chatTypedQuestion}<span className={styles.terminalCursor}>▋</span></span>
                 </div>
-                <div className={styles.chatMsgSystem}>
-                  <div className={styles.thoughtProcess}>
-                    <Activity size={12} className={styles.spinningIcon} />
-                    <span>thought: Routing query &rarr; QA Specialist &rarr; walking AST dependencies...</span>
+                {chatPhase >= 1 && (
+                  <div className={styles.chatMsgSystem}>
+                    {chatPhase === 1 && (
+                      <div className={styles.thoughtProcess}>
+                        <Activity size={12} className={styles.spinningIcon} />
+                        <span>thought: Routing query &rarr; QA Specialist &rarr; walking AST dependencies...</span>
+                      </div>
+                    )}
+                    {chatPhase >= 2 && (
+                      <div className={styles.systemContent}>
+                        {chatStreamedAnswer}
+                        {chatPhase === 2 && <span className={styles.terminalCursor}>▋</span>}
+                      </div>
+                    )}
+                    {chatPhase >= 3 && (
+                      <div className={styles.citationsBlock}>
+                        <span className={styles.citationLabel}>Citations</span>
+                        <div className={styles.citationLink}>
+                          <FileCode size={12} />
+                          <span>lib/supabase.ts:L12-L28</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className={styles.systemContent}>
-                    Authentication is initialized using Supabase client library inside <span className={styles.glowingText}>lib/supabase.ts</span>.
-                  </div>
-                  <div className={styles.citationsBlock}>
-                    <span className={styles.citationLabel}>Citations</span>
-                    <div className={styles.citationLink}>
-                      <FileCode size={12} />
-                      <span>lib/supabase.ts:L12-L28</span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
             <p className={styles.visualizerCaption}>
@@ -501,66 +723,7 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        {/* ── PIPELINE PROCESS OVERVIEW ────────────────────────────── */}
-        <section className={styles.timelineSection}>
-          <div className={styles.timelineHeader}>
-            <p className={styles.label}>system_execution_flow</p>
-            <h2 className={styles.timelineMainTitle}>Step-by-Step Architecture Process</h2>
-            <p className={styles.timelineMainSubtitle}>
-              Walk through the detailed sequence of steps GitDecode performs to clone, analyze, parse, route, and stream answers for your codebase.
-            </p>
-          </div>
 
-          <div className={styles.timelineWrapper}>
-            {/* Connecting vertical background line */}
-            <div className={styles.timelineVerticalLine} />
-
-            {howItWorksData.steps.map((step, idx) => (
-              <motion.div
-                key={step.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className={styles.timelineStepCard}
-              >
-                {/* Step Badge */}
-                <div className={styles.timelineStepBadge}>
-                  {step.stepNumber}
-                </div>
-
-                {/* Step Details */}
-                <div className={styles.timelineStepDetails}>
-                  <div className={styles.timelineStepHeader}>
-                    <h3 className={styles.timelineStepTitle}>{step.title}</h3>
-                    <span className={styles.timelineStepHeadline}>{step.headline}</span>
-                  </div>
-                  <p className={styles.timelineStepDescription}>{step.description}</p>
-
-                  {/* Tech tags */}
-                  <div className={styles.timelineStepTechRow}>
-                    {step.tech.map((t, i) => (
-                      <span key={i} className={styles.timelineStepTechTag}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Code Snippet Box */}
-                  <div className={styles.timelineStepCodeBox}>
-                    <div className={styles.timelineCodeHeader}>
-                      <span>terminal / code representation</span>
-                      <span className={styles.timelineCodeLang}>bash · python</span>
-                    </div>
-                    <pre className={styles.timelineCodePre}>
-                      <code>{step.codePreview}</code>
-                    </pre>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
 
         {/* ── TECHNICAL COMPARISON / ARCHITECTURE SUMMARY ────────── */}
         <section className={styles.detailsSection}>

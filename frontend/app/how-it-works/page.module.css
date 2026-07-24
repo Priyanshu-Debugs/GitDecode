@@ -81,18 +81,22 @@
 }
 
 .paneGrid {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 32px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
 }
 
 .leftPane {
-  position: sticky;
-  top: 96px;
+  position: relative;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
 }
 
 .rightPane {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -134,14 +138,18 @@
 .editorPre {
   padding: 24px;
   margin: 0;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
 }
 
 .editorCode {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   line-height: 1.6;
   color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .ln {
