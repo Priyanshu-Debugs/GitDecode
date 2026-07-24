@@ -43,6 +43,11 @@ export const metadata: Metadata = {
   title: "GitDecode | Understand Any Codebase",
   description:
     "AI-powered codebase intelligence. GitDecode parses your repository, builds a knowledge graph, and lets you explore it through interactive architecture diagrams and natural conversation.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   keywords: [
     "codebase visualization",
     "code understanding",

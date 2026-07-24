@@ -423,7 +423,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           {!collapsed && (
             <Link href="/" style={{ display: "flex", alignItems: "center" }}>
               <Image
-                src="/gitdecode-logo-vector.svg"
+                src="/logo.svg"
                 alt="GitDecode"
                 width={120}
                 height={32}

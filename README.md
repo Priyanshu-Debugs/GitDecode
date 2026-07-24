@@ -389,9 +389,9 @@ GitDecode/
     ├── next.config.ts                 # Next.js Configuration
     ├── tailwind.config.ts             # Tailwind CSS Design Tokens
     ├── public/
-    │   ├── developer-logo-refined.svg # Refined GitDecode Vector Logo Asset
-    │   ├── gitdecode-logo-vector.svg    # Secondary Branding Graphic
-    │   └── animation.gif              # Dashboard Interaction Recording
+    │   ├── logo.svg                   # Primary GitDecode Vector Logo Asset
+    │   ├── developer-logo-refined.svg # Refined GitDecode Hero Asset
+    │   └── developer-logo.svg         # Sign-in Graphic Asset
     ├── app/
     │   ├── layout.tsx                 # Root Layout & Theme Container
     │   ├── page.tsx                   # Landing Page & Product Overview
