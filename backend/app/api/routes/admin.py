@@ -135,9 +135,10 @@ async def get_pro_request_stats(
     summary="Approve a Pro request",
     description=(
         "Approve a Pro upgrade request. This will: "
-        "1) Update the request status to 'approved', "
-        "2) Grant the user Pro subscription for 1 year, "
-        "3) Send an approval notification email to the user."
+        "1) Verify the request isn't already approved, "
+        "2) Send an approval notification email to the user, "
+        "3) Update the request status to 'approved', "
+        "4) Grant the user Pro subscription for 1 year."
     ),
 )
 async def approve_pro_request(
@@ -146,20 +147,52 @@ async def approve_pro_request(
     admin: dict = Depends(require_admin),
     pg: SupabasePGClient = Depends(get_pg),
 ) -> dict:
-    # 1. Update request status
+    # 1. Fetch current request to check status
+    requests = await pg.list_pro_requests()
+    target_req = next((r for r in requests if r.get("id") == request_id), None)
+    
+    if not target_req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pro request not found.",
+        )
+        
+    if target_req.get("status") == "approved":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This request is already approved.",
+        )
+        
+    # 2. Send approval email FIRST (fail the API if it fails)
+    try:
+        success = await send_pro_approval_email(
+            to_email=target_req.get("email", ""),
+            first_name=target_req.get("first_name", ""),
+            github_username=target_req.get("github_username", ""),
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Email service not configured or failed to send email.",
+            )
+        logger.info("Approval email sent to %s", target_req.get("email"))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to send approval email: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send email: {str(e)}",
+        )
+
+    # 3. Update request status in DB
     updated = await pg.update_pro_request_status(
         request_id=request_id,
         status="approved",
         admin_notes=body.admin_notes,
     )
     
-    if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pro request not found.",
-        )
-    
-    # 2. Grant Pro subscription for 1 year
+    # 4. Grant Pro subscription for 1 year
     user_id = updated.get("user_id")
     expires_at = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
     await pg.upsert_user_subscription(
@@ -167,17 +200,6 @@ async def approve_pro_request(
         plan="pro",
         expires_at=expires_at,
     )
-    
-    # 3. Send approval email (non-blocking)
-    try:
-        await send_pro_approval_email(
-            to_email=updated.get("email", ""),
-            first_name=updated.get("first_name", ""),
-            github_username=updated.get("github_username", ""),
-        )
-        logger.info("Approval email sent to %s", updated.get("email"))
-    except Exception as e:
-        logger.error("Failed to send approval email: %s", str(e))
     
     return {
         "status": "approved",
@@ -191,8 +213,9 @@ async def approve_pro_request(
     summary="Reject a Pro request",
     description=(
         "Reject a Pro upgrade request. This will: "
-        "1) Update the request status to 'rejected', "
-        "2) Send a rejection notification email to the user."
+        "1) Verify the request isn't already rejected, "
+        "2) Send a rejection notification email to the user, "
+        "3) Update the request status to 'rejected'."
     ),
 )
 async def reject_pro_request(
@@ -201,28 +224,50 @@ async def reject_pro_request(
     admin: dict = Depends(require_admin),
     pg: SupabasePGClient = Depends(get_pg),
 ) -> dict:
+    # 1. Fetch current request to check status
+    requests = await pg.list_pro_requests()
+    target_req = next((r for r in requests if r.get("id") == request_id), None)
+    
+    if not target_req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pro request not found.",
+        )
+        
+    if target_req.get("status") == "rejected":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This request is already rejected.",
+        )
+        
+    # 2. Send rejection email FIRST (fail the API if it fails)
+    try:
+        success = await send_pro_rejection_email(
+            to_email=target_req.get("email", ""),
+            first_name=target_req.get("first_name", ""),
+            github_username=target_req.get("github_username", ""),
+        )
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Email service not configured or failed to send email.",
+            )
+        logger.info("Rejection email sent to %s", target_req.get("email"))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to send rejection email: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send email: {str(e)}",
+        )
+
+    # 3. Update request status in DB
     updated = await pg.update_pro_request_status(
         request_id=request_id,
         status="rejected",
         admin_notes=body.admin_notes,
     )
-    
-    if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pro request not found.",
-        )
-    
-    # Send rejection email (non-blocking)
-    try:
-        await send_pro_rejection_email(
-            to_email=updated.get("email", ""),
-            first_name=updated.get("first_name", ""),
-            github_username=updated.get("github_username", ""),
-        )
-        logger.info("Rejection email sent to %s", updated.get("email"))
-    except Exception as e:
-        logger.error("Failed to send rejection email: %s", str(e))
     
     return {
         "status": "rejected",
