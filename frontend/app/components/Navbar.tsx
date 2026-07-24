@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/app/lib/useAuth";
+import { useSubscription } from "@/app/lib/useSubscription";
 import styles from "./Navbar.module.css";
 
 const snarkyQuotes = [
@@ -25,6 +27,19 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [lineIndex, setLineIndex] = useState(0);
   const pathname = usePathname();
+  const { user } = useAuth(false);
+  const { isPro } = useSubscription();
+
+  const githubName =
+    user?.user_metadata?.preferred_username ||
+    user?.user_metadata?.user_name ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    "Developer";
+
+  const initials = githubName
+    ? githubName.slice(0, 2).toUpperCase()
+    : "DV";
 
   const handleLightModeClick = () => {
     const text = snarkyQuotes[lineIndex % snarkyQuotes.length];
@@ -115,17 +130,67 @@ export default function Navbar() {
               ☀ light mode
             </button>
           </div>
-          {/* <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.navLink}
-          >
-            GitHub
-          </a> */}
-          <Link href="/auth/sign-in" className={styles.bracketBtn}>
-            sign in
-          </Link>
+          {user ? (
+            <>
+              <Link href="/dashboard" className={styles.bracketBtn}>
+                dashboard
+              </Link>
+
+              <Link
+                href="/dashboard/profile"
+                className={styles.topbarProfileWidget}
+                title="Developer Profile"
+              >
+                {user.user_metadata?.avatar_url ? (
+                  <div className={styles.topbarAvatar} style={{ overflow: "hidden", padding: 0 }}>
+                    <img
+                      src={user.user_metadata.avatar_url}
+                      alt={githubName}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.topbarAvatar}>{initials}</div>
+                )}
+                <span className={styles.topbarProfileName} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {githubName}
+                  {isPro ? (
+                    <span style={{ 
+                      fontSize: "0.6rem", 
+                      background: "rgba(212, 175, 55, 0.12)", 
+                      border: "1px solid #d4af37", 
+                      color: "#d4af37", 
+                      padding: "1px 6px", 
+                      borderRadius: 4, 
+                      fontFamily: "var(--font-mono)", 
+                      fontWeight: 700,
+                      letterSpacing: "0.02em"
+                    }}>
+                      Pro
+                    </span>
+                  ) : (
+                    <span style={{ 
+                      fontSize: "0.6rem", 
+                      background: "rgba(131, 193, 103, 0.12)", 
+                      border: "1px solid var(--color-green)", 
+                      color: "var(--color-green)", 
+                      padding: "1px 6px", 
+                      borderRadius: 4, 
+                      fontFamily: "var(--font-mono)", 
+                      fontWeight: 700,
+                      letterSpacing: "0.02em"
+                    }}>
+                      Free
+                    </span>
+                  )}
+                </span>
+              </Link>
+            </>
+          ) : (
+            <Link href="/auth/sign-in" className={styles.bracketBtn}>
+              sign in
+            </Link>
+          )}
         </div>
 
         {/* Mobile Hamburger */}
@@ -189,16 +254,50 @@ export default function Navbar() {
               ☀ light mode
             </button>
           </div>
-          <Link
-            href="/auth/sign-in"
-            className={styles.mobileLink}
-            onClick={() => setMobileOpen(false)}
-            style={{ color: "var(--color-green)" }}
-          >
-            [ sign in ]
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href="/dashboard"
+                className={styles.mobileLink}
+                onClick={() => setMobileOpen(false)}
+                style={{ color: "var(--color-green)" }}
+              >
+                [ dashboard ]
+              </Link>
+              <Link
+                href="/dashboard/profile"
+                className={styles.mobileProfileLink}
+                onClick={() => setMobileOpen(false)}
+              >
+                {user.user_metadata?.avatar_url ? (
+                  <div className={styles.topbarAvatar} style={{ overflow: "hidden", padding: 0 }}>
+                    <img
+                      src={user.user_metadata.avatar_url}
+                      alt={githubName}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.topbarAvatar}>{initials}</div>
+                )}
+                <span style={{ color: "var(--color-text)", fontFamily: "var(--font-mono)", fontSize: "0.875rem" }}>
+                  {githubName}
+                </span>
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/auth/sign-in"
+              className={styles.mobileLink}
+              onClick={() => setMobileOpen(false)}
+              style={{ color: "var(--color-green)" }}
+            >
+              [ sign in ]
+            </Link>
+          )}
         </div>
       )}
     </nav>
   );
 }
+

@@ -327,3 +327,62 @@
     display: none !important;
   }
 }
+
+/* ── Profile Widget ────────────────────────────────────────── */
+.topbarProfileWidget {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  cursor: pointer;
+  padding: 0 10px;
+  border-radius: 0px;
+  border: 0.5px solid transparent;
+  white-space: nowrap;
+  box-sizing: border-box;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.topbarProfileWidget:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.topbarAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-green);
+  color: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.topbarProfileName {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.topbarProfileWidget:hover .topbarProfileName {
+  color: var(--color-white);
+}
+
+.mobileProfileLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
