@@ -116,10 +116,10 @@ app.include_router(admin_router, prefix=settings.API_V1_PREFIX)
 
 # ── Inngest Event Server ────────────────────────────────────────────
 import inngest.fast_api
-from app.workers.inngest_fns import sync_github_repository
+from app.workers.inngest_fns import sync_github_repository, handle_function_failure
 from app.api.routes.repos import inngest_client
 
-inngest.fast_api.serve(app, inngest_client, [sync_github_repository])
+inngest.fast_api.serve(app, inngest_client, [sync_github_repository, handle_function_failure])
 
 
 

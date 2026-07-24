@@ -412,9 +412,9 @@
 }
 
 .statusFailed {
-  background: rgba(224, 138, 74, 0.1);
-  color: var(--color-orange);
-  border: 0.5px solid rgba(224, 138, 74, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 0.5px solid rgba(239, 68, 68, 0.4);
 }
 
 .statusDot {
@@ -438,8 +438,8 @@
 }
 
 .statusDotFailed {
-  background: var(--color-orange);
-  box-shadow: 0 0 6px var(--color-orange);
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
 }
 
 .repoBranch {
@@ -2334,9 +2334,9 @@
 }
 
 .badgeFailed {
-  background: rgba(224, 138, 74, 0.08);
-  border: 0.5px solid rgba(224, 138, 74, 0.3);
-  color: var(--color-orange);
+  background: rgba(239, 68, 68, 0.12);
+  border: 0.5px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
 }
 
 .pulseLightDot {
@@ -2357,8 +2357,8 @@
 }
 
 .pulseDotRed {
-  background: var(--color-danger);
-  box-shadow: 0 0 6px var(--color-danger);
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
 }
 
 .pulseDotGray {

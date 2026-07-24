@@ -115,9 +115,55 @@ def resolve_import_path(
 
     return None
 
+
+# ── Failure Handlers ────────────────────────────────────────────────
+# Fires when the sync function exhausts all Inngest retries.
+# Updates the repo record in the DB so the frontend shows "Failed"
+# instead of being stuck on "Ingesting".
+
+async def _on_sync_failure(ctx: inngest.Context) -> None:
+    """Per-function on_failure handler for sync_github_repository.
+
+    Called by Inngest when the function fails after all retries are
+    exhausted.  The original triggering event is available inside
+    ``ctx.event.data["event"]``.
+    """
+    try:
+        original_event = ctx.event.data.get("event", {})
+        event_data = original_event.get("data", {})
+        repo_id = event_data.get("repo_id")
+        user_id = event_data.get("user_id")
+        error_info = ctx.event.data.get("error", {})
+        error_msg = error_info.get("message", "Unknown error") if isinstance(error_info, dict) else str(error_info)
+
+        if not repo_id or not user_id:
+            logger.error("on_failure: missing repo_id or user_id in event data")
+            return
+
+        settings = get_settings()
+        pg_client = SupabasePGClient(
+            supabase_url=settings.SUPABASE_URL,
+            service_role_key=settings.SUPABASE_SERVICE_ROLE_KEY,
+        )
+
+        logger.warning("on_failure: marking repo %s as failed — %s", repo_id, error_msg)
+        await pg_client.update_repo_status(
+            repo_id, user_id, "failed",
+            detailed_status="failed",
+            error_message=f"Ingestion failed: {error_msg}",
+        )
+
+        # Cleanup temp files if they exist
+        temp_dir = os.path.join(tempfile.gettempdir(), f"gitdecode_{repo_id}")
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    except Exception as exc:
+        logger.exception("on_failure handler itself errored: %s", exc)
+
+
 @inngest_client.create_function(
     fn_id="sync_github_repository",
     trigger=inngest.TriggerEvent(event="repo/sync.requested"),
+    on_failure=_on_sync_failure,
 )
 async def sync_github_repository(
     ctx: inngest.Context
@@ -536,3 +582,85 @@ async def sync_github_repository(
 
         await step.run("update_status_failed", update_to_failed)
         return {"status": "failed", "error": str(e), "repo_id": repo_id}
+
+
+# ── Global Failure & Cancellation Handler ───────────────────────────
+# Catches ALL Inngest function failures AND cancellations via the
+# inngest/function.failed and inngest/function.cancelled system events.
+
+@inngest_client.create_function(
+    fn_id="handle_function_failure",
+    trigger=[
+        inngest.TriggerEvent(event="inngest/function.failed"),
+        inngest.TriggerEvent(event="inngest/function.cancelled"),
+    ],
+)
+async def handle_function_failure(
+    ctx: inngest.Context,
+) -> dict[str, Any]:
+    """Global catch-all for any Inngest function failure or cancellation.
+
+    Extracts the original event data and updates the repo status
+    to 'failed' so the UI stops showing 'Ingesting'.
+    """
+    try:
+        event_name = ctx.event.name
+        event_data = ctx.event.data or {}
+        function_id = event_data.get("function_id", "")
+        
+        error_info = event_data.get("error", {})
+        if isinstance(error_info, dict) and error_info.get("message"):
+            error_msg = error_info["message"]
+        elif event_name == "inngest/function.cancelled":
+            error_msg = "Run was manually cancelled from Inngest."
+        else:
+            error_msg = str(error_info) if error_info else "Unknown error"
+
+        # Only handle sync_github_repository failures/cancellations
+        if "sync_github_repository" not in function_id:
+            logger.info("Global failure handler: ignoring event '%s' for function '%s'", event_name, function_id)
+            return {"handled": False}
+
+        # Extract original event data
+        original_event = event_data.get("event", {})
+        original_data = original_event.get("data", {})
+        repo_id = original_data.get("repo_id")
+        user_id = original_data.get("user_id")
+
+        if not repo_id or not user_id:
+            logger.error("Global failure handler: missing repo_id or user_id for function '%s'", function_id)
+            return {"handled": False, "reason": "missing identifiers"}
+
+        settings = get_settings()
+        pg_client = SupabasePGClient(
+            supabase_url=settings.SUPABASE_URL,
+            service_role_key=settings.SUPABASE_SERVICE_ROLE_KEY,
+        )
+
+        # Check if already marked as failed (avoid double-update)
+        repo = await pg_client.get_repo(repo_id, user_id)
+        if repo and repo.get("status") == "failed":
+            logger.info("Global failure handler: repo %s already marked as failed, skipping", repo_id)
+            return {"handled": False, "reason": "already_failed"}
+
+        logger.warning(
+            "Global failure handler (%s): marking repo %s as failed — %s",
+            event_name, repo_id, error_msg,
+        )
+        await pg_client.update_repo_status(
+            repo_id, user_id, "failed",
+            detailed_status="failed",
+            error_message=f"Ingestion {event_name.split('.')[-1]}: {error_msg}",
+        )
+
+        # Cleanup temp files
+        temp_dir = os.path.join(tempfile.gettempdir(), f"gitdecode_{repo_id}")
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+        return {"handled": True, "repo_id": repo_id, "error": error_msg}
+
+    except Exception as exc:
+        logger.exception("Global failure handler itself errored: %s", exc)
+        return {"handled": False, "error": str(exc)}
+
+
