@@ -162,7 +162,10 @@ async def _on_sync_failure(ctx: inngest.Context) -> None:
 
 @inngest_client.create_function(
     fn_id="sync_github_repository",
-    trigger=inngest.TriggerEvent(event="repo/sync.requested"),
+    trigger=[
+        inngest.TriggerEvent(event="repo/sync.requested"),
+        inngest.TriggerEvent(event="repo/sync_local.requested")
+    ],
     on_failure=_on_sync_failure,
 )
 async def sync_github_repository(
@@ -180,6 +183,8 @@ async def sync_github_repository(
     repo_url = event_data["repo_url"]
     branch = event_data.get("branch", "main")
     github_token = event_data.get("github_token")
+    zip_path = event_data.get("zip_path")
+    is_local = "sync_local" in ctx.event.name
 
     # If github_token is provided, convert URL to authenticated HTTPS URL
     clone_url = repo_url
@@ -204,12 +209,27 @@ async def sync_github_repository(
     await step.run("update_status_processing", update_to_processing)
 
     try:
-        # Step A: Clone the repository to the temp directory
+        # Step A: Clone or Extract the repository to the temp directory
         async def clone_repo_step() -> str:
             temp_dir = os.path.join(tempfile.gettempdir(), f"gitdecode_{repo_id}")
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir, ignore_errors=True)
             os.makedirs(temp_dir, exist_ok=True)
+
+            if is_local and zip_path:
+                logger.info("Extracting local repository zip %s to %s", zip_path, temp_dir)
+                import zipfile
+                def run_unzip():
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        zip_ref.extractall(temp_dir)
+                await asyncio.to_thread(run_unzip)
+                
+                # Cleanup the uploaded zip file to save space
+                try:
+                    os.remove(zip_path)
+                except OSError:
+                    pass
+                return temp_dir
 
             logger.info(
                 "Cloning repository %s (branch: %s) to %s",

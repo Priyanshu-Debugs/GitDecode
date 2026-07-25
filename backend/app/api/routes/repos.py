@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 import inngest
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form
 
 from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
@@ -185,6 +185,90 @@ async def sync_repo(
             repo_id=repo_row["id"],
             status="queued",
             message=f"Repository {request.repo_url} has been queued for ingestion.",
+            queued_at=repo_row.get("created_at", datetime.now(timezone.utc)),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        with open("sync_error.log", "a") as f:
+            f.write(traceback.format_exc() + "\n")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@router.post(
+    "/upload-local",
+    response_model=RepoSyncResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload and sync a local directory",
+    description="Accepts a zip file containing a local code repository and queues it for ingestion.",
+    responses={
+        201: {"description": "Sync job queued successfully"},
+        403: {"model": ErrorResponse, "description": "Plan limit reached"},
+    },
+)
+async def upload_local_repo(
+    file: UploadFile = File(...),
+    folder_name: str = Form("local-folder"),
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> RepoSyncResponse:
+    """Initiate a repository sync from a local zip file.
+    
+    1. Checks the user's plan limit.
+    2. Saves the uploaded zip file to a temporary location.
+    3. Creates a repo record in PostgreSQL with status 'queued' and a special 'local://' URL.
+    4. Dispatches an Inngest event to trigger the local ingestion pipeline.
+    """
+    try:
+        # Rate Limit Check
+        plan = await get_user_plan(pg, user.id)
+        limits = get_plan_limits(plan)
+        active_count = await pg.get_active_repo_count(user.id)
+        if active_count >= limits["repo_limit"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Your plan ({plan}) is limited to {limits['repo_limit']} repositories. Upgrade to Pro for unlimited repos."
+            )
+
+        # Save file temporarily
+        import tempfile
+        import os
+        import shutil
+        from uuid import uuid4
+        
+        temp_dir = tempfile.gettempdir()
+        file_uuid = uuid4().hex
+        zip_path = os.path.join(temp_dir, f"local_upload_{file_uuid}.zip")
+        
+        with open(zip_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Create repo record
+        local_url = f"local://{folder_name}-{file_uuid[:8]}"
+        repo_row = await pg.insert_repo(
+            user_id=user.id,
+            github_url=local_url,
+            branch="main",
+        )
+        
+        # Dispatch event
+        await inngest_client.send(
+            inngest.Event(
+                name="repo/sync_local.requested",
+                data={
+                    "repo_id": repo_row["id"],
+                    "user_id": user.id,
+                    "repo_url": local_url,
+                    "zip_path": zip_path,
+                },
+            )
+        )
+        
+        return RepoSyncResponse(
+            repo_id=repo_row["id"],
+            status="queued",
+            message=f"Local folder {folder_name} has been queued for ingestion.",
             queued_at=repo_row.get("created_at", datetime.now(timezone.utc)),
         )
     except HTTPException:

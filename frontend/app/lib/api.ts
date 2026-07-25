@@ -400,6 +400,85 @@ export async function syncRepo(
   });
 }
 
+/** Upload a local folder as a zip for ingestion */
+export async function uploadLocalRepo(
+  zipBlob: Blob,
+  folderName: string
+): Promise<RepoSyncResponse> {
+  if (isDemoMode()) {
+    const list = getMockRepos();
+    const normalizedUrl = `local://${folderName}-demo`;
+    let repo = list.find((r) => r.github_url === normalizedUrl);
+    const repoId = repo ? repo.id : String(Date.now());
+
+    if (!repo) {
+      repo = {
+        id: repoId,
+        github_url: normalizedUrl,
+        branch: "main",
+        status: "queued",
+        detailed_status: "Sync queued in Demo Mode...",
+        created_at: new Date().toISOString()
+      };
+      list.push(repo);
+      localStorage.setItem("gitdecode_mock_repos", JSON.stringify(list));
+    } else {
+      repo.status = "queued";
+      repo.detailed_status = "Sync queued in Demo Mode...";
+      localStorage.setItem("gitdecode_mock_repos", JSON.stringify(list));
+    }
+
+    // Trigger state transitions to simulate indexing pipeline
+    setTimeout(() => {
+      const current = getMockRepos();
+      const r = current.find((x) => x.id === repoId);
+      if (r) {
+        r.status = "processing";
+        r.detailed_status = "Extracting local archive...";
+        localStorage.setItem("gitdecode_mock_repos", JSON.stringify(current));
+      }
+    }, 1000);
+
+    setTimeout(() => {
+      const current = getMockRepos();
+      const r = current.find((x) => x.id === repoId);
+      if (r) {
+        r.status = "completed";
+        r.detailed_status = "Active workspace indexing verified.";
+        localStorage.setItem("gitdecode_mock_repos", JSON.stringify(current));
+      }
+    }, 3000);
+
+    return {
+      repo_id: repoId,
+      status: "queued",
+      message: "Simulation local sync initiated.",
+      queued_at: new Date().toISOString()
+    };
+  }
+
+  const headers = await getAuthHeaders();
+  // Remove Content-Type so browser sets it automatically with boundary for FormData
+  const { "Content-Type": _, ...restHeaders } = headers as any;
+  
+  const formData = new FormData();
+  formData.append("file", zipBlob, `${folderName}.zip`);
+  formData.append("folder_name", folderName);
+
+  const res = await fetch(`${API_BASE}/repos/upload-local`, {
+    method: "POST",
+    headers: restHeaders,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(body.detail || `API Error: ${res.status}`);
+  }
+
+  return res.json();
+}
+
 /** Cancel an active repo sync */
 export async function cancelRepoSync(
   repoId: string

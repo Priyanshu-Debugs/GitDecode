@@ -44,7 +44,9 @@ import {
   exportReportPdf,
   type CodebaseReport,
   type ReportPlan,
+  uploadLocalRepo,
 } from "@/app/lib/api";
+import JSZip from "jszip";
 import styles from "./dashboard.module.css";
 
 
@@ -79,6 +81,10 @@ function SendIcon() {
  */
 function githubUrlToRepoPath(githubUrl: string): string {
   try {
+    if (githubUrl.startsWith("local://")) {
+      const name = githubUrl.replace("local://", "");
+      return `/dashboard/repo/local/${encodeURIComponent(name)}`;
+    }
     const clean = githubUrl.replace(/\.git$/, "").replace(/\/$/, "");
     const parts = clean.split("/");
     // Last two segments are owner and repo
@@ -295,6 +301,10 @@ function DashboardContent() {
 
   if (!activeRepoId && pathUsername && pathRepoName && repos.length > 0) {
     const matched = repos.find((r) => {
+      if (r.github_url.startsWith("local://")) {
+        const name = r.github_url.replace("local://", "");
+        return pathUsername === "local" && pathRepoName === name;
+      }
       const parts = r.github_url.replace(/\.git$/, "").replace(/\/$/, "").split("/");
       return (
         parts[parts.length - 1] === pathRepoName &&
@@ -608,6 +618,90 @@ function DashboardContent() {
       });
     } finally {
       setSyncLoading(false);
+    }
+  };
+
+  const [localFolderUploading, setLocalFolderUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute("webkitdirectory", "true");
+      fileInputRef.current.setAttribute("directory", "true");
+    }
+  }, []);
+
+  const handleLocalFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setLocalFolderUploading(true);
+    setSyncError("");
+
+    try {
+      const zip = new JSZip();
+      
+      const ignoredPaths = ['.git', '.venv', 'node_modules', '.next', '__pycache__'];
+      let totalSize = 0;
+      let folderName = "local-folder";
+
+      if (files[0].webkitRelativePath) {
+        folderName = files[0].webkitRelativePath.split('/')[0];
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const path = file.webkitRelativePath || file.name;
+        
+        // Check ignored paths
+        if (ignoredPaths.some(ignored => path.includes(`/${ignored}/`) || path.startsWith(`${ignored}/`))) {
+          continue;
+        }
+
+        totalSize += file.size;
+        // Limit total uncompressed size to 50MB
+        if (totalSize > 50 * 1024 * 1024) {
+          throw new Error("Local folder exceeds the 50MB upload size limit.");
+        }
+
+        zip.file(path, file);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 5 } });
+      
+      const res = await uploadLocalRepo(zipBlob, folderName);
+      
+      if (res && res.repo_id) {
+         // Re-fetch instantly so we can resolve the full local:// URL
+         const { listRepos } = await import("@/app/lib/api");
+         const latestRepos = await listRepos();
+         setRepos(latestRepos);
+         
+         const newRepo = latestRepos.find(r => r.id === res.repo_id);
+         if (newRepo && newRepo.github_url) {
+            router.push(githubUrlToRepoPath(newRepo.github_url));
+         } else {
+            router.push(`/dashboard?repo_id=${res.repo_id}`);
+         }
+      } else {
+         fetchRepos();
+         router.push(`/dashboard`);
+      }
+    } catch (err) {
+      const rawMsg = err instanceof Error ? err.message : "Local folder sync failed.";
+      setSyncError(rawMsg);
+      setCustomConfirm({
+        isOpen: true,
+        title: rawMsg.includes("limit") ? "Limit Reached" : "Sync Failed",
+        message: rawMsg,
+        confirmText: "Close",
+        onConfirm: () => {}
+      });
+    } finally {
+      setLocalFolderUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -1126,34 +1220,90 @@ function DashboardContent() {
 
         {/* ── Terminal-Style URL Bar ── */}
         <div className={styles.dashboardUrlContainer}>
-          <form onSubmit={handleTerminalUrlCheck} className={styles.dashboardUrlForm}>
-            <div className={styles.dashboardUrlInputWrap}>
-              <span className={styles.dashboardUrlPrompt}>$</span>
-              <input
-                type="text"
-                value={terminalUrlInput}
-                onChange={(e) => {
-                  setTerminalUrlInput(e.target.value);
-                  if (urlCheckResult || urlCheckError) {
-                    setUrlCheckResult(null);
-                    setUrlCheckError(null);
-                  }
-                }}
-                placeholder="https://github.com/owner/repository"
-                className={styles.dashboardUrlInput}
-                disabled={urlChecking || syncLoading}
-                aria-label="GitHub repository URL"
-              />
-              <button
-                type="submit"
-                className={styles.dashboardUrlSubmit}
-                disabled={urlChecking || !terminalUrlInput.trim() || syncLoading}
-                title="Verify Repository Access"
-              >
-                {urlChecking ? "..." : "→"}
-              </button>
-            </div>
-          </form>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "center", maxWidth: "800px", margin: "0 auto" }}>
+            <form onSubmit={handleTerminalUrlCheck} className={styles.dashboardUrlForm} style={{ flex: 1, margin: 0 }}>
+              <div className={styles.dashboardUrlInputWrap}>
+                <span className={styles.dashboardUrlPrompt}>$</span>
+                <input
+                  type="text"
+                  value={terminalUrlInput}
+                  onChange={(e) => {
+                    setTerminalUrlInput(e.target.value);
+                    if (urlCheckResult || urlCheckError) {
+                      setUrlCheckResult(null);
+                      setUrlCheckError(null);
+                    }
+                  }}
+                  placeholder="https://github.com/owner/repository"
+                  className={styles.dashboardUrlInput}
+                  disabled={urlChecking || syncLoading}
+                  aria-label="GitHub repository URL"
+                />
+                <button
+                  type="submit"
+                  className={styles.dashboardUrlSubmit}
+                  disabled={urlChecking || !terminalUrlInput.trim() || syncLoading}
+                  title="Verify Repository Access"
+                >
+                  {urlChecking ? "..." : "→"}
+                </button>
+              </div>
+            </form>
+
+            <span style={{ fontSize: "0.75rem", letterSpacing: "0.05em", color: "var(--color-text-tertiary)", textTransform: "uppercase", fontFamily: "var(--font-mono)", flexShrink: 0 }}>OR</span>
+
+            {/* @ts-ignore: webkitdirectory is non-standard but works in all modern browsers */}
+            <input type="file" ref={fileInputRef} onChange={handleLocalFolderUpload} style={{ display: "none" }} webkitdirectory="true" directory="true" />
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={localFolderUploading || syncLoading || isAtLimit}
+              style={{ 
+                height: "100%",
+                minHeight: "44px",
+                padding: "0 18px",
+                display: "flex", 
+                alignItems: "center", 
+                gap: "8px", 
+                background: "rgba(18, 16, 14, 0.85)", 
+                border: "1px solid var(--color-border)", 
+                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04)",
+                color: "var(--color-text-secondary)",
+                borderRadius: "var(--radius-md, 8px)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.75rem",
+                transition: "all 0.2s ease",
+                flexShrink: 0
+              }}
+              onMouseOver={(e) => {
+                if (!localFolderUploading && !syncLoading && !isAtLimit) {
+                  e.currentTarget.style.borderColor = "var(--color-green)";
+                  e.currentTarget.style.boxShadow = "0 0 0 2px rgba(16, 185, 129, 0.15), 0 8px 24px rgba(0, 0, 0, 0.5)";
+                  e.currentTarget.style.color = "var(--color-white)";
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!localFolderUploading && !syncLoading && !isAtLimit) {
+                  e.currentTarget.style.borderColor = "var(--color-border)";
+                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04)";
+                  e.currentTarget.style.color = "var(--color-text-secondary)";
+                }
+              }}
+            >
+              {localFolderUploading ? (
+                <span className={styles.spinner} style={{ width: 14, height: 14, border: "2px solid currentColor", borderRightColor: "transparent", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--color-text-tertiary)" }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              )}
+              {localFolderUploading ? "Syncing..." : "Local Folder"}
+            </button>
+          </div>
+
 
           {/* Verification Error */}
           {urlCheckError && (

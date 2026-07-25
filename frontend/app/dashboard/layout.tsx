@@ -163,6 +163,10 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
    */
   function githubUrlToRepoPath(githubUrl: string): string {
     try {
+      if (githubUrl.startsWith("local://")) {
+        const name = githubUrl.replace("local://", "");
+        return `/dashboard/repo/local/${encodeURIComponent(name)}`;
+      }
       const clean = githubUrl.replace(/\.git$/, "").replace(/\/$/, "");
       const parts = clean.split("/");
       const repoName = parts[parts.length - 1];
@@ -191,6 +195,10 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   // Find repo from path when on the new route (no repo_id in URL)
   const pathActiveRepo = isRepoDetailPath && pathUsername && pathRepoName
     ? repos.find((r) => {
+        if (r.github_url.startsWith("local://")) {
+          const name = r.github_url.replace("local://", "");
+          return pathUsername === "local" && pathRepoName === name;
+        }
         const parts = r.github_url.replace(/\.git$/, "").replace(/\/$/, "").split("/");
         return (
           parts[parts.length - 1] === pathRepoName &&

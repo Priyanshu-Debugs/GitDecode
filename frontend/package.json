@@ -30,6 +30,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.42.2",
     "html2pdf.js": "^0.10.2",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.23.0",
     "media-chrome": "^4.19.2",
     "mermaid": "^11.16.0",
