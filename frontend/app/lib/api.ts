@@ -1099,7 +1099,8 @@ export async function generateReport(
   onUpdate: (
     type: "stage" | "report_type" | "plan" | "section_start" | "section_complete" | "report" | "done" | "error",
     content: any
-  ) => void
+  ) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   if (isDemoMode()) {
     onUpdate("stage", "Demo Mode — Simulating report generation...");
@@ -1138,6 +1139,7 @@ export async function generateReport(
   const res = await fetch(`${API_BASE}/repos/${repoId}/report/generate`, {
     method: "POST",
     headers,
+    signal,
   });
 
   if (!res.ok) {

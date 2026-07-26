@@ -1,0 +1,523 @@
+/* Main Container - Clean & Matte Dark Theme */
+.container {
+  background: var(--color-surface, #161410);
+  border: 1px solid var(--color-border, #211f19);
+  border-radius: var(--radius-lg, 16px);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.stopBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-elevated, #211f19);
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-text, #d8d3c5);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stopBtn:hover {
+  background: rgba(224, 112, 95, 0.12);
+  border-color: rgba(224, 112, 95, 0.4);
+  color: var(--color-danger, #e0705f);
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.iconWrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--color-surface-elevated, #211f19);
+  border: 1px solid var(--color-border, #211f19);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary, #83c167);
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.titleText {
+  font-family: var(--font-display, var(--font-sans));
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-white, #f3eee1);
+  letter-spacing: -0.01em;
+}
+
+.repoBadge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-surface-elevated, #211f19);
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-primary, #83c167);
+  font-weight: 500;
+}
+
+.subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #8b8270);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liveStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary, #83c167);
+}
+
+/* Linear Progress Bar - Clean Matte */
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.progressLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #8b8270);
+}
+
+.progressPercent {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  color: var(--color-primary, #83c167);
+}
+
+.track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-elevated, #211f19);
+  border: 1px solid var(--color-border, #211f19);
+  overflow: hidden;
+  position: relative;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-primary, #83c167);
+  transition: width 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Multi-Agent Pipeline Graph Flow */
+.pipelineContainer {
+  background: var(--color-bg, #0e0d0b);
+  border: 1px solid var(--color-border, #211f19);
+  border-radius: var(--radius-md, 10px);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.sectionHeader {
+  font-family: var(--font-display, var(--font-sans));
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #8b8270);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pipelineFlow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .pipelineFlow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pipelineNode {
+  background: var(--color-surface, #161410);
+  border: 1px solid var(--color-border, #211f19);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+
+.pipelineNodeActive {
+  border-color: rgba(131, 193, 103, 0.6);
+  background: var(--color-surface-elevated, #211f19);
+}
+
+.pipelineNodeCompleted {
+  border-color: var(--color-border, #211f19);
+  background: var(--color-surface, #161410);
+}
+
+.nodeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nodeIconWrapper {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--color-bg, #0e0d0b);
+  border: 1px solid var(--color-border, #211f19);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary, #8b8270);
+}
+
+.nodeIconActive {
+  color: var(--color-primary, #83c167);
+  border-color: rgba(131, 193, 103, 0.3);
+}
+
+.nodeIconCompleted {
+  color: var(--color-primary, #83c167);
+}
+
+.nodeBadge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.625rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.nodeBadgeActive {
+  background: rgba(131, 193, 103, 0.12);
+  color: var(--color-primary, #83c167);
+}
+
+.nodeBadgeCompleted {
+  background: var(--color-surface-elevated, #211f19);
+  color: var(--color-primary, #83c167);
+}
+
+.nodeBadgeQueued {
+  background: var(--color-surface-elevated, #211f19);
+  color: var(--color-text-tertiary, #3a352b);
+}
+
+.nodeTitle {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-white, #f3eee1);
+}
+
+.nodeSubtitle {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #8b8270);
+  line-height: 1.3;
+}
+
+/* Active Agent Focus Card - Subtle Matte */
+.activeAgentCard {
+  background: var(--color-surface-elevated, #211f19);
+  border: 1px solid rgba(131, 193, 103, 0.3);
+  border-radius: var(--radius-md, 10px);
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+}
+
+.activeAgentLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.activeAgentAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface, #161410);
+  border: 1px solid rgba(131, 193, 103, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary, #83c167);
+}
+
+.activeAgentDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activeAgentHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activeAgentName {
+  font-family: var(--font-display, var(--font-sans));
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-white, #f3eee1);
+}
+
+.activeAgentRoleTag {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(131, 193, 103, 0.1);
+  border: 1px solid rgba(131, 193, 103, 0.2);
+  color: var(--color-primary, #83c167);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.activeAgentTask {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--color-text, #d8d3c5);
+}
+
+/* Live Activity Log / Mini Terminal */
+.terminalCard {
+  background: var(--color-bg, #0e0d0b);
+  border: 1px solid var(--color-border, #211f19);
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+}
+
+.terminalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-text-secondary, #8b8270);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border, #211f19);
+}
+
+.terminalDots {
+  display: flex;
+  gap: 6px;
+}
+
+.dotRed { width: 8px; height: 8px; border-radius: 50%; background: #e0705f; }
+.dotYellow { width: 8px; height: 8px; border-radius: 50%; background: #8b8270; }
+.dotGreen { width: 8px; height: 8px; border-radius: 50%; background: #83c167; }
+
+.terminalLogs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.logItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--color-text, #d8d3c5);
+  line-height: 1.4;
+}
+
+.logPrompt {
+  color: var(--color-primary, #83c167);
+  font-weight: 700;
+  user-select: none;
+}
+
+/* Section Plan Outline Grid - Clean Matte */
+.planContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.planGridTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.planTitle {
+  font-family: var(--font-display, var(--font-sans));
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-white, #f3eee1);
+}
+
+.planTypeBadge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-surface-elevated, #211f19);
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-text-secondary, #8b8270);
+  text-transform: capitalize;
+}
+
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.planCard {
+  background: var(--color-bg, #0e0d0b);
+  border: 1px solid var(--color-border, #211f19);
+  border-radius: var(--radius-md, 8px);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s ease;
+  position: relative;
+}
+
+.planCardActive {
+  border-color: rgba(131, 193, 103, 0.5);
+  background: var(--color-surface-elevated, #211f19);
+}
+
+.planCardCompleted {
+  border-color: var(--color-border, #211f19);
+  background: var(--color-bg, #0e0d0b);
+}
+
+.planCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.planCardIndex {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-secondary, #8b8270);
+}
+
+.planCardStatusBadgeCompleted {
+  font-size: 0.75rem;
+  color: var(--color-primary, #83c167);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.planCardStatusBadgeWriting {
+  font-size: 0.75rem;
+  color: var(--color-primary, #83c167);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.writingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary, #83c167);
+}
+
+.planCardStatusBadgeQueued {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary, #3a352b);
+}
+
+.planCardTitle {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-white, #f3eee1);
+  line-height: 1.3;
+}
+
+.planCardGoal {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #8b8270);
+  line-height: 1.4;
+}

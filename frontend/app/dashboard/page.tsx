@@ -57,6 +57,7 @@ import { useLocalKeys } from "@/app/lib/useLocalKeys";
 import NvlGraphViewer from "@/components/ui/NvlGraphViewer";
 import DashboardLoader from "@/app/components/DashboardLoader";
 import ChatInput from "@/app/components/ChatInput";
+import ReportGenerationView from "@/app/components/ReportGenerationView";
 
 /* ── Inline SVG Icons ────────────────────────────────────────────────── */
 function SearchIcon() {
@@ -409,8 +410,22 @@ function DashboardContent() {
   const [reportRateLimit, setReportRateLimit] = useState<{ can_generate: boolean; next_available: string | null; is_developer?: boolean } | null>(null);
   const hasUnlimitedReports = isPro || Boolean(reportRateLimit?.is_developer);
 
+  const reportAbortControllerRef = useRef<AbortController | null>(null);
+
+  const handleStopReport = () => {
+    if (reportAbortControllerRef.current) {
+      reportAbortControllerRef.current.abort();
+      reportAbortControllerRef.current = null;
+    }
+    setReportGenerating(false);
+    setReportError("Report generation stopped by user.");
+  };
+
   const handleGenerateReport = async () => {
     if (!activeRepoId || reportGenerating) return;
+    const controller = new AbortController();
+    reportAbortControllerRef.current = controller;
+
     setReportGenerating(true);
     setReportStages([]);
     setReportPlan(null);
@@ -419,22 +434,32 @@ function DashboardContent() {
     setReport(null);
 
     try {
-      await generateReport(activeRepoId, (type, content) => {
-        if (type === "stage") setReportStages((prev) => [...prev, content]);
-        else if (type === "plan") setReportPlan(content);
-        else if (type === "section_complete") setReportSectionProgress(content);
-        else if (type === "report") setReport({ repo_id: activeRepoId, report_markdown: content, plan: reportPlan, created_at: new Date().toISOString() });
-        else if (type === "error") setReportError(content);
-        else if (type === "done") {
-          setReportGenerating(false);
-          getReportRateLimitStatus(activeRepoId)
-            .then((res) => setReportRateLimit(res))
-            .catch(() => {});
-        }
-      });
+      await generateReport(
+        activeRepoId,
+        (type, content) => {
+          if (type === "stage") setReportStages((prev) => [...prev, content]);
+          else if (type === "plan") setReportPlan(content);
+          else if (type === "section_complete") setReportSectionProgress(content);
+          else if (type === "report") setReport({ repo_id: activeRepoId, report_markdown: content, plan: reportPlan, created_at: new Date().toISOString() });
+          else if (type === "error") setReportError(content);
+          else if (type === "done") {
+            setReportGenerating(false);
+            reportAbortControllerRef.current = null;
+            getReportRateLimitStatus(activeRepoId)
+              .then((res) => setReportRateLimit(res))
+              .catch(() => {});
+          }
+        },
+        controller.signal
+      );
     } catch (e: any) {
-      setReportError(e.message || "Failed to generate report");
+      if (e.name === "AbortError") {
+        setReportError("Report generation stopped by user.");
+      } else {
+        setReportError(e.message || "Failed to generate report");
+      }
       setReportGenerating(false);
+      reportAbortControllerRef.current = null;
       getReportRateLimitStatus(activeRepoId)
         .then((res) => setReportRateLimit(res))
         .catch(() => {});
@@ -2043,50 +2068,41 @@ function DashboardContent() {
           {activeGraphTab === "report" && (
             <div className={styles.reportFullSpace}>
               {reportLoading ? (
-                <div style={{ display: "flex", justifyContent: "center", padding: 64 }}>
-                  <div className={styles.loadingSpinner} />
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 64, gap: 16 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 10,
+                      background: "var(--color-surface-elevated, #211f19)",
+                      border: "1px solid var(--color-border, #211f19)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--color-primary, #83c167)",
+                    }}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <line x1="10" y1="9" x2="8" y2="9" />
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: "0.875rem", color: "var(--color-text-secondary)", fontFamily: "var(--font-sans)" }}>
+                    Retrieving Codebase Deep Report...
+                  </span>
                 </div>
               ) : reportGenerating ? (
                 /* LIVE GENERATION PROGRESS VIEW */
-                <div className={styles.reportProgressCard}>
-                  <div className={styles.reportProgressTitle}>
-                    <div className={styles.loadingSpinner} style={{ width: 20, height: 20 }} />
-                    <span>Generating Codebase Deep Analysis Report...</span>
-                  </div>
-
-                  <div className={styles.reportStageList}>
-                    {reportStages.map((stg, i) => (
-                      <div key={i} className={styles.reportStageItem}>
-                        <div className={styles.reportStageDot} />
-                        <span>{stg}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {reportSectionProgress && (
-                    <div style={{ marginTop: 12, fontSize: "0.875rem", color: "var(--color-text-secondary)" }}>
-                      Writing section {reportSectionProgress.completed} of {reportSectionProgress.total}...
-                    </div>
-                  )}
-
-                  {reportPlan && (
-                    <div style={{ marginTop: 16 }}>
-                      <h4 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "var(--color-white)", marginBottom: 8 }}>
-                        {reportPlan.report_title}
-                      </h4>
-                      <div className={styles.reportPlanGrid}>
-                        {reportPlan.sections.map((sec) => (
-                          <div key={sec.id} className={styles.reportPlanItem}>
-                            <span className={styles.reportPlanItemTitle}>
-                              {sec.id}. {sec.title}
-                            </span>
-                            <span className={styles.reportPlanItemGoal}>{sec.goal}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <ReportGenerationView
+                  stages={reportStages}
+                  plan={reportPlan}
+                  sectionProgress={reportSectionProgress}
+                  repoName={activeRepo?.github_url ? activeRepo.github_url.split("/").pop() : undefined}
+                  onStop={handleStopReport}
+                />
               ) : report ? (
                 /* RENDERED REPORT VIEW */
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -2320,42 +2336,56 @@ function DashboardContent() {
           {activeGraphTab === "insights" && (
             <div className={styles.insightsFullSpace}>
               {summaryData ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 28, maxWidth: "1000px", margin: "0 auto", width: "100%" }}>
                   
+                  {/* ── 1. SUMMARY METRICS 4-CARD GRID ── */}
                   <div>
-                    <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Summary Metrics</div>
-                    <div className={styles.statsGrid} style={{ gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 0 }}>
-                      <div className={styles.statCard} style={{ padding: 12, gap: 4 }}>
-                        <span style={{ fontSize: "1.25rem", fontWeight: 600 }}>{summaryData.total_classes || 0}</span>
-                        <span style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)" }}>Total Classes</span>
+                    <div className={styles.rightSectionTitle} style={{ marginBottom: 14 }}>Codebase Architecture Overview</div>
+                    <div className={styles.statsGrid} style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 0 }}>
+                      <div className={styles.statCard} style={{ padding: "16px 20px", gap: 6, background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
+                        <span style={{ fontSize: "1.5rem", fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--color-white)" }}>{summaryData.total_classes || 0}</span>
+                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)", fontWeight: 500 }}>Total Classes / Schemas</span>
                       </div>
-                      <div className={styles.statCard} style={{ padding: 12, gap: 4 }}>
-                        <span style={{ fontSize: "1.25rem", fontWeight: 600 }}>{summaryData.total_functions || 0}</span>
-                        <span style={{ fontSize: "0.625rem", color: "var(--color-text-secondary)" }}>Functions</span>
+                      <div className={styles.statCard} style={{ padding: "16px 20px", gap: 6, background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
+                        <span style={{ fontSize: "1.5rem", fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--color-white)" }}>{summaryData.total_functions || 0}</span>
+                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)", fontWeight: 500 }}>Functions & Handlers</span>
+                      </div>
+                      <div className={styles.statCard} style={{ padding: "16px 20px", gap: 6, background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
+                        <span style={{ fontSize: "1.5rem", fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--color-white)" }}>
+                          {summaryData.languages?.reduce((acc: number, curr: any) => acc + (curr.count || 0), 0) || 0}
+                        </span>
+                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)", fontWeight: 500 }}>Indexed Source Files</span>
+                      </div>
+                      <div className={styles.statCard} style={{ padding: "16px 20px", gap: 6, background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)" }}>
+                        <span style={{ fontSize: "1.5rem", fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--color-primary)" }}>
+                          {summaryData.languages?.length || 0}
+                        </span>
+                        <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)", fontWeight: 500 }}>Detected Languages</span>
                       </div>
                     </div>
                   </div>
 
-                  <div>
-                    <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Languages Breakdown</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* ── 2. LANGUAGES BREAKDOWN ── */}
+                  <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "20px 24px" }}>
+                    <div className={styles.rightSectionTitle} style={{ marginBottom: 16 }}>Languages Breakdown</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                       {summaryData.languages?.map((lang: any, idx: number) => {
-                        const name = lang.language || "unknown";
+                        const name = lang.language || "Other";
                         const count = lang.count;
                         const total = summaryData.languages.reduce((acc: number, curr: any) => acc + curr.count, 0) || 1;
                         const percent = ((count / total) * 100).toFixed(1);
                         
-                        const colors = ["#c8ccd4", "#a0a8b8", "#7a8292", "#5b6370"];
+                        const colors = ["#83c167", "#9ad67e", "#a78bfa", "#d8a657", "#e0705f"];
                         const barColor = colors[idx % colors.length];
 
                         return (
-                          <div key={name} style={{ fontSize: "0.75rem" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                              <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-text)" }}>{name}</span>
-                              <span style={{ color: "var(--color-text-secondary)" }}>{percent}% ({count} files)</span>
+                          <div key={name} style={{ fontSize: "0.8125rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                              <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-white)", fontWeight: 600 }}>{name}</span>
+                              <span style={{ color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)" }}>{percent}% ({count} {count === 1 ? "file" : "files"})</span>
                             </div>
-                            <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 3, overflow: "hidden" }}>
-                              <div style={{ height: "100%", width: `${percent}%`, background: barColor }} />
+                            <div style={{ height: 6, background: "var(--color-surface-elevated)", borderRadius: 3, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${percent}%`, background: barColor, borderRadius: 3 }} />
                             </div>
                           </div>
                         );
@@ -2363,20 +2393,68 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  <div>
-                    <div className={styles.rightSectionTitle} style={{ marginBottom: 12 }}>Source Map Sample</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 150, overflowY: "auto" }}>
-                      {summaryData.languages?.[0]?.sample_files?.map((file: string) => (
-                        <div key={file} style={{ fontSize: "0.6875rem", fontFamily: "var(--font-mono)", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "4px 8px", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-sm)" }}>
-                          📄 {file}
-                        </div>
-                      ))}
+                  {/* ── 3. SOURCE MAP EXPLORER ── */}
+                  <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "20px 24px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div className={styles.rightSectionTitle}>Indexed Source Map Sample</div>
+                      <span style={{ fontSize: "0.75rem", color: "var(--color-text-secondary)", fontFamily: "var(--font-mono)" }}>
+                        {(() => {
+                          const allFiles = summaryData.languages?.flatMap((l: any) => l.sample_files || []) || [];
+                          return `${allFiles.length} files sampled`;
+                        })()}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10, maxHeight: 320, overflowY: "auto", paddingRight: 4 }}>
+                      {(() => {
+                        const allFiles = summaryData.languages?.flatMap((l: any) =>
+                          (l.sample_files || []).map((f: string) => ({ file: f, lang: l.language }))
+                        ) || [];
+
+                        if (allFiles.length === 0) {
+                          return (
+                            <div style={{ fontSize: "0.8125rem", color: "var(--color-text-secondary)", fontStyle: "italic", padding: 12 }}>
+                              No sample files available for this repository graph.
+                            </div>
+                          );
+                        }
+
+                        return allFiles.map(({ file, lang }: { file: string; lang: string }, i: number) => {
+                          const ext = file.split(".").pop() || lang.toLowerCase();
+                          return (
+                            <div
+                              key={`${i}-${file}`}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                padding: "8px 12px",
+                                background: "var(--color-bg)",
+                                border: "1px solid var(--color-border)",
+                                borderRadius: "var(--radius-sm)",
+                                fontSize: "0.8125rem",
+                                fontFamily: "var(--font-mono)",
+                                color: "var(--color-text)",
+                                overflow: "hidden",
+                              }}
+                              title={file}
+                            >
+                              <span style={{ fontSize: "0.6875rem", padding: "2px 6px", borderRadius: 4, background: "var(--color-surface-elevated)", border: "1px solid var(--color-border)", color: "var(--color-primary)", textTransform: "uppercase", fontWeight: 700, flexShrink: 0 }}>
+                                .{ext}
+                              </span>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, color: "var(--color-white)" }}>
+                                {file}
+                              </span>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
 
                 </div>
               ) : (
-                <div style={{ color: "var(--color-text-tertiary)", fontSize: "0.8125rem", textAlign: "center" }}>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: 64, color: "var(--color-text-tertiary)", fontSize: "0.875rem" }}>
                   Loading summary insights...
                 </div>
               )}

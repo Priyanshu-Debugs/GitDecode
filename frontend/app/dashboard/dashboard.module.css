@@ -3743,12 +3743,16 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
   padding: 32px 40px;
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
   gap: 24px;
+  box-sizing: border-box;
 }
 
 .reportEmptyState {
@@ -3756,13 +3760,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 64px 32px;
+  padding: 48px 32px;
   background: var(--color-surface, #161410);
   border: 1px dashed var(--color-border-hover, #3a352b);
   border-radius: var(--radius-lg, 16px);
   text-align: center;
   max-width: 640px;
-  margin: 40px auto;
+  width: 100%;
+  margin: auto;
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
 }
 
