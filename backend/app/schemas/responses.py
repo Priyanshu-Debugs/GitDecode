@@ -120,6 +120,8 @@ class RepoListItem(BaseModel):
         detailed_status: Detailed status step.
         error_message: Error log if failed.
         created_at: When the repo was first synced.
+        last_synced_commit: Full git commit SHA from the most recent successful sync.
+        last_synced_at: Timestamp of the most recent successful sync.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -131,6 +133,9 @@ class RepoListItem(BaseModel):
     detailed_status: str | None = None
     error_message: str | None = None
     created_at: datetime
+    last_synced_commit: str | None = None
+    last_synced_commit_msg: str | None = None
+    last_synced_at: datetime | None = None
 
 
 class GraphStatsResponse(BaseModel):

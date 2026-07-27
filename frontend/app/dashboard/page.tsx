@@ -16,6 +16,7 @@ import { useSubscription } from "@/app/lib/useSubscription";
 import {
   listRepos,
   syncRepo,
+  resyncRepo,
   cancelRepoSync,
   checkRepoAccess,
   getProviderToken,
@@ -73,6 +74,28 @@ function SendIcon() {
       <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
     </svg>
   );
+}
+
+/**
+ * Format an ISO timestamp as a human-readable relative time string.
+ * e.g. "just now", "3m ago", "5h ago", "2d ago"
+ */
+function formatTimeAgo(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return "just now";
+    const diffMins = Math.floor(diffMs / 60_000);
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -304,12 +327,12 @@ function DashboardContent() {
     const matched = repos.find((r) => {
       if (r.github_url.startsWith("local://")) {
         const name = r.github_url.replace("local://", "");
-        return pathUsername === "local" && pathRepoName === name;
+        return pathUsername.toLowerCase() === "local" && pathRepoName.toLowerCase() === name.toLowerCase();
       }
       const parts = r.github_url.replace(/\.git$/, "").replace(/\/$/, "").split("/");
       return (
-        parts[parts.length - 1] === pathRepoName &&
-        parts[parts.length - 2] === pathUsername
+        parts[parts.length - 1]?.toLowerCase() === pathRepoName.toLowerCase() &&
+        parts[parts.length - 2]?.toLowerCase() === pathUsername.toLowerCase()
       );
     });
     if (matched) {
@@ -340,6 +363,7 @@ function DashboardContent() {
   const [syncError, setSyncError] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
   const [cancellingRepoId, setCancellingRepoId] = useState<string | null>(null);
+  const [resyncingRepoId, setResyncingRepoId] = useState<string | null>(null);
   const { getActiveLLMConfig } = useLocalKeys();
 
   const handleCancelSync = async (repoId: string) => {
@@ -643,6 +667,33 @@ function DashboardContent() {
       });
     } finally {
       setSyncLoading(false);
+    }
+  };
+
+  const handleResync = async (repo: { id: string; github_url: string; branch: string }) => {
+    if (resyncingRepoId === repo.id) return;
+    setResyncingRepoId(repo.id);
+    // Optimistically update repo status to processing to kick off status polling
+    setRepos((prev) =>
+      prev.map((r) =>
+        r.id === repo.id ? { ...r, status: "processing", detailed_status: "queued" } : r
+      )
+    );
+    try {
+      await resyncRepo(repo.github_url, repo.branch);
+      fetchRepos();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Re-sync failed.";
+      setCustomConfirm({
+        isOpen: true,
+        title: "Re-Sync Failed",
+        message: msg,
+        confirmText: "Close",
+        onConfirm: () => {},
+      });
+      fetchRepos();
+    } finally {
+      setResyncingRepoId(null);
     }
   };
 
@@ -1097,7 +1148,8 @@ function DashboardContent() {
 
     // 1. Add all synced repos
     activeSyncsAndCompleted.forEach((sr) => {
-      const githubMatch = githubListToUse.find((gr) => gr.html_url === sr.github_url);
+      const srClean = sr.github_url.replace(/\.git$/, "").replace(/\/$/, "").toLowerCase();
+      const githubMatch = githubListToUse.find((gr) => gr.html_url?.replace(/\.git$/, "").replace(/\/$/, "").toLowerCase() === srClean);
       const parts = sr.github_url.replace(/\.git$/, "").replace(/\/$/, "").split("/");
       const owner = githubMatch?.owner?.login || parts[parts.length - 2] || "";
       const avatarUrl = githubMatch?.owner?.avatar_url || (owner ? `https://github.com/${owner}.png` : null);
@@ -1118,6 +1170,9 @@ function DashboardContent() {
         branch: sr.branch,
         status: sr.status,
         detailed_status: sr.detailed_status,
+        last_synced_commit: sr.last_synced_commit,
+        last_synced_commit_msg: sr.last_synced_commit_msg,
+        last_synced_at: sr.last_synced_at,
         isSynced: true,
         private: githubMatch?.private ?? false,
       });
@@ -1125,8 +1180,9 @@ function DashboardContent() {
 
     // 2. Add public GitHub repos that aren't synced yet
     githubListToUse.forEach((gr) => {
+      const grClean = gr.html_url?.replace(/\.git$/, "").replace(/\/$/, "").toLowerCase();
       const isAlreadySynced = activeSyncsAndCompleted.some(
-        (sr) => sr.github_url === gr.html_url
+        (sr) => sr.github_url.replace(/\.git$/, "").replace(/\/$/, "").toLowerCase() === grClean
       );
       if (!isAlreadySynced) {
         const owner = gr.owner?.login || "";
@@ -1603,9 +1659,51 @@ function DashboardContent() {
                         <span className={styles.repoCardOwner}>{repo.owner}</span>
                       </div>
 
-                      <p className={styles.repoCardDescription} title={repo.description}>
-                        {repo.description}
-                      </p>
+                      {/* Card Body / Description / Commit Message */}
+                      {repo.isSynced && repo.status === "completed" && (repo.last_synced_commit_msg || repo.last_synced_commit) ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", margin: "4px 0 10px 0", minHeight: "36px" }}>
+                          <span
+                            style={{
+                              fontSize: "0.78125rem",
+                              color: "var(--color-text-secondary)",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "170px",
+                            }}
+                            title={repo.last_synced_commit_msg || repo.description}
+                          >
+                            {repo.last_synced_commit_msg || repo.description}
+                          </span>
+                          {repo.last_synced_commit && (
+                            <span
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                fontSize: "0.625rem",
+                                padding: "1.5px 6px",
+                                background: "rgba(16, 185, 129, 0.08)",
+                                border: "1px solid rgba(16, 185, 129, 0.2)",
+                                borderRadius: "4px",
+                                color: "#34d399",
+                                letterSpacing: "0.04em",
+                                fontWeight: 500,
+                              }}
+                              title={`Commit ${repo.last_synced_commit}`}
+                            >
+                              {repo.last_synced_commit.slice(0, 7)}
+                            </span>
+                          )}
+                          {repo.last_synced_at && (
+                            <span style={{ fontSize: "0.65rem", color: "var(--color-text-tertiary)" }}>
+                              · {formatTimeAgo(repo.last_synced_at)}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className={styles.repoCardDescription} title={repo.description}>
+                          {repo.description}
+                        </p>
+                      )}
 
                       {/* Meta Row: Language, stars, branch */}
                       <div className={styles.repoCardMetaRow}>
@@ -1639,13 +1737,45 @@ function DashboardContent() {
                               Connected
                             </span>
 
-                            <button
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
-                              style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
-                            >
-                              Explore Workspace
-                            </button>
+                            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                              {/* Re-Sync button */}
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => handleResync({ id: repo.id, github_url: repo.github_url, branch: repo.branch })}
+                                disabled={resyncingRepoId === repo.id}
+                                title={resyncingRepoId === repo.id ? "Syncing…" : "Re-sync with latest commit"}
+                                style={{
+                                  height: 28,
+                                  padding: "0 10px",
+                                  fontSize: "0.7rem",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                  opacity: resyncingRepoId === repo.id ? 0.7 : 1,
+                                }}
+                              >
+                                <svg
+                                  width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                                  style={{
+                                    animation: resyncingRepoId === repo.id ? "spin 0.75s linear infinite" : "none",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <polyline points="23 4 23 10 17 10"/>
+                                  <polyline points="1 20 1 14 7 14"/>
+                                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                                </svg>
+                                {resyncingRepoId === repo.id ? "Syncing…" : "Re-Sync"}
+                              </button>
+
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => router.push(githubUrlToRepoPath(repo.github_url))}
+                                style={{ height: 28, padding: "0 12px", fontSize: "0.75rem" }}
+                              >
+                                Explore
+                              </button>
+                            </div>
                           </>
                         )}
 

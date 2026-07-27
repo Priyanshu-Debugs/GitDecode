@@ -94,6 +94,12 @@ export interface RepoItem {
   detailed_status?: string;
   error_message?: string;
   created_at: string;
+  /** Full git commit SHA from the most recent successful sync */
+  last_synced_commit?: string;
+  /** Git commit subject message */
+  last_synced_commit_msg?: string;
+  /** ISO timestamp of the most recent successful sync */
+  last_synced_at?: string;
 }
 
 export interface RepoSyncResponse {
@@ -214,7 +220,10 @@ const MOCK_REPOS_LIST: RepoItem[] = [
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
-    created_at: "2026-07-05T12:00:00Z"
+    created_at: "2026-07-05T12:00:00Z",
+    last_synced_commit: "9f3a1b8c2d4e",
+    last_synced_commit_msg: "feat: optimize AST graph traversal",
+    last_synced_at: "2026-07-27T18:00:00Z"
   },
   {
     id: "102",
@@ -222,7 +231,10 @@ const MOCK_REPOS_LIST: RepoItem[] = [
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
-    created_at: "2026-07-04T18:30:00Z"
+    created_at: "2026-07-04T18:30:00Z",
+    last_synced_commit: "4e2b8c9f1a3d",
+    last_synced_commit_msg: "fix: handle async function AST nodes",
+    last_synced_at: "2026-07-27T19:30:00Z"
   },
   {
     id: "103",
@@ -230,7 +242,10 @@ const MOCK_REPOS_LIST: RepoItem[] = [
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
-    created_at: "2026-07-03T09:15:00Z"
+    created_at: "2026-07-03T09:15:00Z",
+    last_synced_commit: "7c1d4e2b8a9f",
+    last_synced_commit_msg: "refactor: optimize pgvector cosine similarity",
+    last_synced_at: "2026-07-27T20:15:00Z"
   },
   {
     id: "104",
@@ -238,7 +253,10 @@ const MOCK_REPOS_LIST: RepoItem[] = [
     branch: "main",
     status: "completed",
     detailed_status: "Active workspace indexing verified.",
-    created_at: "2026-07-06T05:00:00Z"
+    created_at: "2026-07-06T05:00:00Z",
+    last_synced_commit: "b8a9f7c1d4e2",
+    last_synced_commit_msg: "style: polish interactive bento cards",
+    last_synced_at: "2026-07-27T21:00:00Z"
   }
 ];
 
@@ -382,6 +400,9 @@ export async function syncRepo(
       if (r) {
         r.status = "completed";
         r.detailed_status = "Active workspace indexing verified.";
+        r.last_synced_commit = "e5f6a1b2c3d4";
+        r.last_synced_commit_msg = "feat: latest commit synced successfully";
+        r.last_synced_at = new Date().toISOString();
         localStorage.setItem("gitdecode_mock_repos", JSON.stringify(current));
       }
     }, 6000);
@@ -398,6 +419,21 @@ export async function syncRepo(
     method: "POST",
     body: JSON.stringify({ repo_url: repoUrl, branch, github_token: token }),
   });
+}
+
+/**
+ * Trigger a re-sync of an already-connected repository.
+ *
+ * The backend will detect that `last_synced_commit` is set and perform
+ * an incremental diff-based parse — only re-processing files that changed
+ * since the last commit. Falls back to a full re-clone if the diff fails.
+ */
+export async function resyncRepo(
+  repoUrl: string,
+  branch = "main",
+  githubToken?: string
+): Promise<RepoSyncResponse> {
+  return syncRepo(repoUrl, branch, githubToken);
 }
 
 /** Upload a local folder as a zip for ingestion */

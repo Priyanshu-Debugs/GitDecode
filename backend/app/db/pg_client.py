@@ -136,10 +136,9 @@ class SupabasePGClient:
             .select("*")
             .eq("id", repo_id)
             .eq("user_id", user_id)
-            .maybe_single()
             .execute()
         )
-        return response.data
+        return response.data[0] if (response and getattr(response, "data", None)) else None
 
     async def get_repo_by_id(
         self,
@@ -154,16 +153,18 @@ class SupabasePGClient:
         user_id: str,
         github_url: str,
     ) -> dict[str, Any] | None:
-        """Fetch a single repository by GitHub URL, scoped to the user."""
-        response = (
-            self._client.table("repos")
-            .select("*")
-            .eq("github_url", github_url)
-            .eq("user_id", user_id)
-            .maybe_single()
-            .execute()
-        )
-        return response.data if response else None
+        """Fetch a single repository by GitHub URL, scoped to the user.
+
+        Normalizes URL variations (trailing slashes, .git suffix, case differences)
+        to prevent false 404 lookup failures.
+        """
+        clean_target = github_url.rstrip("/").removesuffix(".git").lower()
+        user_repos = await self.get_user_repos(user_id)
+        for r in user_repos:
+            r_url = r.get("github_url", "").rstrip("/").removesuffix(".git").lower()
+            if r_url == clean_target:
+                return r
+        return None
 
 
     async def get_user_repos(
@@ -206,6 +207,42 @@ class SupabasePGClient:
             .execute()
         )
         logger.info("Deleted repo %s for user %s", repo_id, user_id)
+
+    async def update_repo_sync_commit(
+        self,
+        repo_id: str,
+        user_id: str,
+        commit_sha: str,
+        commit_msg: str | None = None,
+    ) -> dict[str, Any]:
+        """Persist the HEAD commit SHA, commit message, and sync timestamp after a successful sync.
+
+        Args:
+            repo_id: The repository UUID.
+            user_id: The owner's user UUID.
+            commit_sha: The full git commit SHA captured at sync time.
+            commit_msg: The commit subject/message.
+
+        Returns:
+            The updated row as a dictionary.
+        """
+        from datetime import datetime, timezone
+        update_data: dict[str, Any] = {
+            "last_synced_commit": commit_sha,
+            "last_synced_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if commit_msg:
+            update_data["last_synced_commit_msg"] = commit_msg
+
+        response = (
+            self._client.table("repos")
+            .update(update_data)
+            .eq("id", repo_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        logger.info("Updated last_synced_commit=%s for repo %s", commit_sha[:7], repo_id)
+        return response.data[0] if response.data else {}
 
 
     async def get_active_repo_count(self, user_id: str) -> int:
@@ -340,6 +377,33 @@ class SupabasePGClient:
         logger.info("Inserted %d repository files", len(response.data))
         return response.data
 
+    async def get_all_repo_files(
+        self,
+        repo_id: str,
+        user_id: str,
+    ) -> list[dict[str, Any]]:
+        """Fetch lightweight metadata for all files in a repository.
+
+        Returns only ``file_path`` and ``language`` (not the full content)
+        to avoid loading large payloads into memory. Used during incremental
+        re-sync to build the complete file list for import path resolution.
+
+        Args:
+            repo_id: The repository UUID.
+            user_id: The owner's user UUID.
+
+        Returns:
+            List of dicts with ``file_path`` and ``language`` keys.
+        """
+        response = (
+            self._client.table("repo_files")
+            .select("file_path, language")
+            .eq("repo_id", repo_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return response.data or []
+
     async def get_repo_files(
         self,
         repo_id: str,
@@ -380,6 +444,57 @@ class SupabasePGClient:
         """Delete all files for a repository."""
         self._client.table("repo_files").delete().eq("repo_id", repo_id).eq("user_id", user_id).execute()
         logger.info("Deleted repository files for repo %s, user %s", repo_id, user_id)
+
+    async def delete_repo_file_by_path(
+        self,
+        repo_id: str,
+        user_id: str,
+        file_path: str,
+    ) -> None:
+        """Delete a single file record from the repository by its path.
+
+        Used during incremental re-sync to remove files that were deleted
+        in the latest commit without purging the entire repo_files table.
+
+        Args:
+            repo_id: The repository UUID.
+            user_id: The owner's user UUID.
+            file_path: The relative file path within the repository.
+        """
+        self._client.table("repo_files").delete(
+        ).eq("repo_id", repo_id
+        ).eq("user_id", user_id
+        ).eq("file_path", file_path
+        ).execute()
+        logger.info("Deleted file %s from repo %s", file_path, repo_id)
+
+    async def upsert_repo_files(
+        self,
+        files: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Upsert (insert or update) a list of repository files.
+
+        Used during incremental re-sync to update only changed/added files
+        without purging all other files in the repository.
+
+        Requires a unique constraint on (repo_id, file_path) in the repo_files
+        table. Run this migration if not present:
+            ALTER TABLE repo_files ADD CONSTRAINT repo_files_repo_id_file_path_key
+                UNIQUE (repo_id, file_path);
+
+        Args:
+            files: List of file dicts with repo_id, user_id, file_path, etc.
+
+        Returns:
+            The upserted rows.
+        """
+        response = (
+            self._client.table("repo_files")
+            .upsert(files, on_conflict="repo_id,file_path")
+            .execute()
+        )
+        logger.info("Upserted %d repository files", len(files))
+        return response.data
 
     async def save_repo_graph(
         self,
