@@ -6,7 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import FeedbackSection from "./components/FeedbackSection";
 import styles from "./page.module.css";
+
 
 /* ── Language Data ───────────────────────────────────────────────── */
 const languages = [
@@ -302,8 +304,12 @@ export default function Home() {
             </p>
           </div>
         </section>
+
+        {/* ── FEEDBACK SECTION ───────────────────────────────────── */}
+        <FeedbackSection />
       </main>
       <Footer />
     </>
   );
 }
+

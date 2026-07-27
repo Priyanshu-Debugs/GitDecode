@@ -115,7 +115,16 @@ export default function Navbar() {
               >
                 developers.py
               </Link>
+              <Link
+                href="/feedback"
+                className={`${styles.tab} ${
+                  pathname === "/feedback" ? styles.activeTab : ""
+                }`}
+              >
+                feedback.go
+              </Link>
             </div>
+
           </div>
         </div>
 
@@ -244,6 +253,14 @@ export default function Navbar() {
           >
             developers.py
           </Link>
+          <Link
+            href="/feedback"
+            className={`${styles.mobileLink} ${pathname === "/feedback" ? styles.activeMobileLink : ""}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            feedback.go
+          </Link>
+
           <div className={styles.lightbtnWrapperMobile}>
             <button
               className={styles.mobileLink}

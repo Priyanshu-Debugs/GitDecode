@@ -86,7 +86,7 @@ const plans: PricingPlan[] = [
       "SAML/SSO dashboard access"
     ],
     buttonText: "contact sales",
-    buttonLink: "mailto:gitdecode.team@gmail.com",
+    buttonLink: "mailto:support.gitdecode@gmail.com",
     recommended: false
   }
 ];

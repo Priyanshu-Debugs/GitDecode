@@ -1363,5 +1363,18 @@ export async function adminRejectProRequest(
   });
 }
 
+/** Submit user feedback from website */
+export async function submitFeedback(data: {
+  name: string;
+  email: string;
+  message: string;
+}): Promise<{ status: string; message: string }> {
+  return apiFetch<{ status: string; message: string }>("/feedback", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+
 
 
