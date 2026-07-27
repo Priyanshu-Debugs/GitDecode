@@ -14,6 +14,7 @@ interface ProviderMeta {
   display_name: string;
   key_prefix: string;
   has_server_key: boolean;
+  free_model?: string;
   models: ModelItem[];
 }
 
@@ -103,21 +104,23 @@ export default function ModelSelector() {
   useEffect(() => {
     async function loadData() {
       const pref = getPreference();
-      setSelected({ provider: pref.provider || "google", model: pref.model || "gemini-3.1-flash-lite" });
+      let selectedProvider = pref.provider || "google";
+      let selectedModel = pref.model || "gemini-3.1-flash-lite";
 
+      let providerData: Record<string, ProviderMeta> = {};
       try {
         const res = await fetch("http://localhost:8000/api/v1/providers");
         if (res.ok) {
-          const data = await res.json();
-          setProviders(data);
+          providerData = await res.json();
         }
       } catch {
         // static fallback
-        setProviders({
+        providerData = {
           google: {
             display_name: "Google Gemini",
             key_prefix: "AIza",
             has_server_key: true,
+            free_model: "gemini-3.1-flash-lite",
             models: [
               { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
               { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
@@ -154,11 +157,37 @@ export default function ModelSelector() {
               { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B" },
             ],
           },
-        });
+        };
       }
+
+      setProviders(providerData);
+
+      // Validate the selected model: if user picked a locked model, reset to free model
+      const providerInfo = providerData[selectedProvider];
+      if (providerInfo) {
+        const hasUserKey = !!getKey(selectedProvider);
+        if (!hasUserKey && providerInfo.has_server_key && providerInfo.free_model) {
+          // User has no own key, provider has server key with a specific free model
+          if (selectedModel !== providerInfo.free_model) {
+            selectedProvider = "google";
+            selectedModel = providerInfo.free_model;
+            const freeModelInfo = providerInfo.models.find((m) => m.id === selectedModel);
+            setPreference(selectedProvider, selectedModel, freeModelInfo?.context_window);
+          }
+        } else if (!hasUserKey && !providerInfo.has_server_key) {
+          // Provider is fully locked, reset to default free model
+          selectedProvider = "google";
+          selectedModel = "gemini-3.1-flash-lite";
+          setPreference(selectedProvider, selectedModel, 1000000);
+        }
+      }
+
+      const finalProviderInfo = providerData[selectedProvider];
+      const modelInfo = finalProviderInfo?.models.find((m) => m.id === selectedModel);
+      setSelected({ provider: selectedProvider, model: selectedModel, name: modelInfo?.name });
     }
     loadData();
-  }, [getPreference]);
+  }, [getPreference, getKey, setPreference]);
 
   // Dynamically fetch live models when an API key is available for a provider
   useEffect(() => {
@@ -273,13 +302,16 @@ export default function ModelSelector() {
 
           {Object.entries(providers).map(([providerKey, info]) => {
             const hasUserKey = !!getKey(providerKey);
-            const isUnlocked = hasUserKey || info.has_server_key;
+            const isProviderUnlocked = hasUserKey || info.has_server_key;
             const modelsList = liveModels[providerKey] || info.models || [];
             const filteredModels = modelsList.filter(
               (m) => m.name.toLowerCase().includes(search.toLowerCase()) || m.id.toLowerCase().includes(search.toLowerCase())
             );
 
             if (search && filteredModels.length === 0) return null;
+
+            // Determine if the whole provider is locked (no user key AND no server key)
+            const isProviderLocked = !isProviderUnlocked;
 
             return (
               <div key={providerKey} style={{ marginBottom: 8 }}>
@@ -304,7 +336,7 @@ export default function ModelSelector() {
                     {info.has_server_key && (
                       <span style={{ background: "var(--color-surface-elevated)", color: "var(--color-text)", padding: "2px 6px", borderRadius: 4, fontSize: "0.6rem", fontWeight: 700 }}>FREE</span>
                     )}
-                    {!isUnlocked && (
+                    {isProviderLocked && (
                       <span title="API key required in Settings" style={{ display: "flex" }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -317,12 +349,21 @@ export default function ModelSelector() {
 
                 {filteredModels.map((m) => {
                   const isSelected = selected.provider === providerKey && selected.model === m.id;
+                  
+                  // Per-model lock logic:
+                  // A model is locked if:
+                  // 1. The entire provider is locked (no user key, no server key), OR
+                  // 2. The provider has a server key but this model is NOT the free model,
+                  //    AND the user hasn't added their own key
+                  const isFreeModel = info.free_model && m.id === info.free_model;
+                  const isModelLocked = isProviderLocked || 
+                    (info.has_server_key && !hasUserKey && !isFreeModel);
 
                   return (
                     <button
                       key={m.id}
                       type="button"
-                      disabled={!isUnlocked}
+                      disabled={!!isModelLocked}
                       onClick={() => handleSelect(providerKey, m)}
                       style={{
                         width: "100%",
@@ -333,20 +374,30 @@ export default function ModelSelector() {
                         borderRadius: 6,
                         background: isSelected ? "var(--color-surface-elevated)" : "transparent",
                         border: isSelected ? "1px solid var(--color-border-hover)" : "none",
-                        color: !isUnlocked ? "var(--color-text-tertiary)" : isSelected ? "var(--color-white)" : "var(--color-text-secondary)",
+                        color: isModelLocked ? "var(--color-text-tertiary)" : isSelected ? "var(--color-white)" : "var(--color-text-secondary)",
                         fontSize: "0.8rem",
-                        cursor: !isUnlocked ? "not-allowed" : "pointer",
+                        cursor: isModelLocked ? "not-allowed" : "pointer",
                         textAlign: "left",
                       }}
                     >
                       <span>{m.name}</span>
-                      {isSelected && (
-                        <span style={{ color: "var(--color-text)", display: "flex" }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                          </svg>
-                        </span>
-                      )}
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {isModelLocked && (
+                          <span title="Add your own API key to unlock" style={{ display: "flex", opacity: 0.5 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                          </span>
+                        )}
+                        {isSelected && (
+                          <span style={{ color: "var(--color-text)", display: "flex" }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </span>
+                        )}
+                      </span>
                     </button>
                   );
                 })}

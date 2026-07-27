@@ -28,12 +28,16 @@ async def list_providers():
     """Returns the static provider registry for the frontend Settings UI."""
     result = {}
     for key, info in PROVIDER_REGISTRY.items():
-        result[key] = {
+        entry = {
             "display_name": info["display_name"],
             "key_prefix": info["key_prefix"],
             "models": info["models"],
             "has_server_key": info.get("env_key") is not None,
         }
+        # Include which model is available for free (server key only)
+        if info.get("free_model"):
+            entry["free_model"] = info["free_model"]
+        result[key] = entry
     return result
 
 
