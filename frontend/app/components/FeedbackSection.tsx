@@ -187,7 +187,7 @@ export default function FeedbackSection() {
             <div className={styles.formFooter}>
               <p className={styles.destNote}>
                 <span className={styles.comment}>// </span>
-                Sends to <span className={styles.codeAmber}>support.gitdecode@gmail.com</span>
+                Sends to <span className={styles.codeAmber}>gitdecode.support@gmail.com</span>
               </p>
               <button
                 type="submit"

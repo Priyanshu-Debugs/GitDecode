@@ -86,7 +86,7 @@ const plans: PricingPlan[] = [
       "SAML/SSO dashboard access"
     ],
     buttonText: "contact sales",
-    buttonLink: "mailto:support.gitdecode@gmail.com",
+    buttonLink: "mailto:gitdecode.support@gmail.com",
     recommended: false
   }
 ];
@@ -96,7 +96,7 @@ export default function PricingPage() {
   const { user } = useAuth(false);
   const { subscription, refreshSubscription } = useSubscription();
   const [proRequestStatus, setProRequestStatus] = useState<string | null>(null);
-  
+
   // State for the developer speech bubble
   const [showBubble, setShowBubble] = useState(false);
   const [bubbleText, setBubbleText] = useState("");
@@ -110,7 +110,7 @@ export default function PricingPage() {
             setProRequestStatus(res.status);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [user]);
 

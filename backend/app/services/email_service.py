@@ -148,7 +148,7 @@ def _get_rejection_html(first_name: str, github_username: str) -> str:
                         <span style="color:#d8a657;">→</span> Double-check your coupon code and resubmit
                     </p>
                     <p style="margin:4px 0;color:#d8d3c5;">
-                        <span style="color:#d8a657;">→</span> Contact us at support.gitdecode@gmail.com for assistance
+                        <span style="color:#d8a657;">→</span> Contact us at gitdecode.support@gmail.com for assistance
                     </p>
                     <p style="margin:4px 0;color:#d8d3c5;">
                         <span style="color:#d8a657;">→</span> Continue using the free Hobby plan
@@ -237,7 +237,7 @@ async def send_pro_rejection_email(
         f"Hey {first_name},\n\n"
         f"We've reviewed your Pro upgrade request for @{github_username}, "
         f"and unfortunately we're unable to approve it at this time.\n\n"
-        f"You can resubmit with a valid coupon code or contact support.gitdecode@gmail.com.\n\n"
+        f"You can resubmit with a valid coupon code or contact gitdecode.support@gmail.com.\n\n"
         f"— The GitDecode Team"
     )
     
@@ -325,9 +325,9 @@ async def send_feedback_email(
     sender_email: str,
     message: str,
 ) -> bool:
-    """Send user feedback submission email to support.gitdecode@gmail.com."""
+    """Send user feedback submission email to gitdecode.support@gmail.com."""
     settings = get_settings()
-    recipient_email = "support.gitdecode@gmail.com"
+    recipient_email = "gitdecode.support@gmail.com"
     
     if not settings.ADMIN_EMAIL_ADDRESS or not settings.ADMIN_EMAIL_PASSWORD:
         logger.warning("SMTP email credentials not configured. Skipping feedback email delivery.")

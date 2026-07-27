@@ -2,7 +2,7 @@
 GitDecode — Feedback API Router
 ===============================
 Public endpoint for submitting user feedback from the homepage.
-Validates fields and emails submissions directly to support.gitdecode@gmail.com.
+Validates fields and emails submissions directly to gitdecode.support@gmail.com.
 """
 
 import re
@@ -64,13 +64,13 @@ class FeedbackCreate(BaseModel):
     "",
     status_code=status.HTTP_200_OK,
     summary="Submit user feedback",
-    description="Submit feedback from the website. Form data is validated and emailed to support.gitdecode@gmail.com.",
+    description="Submit feedback from the website. Form data is validated and emailed to gitdecode.support@gmail.com.",
 )
 async def submit_feedback(body: FeedbackCreate) -> dict[str, str]:
     """Process feedback submission and send email notification."""
     logger.info("Feedback received from %s <%s>", body.name, body.email)
     
-    # Send email notification to support.gitdecode@gmail.com
+    # Send email notification to gitdecode.support@gmail.com
     email_sent = await send_feedback_email(
         sender_name=body.name,
         sender_email=body.email,
