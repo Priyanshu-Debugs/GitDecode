@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Feedback Section Module — Developer Editor / Go Aesthetic
+   Feedback Section Module — State-of-the-Art IDE Editor Aesthetic
    ═══════════════════════════════════════════════════════════════════ */
 
 .section {
@@ -8,7 +8,7 @@
 }
 
 .wrap {
-  max-width: 820px;
+  max-width: 840px;
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -28,7 +28,7 @@
 
 .sectionTitle {
   font-family: var(--font-mono);
-  font-size: clamp(1.4rem, 4vw, 1.9rem);
+  font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.01em;
@@ -38,10 +38,10 @@
 
 .sectionSub {
   color: var(--color-dim);
-  max-width: 62ch;
-  margin: 0 0 1.8em;
+  max-width: 65ch;
+  margin: 0 0 2em;
   font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   line-height: 1.6;
 }
 
@@ -50,27 +50,28 @@
   font-style: italic;
 }
 
-/* ── Code Panel ──────────────────────────────────────────────────── */
+/* ── Code Window Panel ───────────────────────────────────────────── */
 .panel {
   border: 1px solid var(--color-border);
   border-radius: 0px;
   overflow: hidden;
-  background: var(--color-panel);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  transition: border-color 0.2s ease;
+  background: #12100d;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .panel:hover {
   border-color: var(--color-border-hover);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
 }
 
 .panelBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--color-border);
-  background: #12100d;
+  background: #0e0d0b;
 }
 
 .panelTitleGroup {
@@ -105,10 +106,27 @@
 
 .fileName {
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: var(--color-text);
   margin-left: 6px;
+}
+
+.panelRightTags {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.methodBadge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-green);
+  background: rgba(131, 193, 103, 0.12);
+  border: 1px solid rgba(131, 193, 103, 0.25);
+  padding: 2px 6px;
+  letter-spacing: 0.04em;
 }
 
 .panelMeta {
@@ -119,15 +137,73 @@
   text-transform: uppercase;
 }
 
-/* ── Form Content ────────────────────────────────────────────────── */
-.formContent {
-  padding: 24px;
+/* ── Code Header & Footer Gutters ─────────────────────────────────── */
+.codeHeaderGutter,
+.codeFooterGutter {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #161410;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.fieldGroup {
+.codeFooterGutter {
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: none;
+}
+
+.lineNum {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #3a352b;
+  user-select: none;
+  min-width: 2ch;
+  text-align: right;
+}
+
+.codeLine {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+}
+
+.keyword {
+  color: var(--color-secondary-accent);
+  font-weight: 600;
+}
+
+.funcName {
+  color: var(--color-green);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.codeDim {
+  color: var(--color-dim);
+}
+
+/* ── Form Content ────────────────────────────────────────────────── */
+.formContent {
+  display: flex;
+  flex-direction: column;
+  background: #161410;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  transition: background 0.15s ease;
+}
+
+.fieldRow:hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.fieldBody {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -135,11 +211,24 @@
 
 .fieldLabel {
   font-family: var(--font-mono);
-  font-size: 0.84rem;
+  font-size: 0.85rem;
   color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.labelWithCounter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.charCounter {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--color-dim);
 }
 
 .codeAmber {
@@ -147,10 +236,7 @@
   font-weight: 600;
 }
 
-.codeDim {
-  color: var(--color-dim);
-}
-
+/* Input Fields */
 .inputWrap {
   display: flex;
   align-items: center;
@@ -163,7 +249,7 @@
 
 .inputWrap:focus-within {
   border-color: var(--color-green);
-  box-shadow: 0 0 0 1px rgba(131, 193, 103, 0.2);
+  box-shadow: 0 0 0 1px rgba(131, 193, 103, 0.25);
 }
 
 .promptPrefix {
@@ -203,11 +289,42 @@
   color: var(--color-text);
   line-height: 1.6;
   resize: vertical;
-  min-height: 90px;
+  min-height: 100px;
   width: 100%;
 }
 
-/* ── Badges ──────────────────────────────────────────────────────── */
+/* Live Email Status Badges */
+.emailStatusRow {
+  margin-top: 2px;
+}
+
+.emailValidBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--color-green);
+}
+
+.badgeCheck {
+  font-weight: 700;
+}
+
+.emailInvalidBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: #e0705f;
+}
+
+.badgeWarn {
+  font-weight: 700;
+}
+
+/* Alert Badges */
 .errorBadge {
   display: flex;
   align-items: flex-start;
@@ -219,6 +336,7 @@
   font-family: var(--font-mono);
   font-size: 0.82rem;
   line-height: 1.5;
+  width: 100%;
 }
 
 .errorIcon {
@@ -237,6 +355,7 @@
   font-family: var(--font-mono);
   font-size: 0.82rem;
   line-height: 1.5;
+  width: 100%;
 }
 
 .successIcon {
@@ -244,14 +363,14 @@
   color: var(--color-green);
 }
 
-/* ── Footer / Submit ─────────────────────────────────────────────── */
+/* Footer Submit Row */
 .formFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 6px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .destNote {
@@ -273,13 +392,14 @@
   font-weight: 700;
   padding: 10px 20px;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   letter-spacing: 0.01em;
 }
 
 .submitBtn:hover:not(:disabled) {
   background: #9ad67e;
   transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(131, 193, 103, 0.25);
 }
 
 .submitBtn:disabled {
@@ -287,7 +407,7 @@
   cursor: not-allowed;
 }
 
-/* Spinner animation */
+/* Spinner Animation */
 .spinner {
   width: 14px;
   height: 14px;

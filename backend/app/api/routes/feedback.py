@@ -8,7 +8,7 @@ Validates fields and emails submissions directly to gitdecode.support@gmail.com.
 import re
 import logging
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, field_validator
 
 from app.services.email_service import send_feedback_email
 
@@ -20,8 +20,9 @@ router = APIRouter(prefix="/feedback", tags=["feedback"])
 class FeedbackCreate(BaseModel):
     """Schema for submitting user feedback."""
     name: str
-    email: EmailStr
+    email: str
     message: str
+
 
     @field_validator("name")
     @classmethod
@@ -41,11 +42,20 @@ class FeedbackCreate(BaseModel):
         trimmed = v.strip().lower()
         if not trimmed:
             raise ValueError("Email ID is required.")
-        # Basic regex check for standard email format
-        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        if not re.match(pattern, trimmed):
-            raise ValueError("Please provide a valid email address.")
+
+        # Dual-layer production email validation
+        try:
+            from email_validator import validate_email as ev_validate, EmailNotValidError
+            email_info = ev_validate(trimmed, check_deliverability=False)
+            trimmed = email_info.normalized
+        except Exception:
+            # Fallback to standard RFC 5322 compliant regex check
+            pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+            if not re.match(pattern, trimmed):
+                raise ValueError("Please enter a valid email address (e.g. name@domain.com).")
+
         return trimmed
+
 
     @field_validator("message")
     @classmethod
