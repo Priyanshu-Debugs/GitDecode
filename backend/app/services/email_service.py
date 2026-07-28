@@ -364,3 +364,145 @@ async def send_feedback_email(
         logger.error("Failed to send feedback email: %s", str(e))
         return False
 
+
+def _get_pro_request_admin_html(req_data: dict) -> str:
+    """Generate HTML body for Pro request admin notification email."""
+    import html
+    gh_user = html.escape(str(req_data.get("github_username", "N/A")))
+    gh_email = html.escape(str(req_data.get("github_email", "N/A")))
+    first = html.escape(str(req_data.get("first_name", "")))
+    last = html.escape(str(req_data.get("last_name", "")))
+    email = html.escape(str(req_data.get("email", "N/A")))
+    mobile = html.escape(str(req_data.get("mobile", "N/A")))
+    address = html.escape(str(req_data.get("address", "N/A")))
+    coupon = html.escape(str(req_data.get("coupon_code", "N/A")))
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin:0;padding:0;background-color:#0e0d0b;font-family:'Courier New',Courier,monospace;">
+        <div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+            <!-- Header -->
+            <div style="border-bottom:1px solid #211f19;padding-bottom:24px;margin-bottom:32px;">
+                <h1 style="color:#d8d3c5;font-size:24px;margin:0 0 8px 0;">
+                    <span style="color:#83c167;">Git</span><span style="color:#d8d3c5;">Decode</span>
+                </h1>
+                <p style="color:#8b8270;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:0.05em;">
+                    pro_request_notification.sh
+                </p>
+            </div>
+            
+            <!-- Status Badge -->
+            <div style="background:rgba(216,166,87,0.08);border:1px solid rgba(216,166,87,0.25);padding:12px 16px;margin-bottom:24px;">
+                <span style="color:#d8a657;font-size:13px;font-weight:bold;">⚡ NEW PRO PLAN UPGRADE REQUEST</span>
+            </div>
+            
+            <!-- Body -->
+            <div style="color:#d8d3c5;font-size:14px;line-height:1.7;">
+                <p style="margin:0 0 12px 0;color:#8b8270;">
+                    // GitHub Account:
+                </p>
+                <div style="background:#161410;border:1px solid #211f19;padding:16px;margin-bottom:20px;">
+                    <p style="margin:0 0 8px 0;color:#d8d3c5;">
+                        <strong style="color:#8b8270;">Username:</strong> <span style="color:#d8a657;">@{gh_user}</span>
+                    </p>
+                    <p style="margin:0;color:#d8d3c5;">
+                        <strong style="color:#8b8270;">Account Email:</strong> {gh_email}
+                    </p>
+                </div>
+
+                <p style="margin:0 0 12px 0;color:#8b8270;">
+                    // Applicant Details:
+                </p>
+                <div style="background:#161410;border:1px solid #211f19;padding:16px;margin-bottom:24px;">
+                    <p style="margin:0 0 8px 0;color:#d8d3c5;">
+                        <strong style="color:#8b8270;">Full Name:</strong> {first} {last}
+                    </p>
+                    <p style="margin:0 0 8px 0;color:#d8d3c5;">
+                        <strong style="color:#8b8270;">Contact Email:</strong> <a href="mailto:{email}" style="color:#83c167;text-decoration:none;">{email}</a>
+                    </p>
+                    <p style="margin:0 0 8px 0;color:#d8d3c5;">
+                        <strong style="color:#8b8270;">Mobile:</strong> {mobile}
+                    </p>
+                    <p style="margin:0 0 8px 0;color:#d8d3c5;">
+                        <strong style="color:#8b8270;">Address:</strong> {address}
+                    </p>
+                    <p style="margin:0;color:#d8d3c5;">
+                        <strong style="color:#8b8270;">Coupon Code:</strong> <span style="color:#83c167;font-weight:bold;">{coupon}</span>
+                    </p>
+                </div>
+
+                <!-- CTA Button -->
+                <div style="margin:32px 0;">
+                    <a href="https://gitdecode.app/admin" 
+                       style="display:inline-block;background:#83c167;color:#0e0d0b;padding:12px 24px;text-decoration:none;font-weight:bold;font-size:13px;font-family:'Courier New',monospace;text-transform:uppercase;">
+                        Review in Admin Panel →
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="border-top:1px solid #211f19;padding-top:24px;margin-top:32px;">
+                <p style="color:#8b8270;font-size:11px;margin:0;">
+                    — GitDecode Pro System<br>
+                    <span style="color:#3a352b;">// Automated admin notification for @{gh_user}.</span>
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+
+async def send_pro_request_notification_email(req_data: dict) -> bool:
+    """Send Pro request notification email to gitdecode.support@gmail.com."""
+    settings = get_settings()
+    recipient_email = "gitdecode.support@gmail.com"
+    gh_user = req_data.get("github_username", "Developer")
+    first_name = req_data.get("first_name", "")
+    
+    if not settings.ADMIN_EMAIL_ADDRESS or not settings.ADMIN_EMAIL_PASSWORD:
+        logger.warning("SMTP credentials not configured. Skipping Pro request admin email notification.")
+        return False
+    
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"⚡ New Pro Plan Request from @{gh_user} ({first_name})"
+        msg["From"] = f"GitDecode Pro Requests <{settings.ADMIN_EMAIL_ADDRESS}>"
+        msg["To"] = recipient_email
+        msg["Reply-To"] = req_data.get("email") or settings.ADMIN_EMAIL_ADDRESS
+        
+        plain_text = (
+            f"New Pro Upgrade Request Submitted\n"
+            f"================================\n\n"
+            f"GitHub Username: @{gh_user}\n"
+            f"GitHub Email: {req_data.get('github_email')}\n"
+            f"Applicant Name: {first_name} {req_data.get('last_name', '')}\n"
+            f"Contact Email: {req_data.get('email')}\n"
+            f"Mobile: {req_data.get('mobile')}\n"
+            f"Address: {req_data.get('address')}\n"
+            f"Coupon Code: {req_data.get('coupon_code')}\n\n"
+            f"Review in Admin Panel: https://gitdecode.app/admin\n"
+        )
+        
+        html_content = _get_pro_request_admin_html(req_data)
+        
+        msg.attach(MIMEText(plain_text, "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+        
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            server.starttls()
+            server.login(settings.ADMIN_EMAIL_ADDRESS, settings.ADMIN_EMAIL_PASSWORD)
+            server.send_message(msg)
+        
+        logger.info("Pro request notification email for @%s sent to %s", gh_user, recipient_email)
+        return True
+    except Exception as e:
+        logger.error("Failed to send Pro request admin email: %s", str(e))
+        return False
+
+

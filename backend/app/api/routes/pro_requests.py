@@ -10,8 +10,10 @@ from typing import Optional
 
 from app.api.dependencies import require_auth, get_pg, AuthenticatedUser
 from app.db.pg_client import SupabasePGClient
+from app.services.email_service import send_pro_request_notification_email
 
 router = APIRouter(prefix="/pro-requests", tags=["pro-requests"])
+
 
 
 class ProRequestCreate(BaseModel):
@@ -88,11 +90,19 @@ async def create_pro_request(
     
     request_row = await pg.insert_pro_request(data)
     
+    # 5. Send notification email to gitdecode.support@gmail.com
+    try:
+        await send_pro_request_notification_email(data)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Failed to send Pro request admin email: %s", str(e))
+    
     return {
         "status": "submitted",
         "message": "Your Pro request has been submitted! Our team will review it and notify you via email.",
         "request": request_row,
     }
+
 
 
 @router.get(
