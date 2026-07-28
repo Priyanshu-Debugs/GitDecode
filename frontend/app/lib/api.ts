@@ -1411,6 +1411,23 @@ export async function submitFeedback(data: {
   });
 }
 
+/** Record non-blocking anonymous page view */
+export async function trackPageView(path: string, referrer?: string): Promise<void> {
+  try {
+    fetch(`${API_BASE}/analytics/pageview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, referrer: referrer || document.referrer || null }),
+    }).catch(() => {});
+  } catch {}
+}
+
+/** Fetch admin analytics summary & graph timeline */
+export async function adminGetAnalytics(): Promise<any> {
+  return adminApiFetch<any>("/admin/analytics");
+}
+
+
 
 
 

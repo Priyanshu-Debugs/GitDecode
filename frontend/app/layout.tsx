@@ -72,6 +72,8 @@ export const viewport = {
   maximumScale: 5,
 };
 
+import AnalyticsTracker from "./components/AnalyticsTracker";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -84,9 +86,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} ${gtWalsheim.variable} ${jetbrainsMono.variable} dark`}
     >
       <body>
+        <AnalyticsTracker />
         <div className="noise-overlay" />
         {children}
       </body>
     </html>
   );
 }
+

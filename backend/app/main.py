@@ -34,6 +34,8 @@ from app.api.routes.subscription import router as subscription_router
 from app.api.routes.pro_requests import router as pro_requests_router
 from app.api.routes.admin import router as admin_router
 from app.api.routes.feedback import router as feedback_router
+from app.api.routes.analytics import router as analytics_router
+
 
 
 # ── Logging ──────────────────────────────────────────────────────────
@@ -114,6 +116,8 @@ app.include_router(subscription_router, prefix=settings.API_V1_PREFIX)
 app.include_router(pro_requests_router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin_router, prefix=settings.API_V1_PREFIX)
 app.include_router(feedback_router, prefix=settings.API_V1_PREFIX)
+app.include_router(analytics_router, prefix=settings.API_V1_PREFIX)
+
 
 
 

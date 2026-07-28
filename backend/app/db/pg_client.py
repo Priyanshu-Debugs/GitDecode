@@ -1130,6 +1130,146 @@ class SupabasePGClient:
             logger.error("Failed to get pro request stats: %s", str(e))
             return {"total": 0, "pending": 0, "approved": 0, "rejected": 0}
 
+    # ══════════════════════════════════════════════════════════════════════
+    #  Website Analytics & Telemetry
+    # ══════════════════════════════════════════════════════════════════════
+
+    async def record_page_view(
+        self, path: str, visitor_hash: str, referrer: str | None = None
+    ) -> None:
+        """Record a single anonymized page view."""
+        try:
+            self._client.table("page_views").insert({
+                "path": path,
+                "visitor_hash": visitor_hash,
+                "referrer": referrer,
+            }).execute()
+        except Exception as e:
+            logger.warning("Failed to record page view (page_views table missing?): %s", str(e))
+
+    async def get_admin_analytics_data(self) -> dict[str, Any]:
+        """Fetch comprehensive analytics, 14-day traffic timeline, page breakdown, and system KPIs."""
+        from datetime import datetime, date, timedelta, timezone
+
+        today = date.today()
+        dates_14 = [(today - timedelta(days=i)) for i in range(13, -1, -1)]
+        timeline_dict = {d.isoformat(): {"date": d.strftime("%b %d"), "iso_date": d.isoformat(), "pageviews": 0, "uniques_set": set()} for d in dates_14}
+
+        pageviews_rows: list[dict] = []
+        try:
+            pv_res = self._client.table("page_views").select("path, visitor_hash, created_at").execute()
+            if pv_res and pv_res.data:
+                pageviews_rows = pv_res.data
+        except Exception as e:
+            logger.warning("page_views query failed (table missing?): %s", str(e))
+
+        total_pageviews = len(pageviews_rows)
+        all_uniques_set = set()
+        today_pv = 0
+        today_uniques = set()
+        d7_pv = 0
+        d7_uniques = set()
+        d30_pv = 0
+        d30_uniques = set()
+        page_counts: dict[str, int] = {}
+
+        now_utc = datetime.now(timezone.utc)
+        d7_cutoff = (now_utc - timedelta(days=7)).isoformat()
+        d30_cutoff = (now_utc - timedelta(days=30)).isoformat()
+        today_iso = today.isoformat()
+
+        for row in pageviews_rows:
+            v_hash = row.get("visitor_hash", "anon")
+            all_uniques_set.add(v_hash)
+            p_path = row.get("path", "/")
+            page_counts[p_path] = page_counts.get(p_path, 0) + 1
+
+            c_at = row.get("created_at", "")
+            if c_at.startswith(today_iso):
+                today_pv += 1
+                today_uniques.add(v_hash)
+            if c_at >= d7_cutoff:
+                d7_pv += 1
+                d7_uniques.add(v_hash)
+            if c_at >= d30_cutoff:
+                d30_pv += 1
+                d30_uniques.add(v_hash)
+
+            row_date = c_at[:10]
+            if row_date in timeline_dict:
+                timeline_dict[row_date]["pageviews"] += 1
+                timeline_dict[row_date]["uniques_set"].add(v_hash)
+
+        timeline = []
+        for d_key in sorted(timeline_dict.keys()):
+            item = timeline_dict[d_key]
+            timeline.append({
+                "date": item["date"],
+                "iso_date": item["iso_date"],
+                "pageviews": item["pageviews"],
+                "uniques": len(item["uniques_set"]),
+            })
+
+        # Top pages breakdown
+        top_pages = []
+        sorted_pages = sorted(page_counts.items(), key=lambda x: x[1], reverse=True)
+        for path_name, count in sorted_pages:
+            pct = round((count / total_pageviews * 100), 1) if total_pageviews > 0 else 0
+            top_pages.append({"path": path_name, "count": count, "percentage": pct})
+
+        # System Metrics
+        repos_count = 0
+        try:
+            r_res = self._client.table("repos").select("id", count="exact").execute()
+            repos_count = r_res.count if r_res and r_res.count is not None else len(r_res.data or [])
+        except Exception:
+            pass
+
+        chats_count = 0
+        try:
+            c_res = self._client.table("chat_messages").select("id", count="exact").execute()
+            chats_count = c_res.count if c_res and c_res.count is not None else len(c_res.data or [])
+        except Exception:
+            pass
+
+        reports_count = 0
+        try:
+            rep_res = self._client.table("codebase_reports").select("id", count="exact").execute()
+            reports_count = rep_res.count if rep_res and rep_res.count is not None else len(rep_res.data or [])
+        except Exception:
+            pass
+
+        pro_stats = await self.get_pro_request_stats()
+        pro_total = pro_stats.get("total", 0)
+        pro_approved = pro_stats.get("approved", 0)
+        conversion_rate = round((pro_approved / pro_total * 100), 1) if pro_total > 0 else 0.0
+
+        return {
+            "visitors": {
+                "today_pv": today_pv,
+                "today_uniques": len(today_uniques),
+                "d7_pv": d7_pv,
+                "d7_uniques": len(d7_uniques),
+                "d30_pv": d30_pv,
+                "d30_uniques": len(d30_uniques),
+                "total_pv": total_pageviews,
+                "total_uniques": len(all_uniques_set),
+            },
+            "timeline": timeline,
+            "top_pages": top_pages,
+            "system_kpis": {
+                "total_repos": repos_count,
+                "total_chats": chats_count,
+                "total_reports": reports_count,
+                "pro_total": pro_total,
+                "pro_pending": pro_stats.get("pending", 0),
+                "pro_approved": pro_approved,
+                "pro_rejected": pro_stats.get("rejected", 0),
+                "conversion_rate": conversion_rate,
+            },
+        }
+
+
 
 
 

@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Admin Charts & Visual Telemetry — CSS Module
+   ═══════════════════════════════════════════════════════════════════ */
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 900px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartCard {
+  background: var(--color-surface, #161410);
+  border: 1px solid var(--color-border, #211f19);
+  padding: 22px;
+  border-radius: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chartCardWide {
+  grid-column: 1 / -1;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chartTitle {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #d8d3c5);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chartSub {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--color-dim, #8b8270);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary, #8b8270);
+}
+
+.dotGreen {
+  width: 10px;
+  height: 10px;
+  background: var(--color-green, #83c167);
+  display: inline-block;
+}
+
+.dotAmber {
+  width: 10px;
+  height: 10px;
+  background: var(--color-amber, #d8a657);
+  display: inline-block;
+}
+
+/* ── Timeline SVG Chart ─────────────────────────────────────────── */
+.timelineWrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  margin-top: 8px;
+}
+
+.svgTimeline {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.barPv {
+  fill: rgba(131, 193, 103, 0.7);
+  transition: fill 0.15s ease;
+  cursor: pointer;
+}
+
+.barPv:hover {
+  fill: #83c167;
+}
+
+.barUniques {
+  fill: #d8a657;
+  transition: fill 0.15s ease;
+  cursor: pointer;
+}
+
+.lineGrid {
+  stroke: #211f19;
+  stroke-dasharray: 4 4;
+}
+
+.axisText {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: #8b8270;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #0e0d0b;
+  border: 1px solid #83c167;
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: #d8d3c5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  transform: translate(-50%, -100%);
+  margin-top: -8px;
+  white-space: nowrap;
+}
+
+/* ── Page Distribution Progress Bars ────────────────────────────── */
+.pagesList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pageRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pageRowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.pathName {
+  color: var(--color-text, #d8d3c5);
+  font-weight: 600;
+}
+
+.pageMetrics {
+  color: var(--color-dim, #8b8270);
+  font-size: 0.76rem;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 8px;
+  background: #0e0d0b;
+  border: 1px solid #211f19;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--color-green, #83c167);
+  transition: width 0.4s ease;
+}
+
+/* ── Pro Status Ratio Visual Bar ───────────────────────────────── */
+.proRatioWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ratioTrack {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  background: #0e0d0b;
+  border: 1px solid #211f19;
+  overflow: hidden;
+}
+
+.segmentApproved {
+  background: var(--color-green, #83c167);
+  height: 100%;
+}
+
+.segmentPending {
+  background: var(--color-amber, #d8a657);
+  height: 100%;
+}
+
+.segmentRejected {
+  background: #e0705f;
+  height: 100%;
+}
+
+.ratioLegend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ratioStat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary, #8b8270);
+}
+
+.emptyNotice {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  color: var(--color-dim, #8b8270);
+  font-style: italic;
+  padding: 16px 0;
+  text-align: center;
+}
