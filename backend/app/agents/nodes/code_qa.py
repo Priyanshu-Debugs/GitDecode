@@ -45,10 +45,50 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
     # 2. Extract target files and symbols
     router = ASTRouter(llm=llm)
     all_files = [node["id"] for node in graph_data.get("nodes", []) if node.get("type") == "file"]
-    
+
+    # Detect if user is asking about commits / recent changes
+    query_lower = user_query.lower()
+    commit_keywords = ["commit", "commits", "changed", "changes", "latest commit", "last commit", "recent changes", "what changed"]
+    is_commit_query = any(kw in query_lower for kw in commit_keywords)
+
+    repo_info = await pg_client.get_repo(repo_id, user_id) if is_commit_query else None
+    commit_info_str = ""
+
+    if is_commit_query and repo_info:
+        commit_sha = repo_info.get("last_synced_commit")
+        commit_msg = repo_info.get("last_synced_commit_msg")
+        synced_at = repo_info.get("last_synced_at")
+        changed_files = repo_info.get("last_commit_changed_files") or []
+
+        if commit_sha or commit_msg or changed_files:
+            commit_info_parts = [
+                "=== LATEST SYNCED COMMIT METADATA ===",
+                f"Commit SHA: {commit_sha or 'N/A'}",
+                f"Commit Message: {commit_msg or 'N/A'}",
+                f"Last Synced At: {synced_at or 'N/A'}",
+                f"Files Changed in Latest Commit ({len(changed_files)} files):",
+            ]
+            for cf in changed_files:
+                commit_info_parts.append(f"  - {cf}")
+            commit_info_parts.append(
+                "\nINSTRUCTION: Answer the user's question about the latest commit using the commit SHA, message, "
+                "and changed files metadata above. Explain what changed across these files based on their contents."
+            )
+            commit_info_str = "\n".join(commit_info_parts) + "\n\n"
+
     logger.info("AST Router analyzing user query: '%s'", user_query)
     routing_res = await router.route_query(user_query, graph_data, all_files)
     target_files = routing_res.get("files", [])
+
+    # If commit query, include changed files in target files so their contents are retrieved
+    if is_commit_query and repo_info and repo_info.get("last_commit_changed_files"):
+        for cf in repo_info["last_commit_changed_files"]:
+            # Find matching file path in repo
+            for f in all_files:
+                if f == cf or f.endswith("/" + cf) or f.split("/")[-1] == cf.split("/")[-1]:
+                    if f not in target_files:
+                        target_files.append(f)
+
     logger.info("AST Router identified entry files: %s", target_files)
 
     if not target_files:
@@ -94,6 +134,7 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
             # We send ZERO file content in the prompt — just the focus directive and question.
             prompt = (
                 f"{CODE_QA_PROMPT}\n\n"
+                f"{commit_info_str}"
                 f"PRIMARY FILES (start your answer here):\n{target_files_str}\n\n"
                 f"FOCUS DIRECTIVE:\n"
                 f"1. Your answer must be PRIMARILY about the PRIMARY FILES listed above.\n"
@@ -171,6 +212,7 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
         SystemMessage(content=CODE_QA_PROMPT),
         *state.get("messages", []),
         SystemMessage(content=(
+            f"{commit_info_str}"
             f"PRIMARY FILES (user's question is about these):\n{target_files_str}\n\n"
             f"FOCUS DIRECTIVE:\n"
             f"1. Ground your answer primarily in the PRIMARY FILES section below.\n"

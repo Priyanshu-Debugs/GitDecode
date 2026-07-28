@@ -46,9 +46,14 @@ async def repo_summary_node(state: AgentState) -> Dict[str, Any]:
         })
         
     summary_data = {
+        "repository_name": repo_name,
+        "latest_commit_sha": repo_info.get("last_synced_commit") if repo_info else None,
+        "latest_commit_message": repo_info.get("last_synced_commit_msg") if repo_info else None,
+        "latest_commit_synced_at": repo_info.get("last_synced_at") if repo_info else None,
+        "latest_commit_changed_files": repo_info.get("last_commit_changed_files") if repo_info else None,
         "languages": languages_stats,
         "total_classes": stats.get("classes_count", 0),
-        "total_functions": stats.get("functions_count", 0)
+        "total_functions": stats.get("functions_count", 0),
     }
     
     # 3. Build context
