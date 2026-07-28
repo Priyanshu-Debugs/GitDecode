@@ -92,13 +92,16 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
 
             # The cache already contains the ENTIRE codebase.
             # We send ZERO file content in the prompt — just the focus directive and question.
-            # Sending file content here makes non-target files doubly prominent and causes drift.
             prompt = (
                 f"{CODE_QA_PROMPT}\n\n"
-                f"FOCUS DIRECTIVE: The user is asking about ONLY these specific files. "
-                f"Retrieve their content from your cached context and answer EXCLUSIVELY about them. "
-                f"Do NOT mention, summarize, or explain any other file.\n"
-                f"Target Files:\n{target_files_str}\n\n"
+                f"PRIMARY FILES (start your answer here):\n{target_files_str}\n\n"
+                f"FOCUS DIRECTIVE:\n"
+                f"1. Your answer must be PRIMARILY about the PRIMARY FILES listed above.\n"
+                f"2. If the question asks about impact, dependencies, callers, or 'what breaks if I change X' — "
+                f"you MUST look up and reference any other files in the cached codebase that import or call these files. "
+                f"Listing those dependents IS the correct answer for such questions.\n"
+                f"3. Do NOT volunteer unrelated files or summarise the whole codebase.\n"
+                f"4. Always cite specific file paths and line numbers.\n\n"
                 f"Recent conversation (for context only):\n{history_text}\n"
                 f"User Question: {user_query}\n\n"
                 f"CRITICAL: You MUST start your response with a <think> block. Inside the <think> block, you MUST write out your analysis as a structured bulleted list of at least 3 sub-points before closing with </think> and providing your final answer. Do NOT output an empty think block or an unstructured paragraph!"
@@ -137,11 +140,11 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
             dynamic_context = dynamic_context[:max_chars - 100] + "\n\n[CONTEXT TRUNCATED TO FIT MODEL LIMITS]"
             
     # Separate the user's exact target files from their graph neighbors
-    # so the model has a clear hierarchy and doesn't treat neighbors as primary
+    # so the model has a clear hierarchy and doesn't treat neighbors as primary.
     target_files_set = set(target_files)
     neighbor_files = depth_1 - target_files_set
 
-    primary_context_parts = ["=== PRIMARY FILES (Answer EXCLUSIVELY about these) ==="]
+    primary_context_parts = ["=== PRIMARY FILES (These are what the user asked about — answer primarily from these) ==="]
     for fp in sorted(target_files_set):
         fi = file_contents_map.get(fp)
         if fi:
@@ -149,7 +152,10 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
                 f"--- FILE: {fp} ---\n{fi.get('content', '')}\n"
             )
 
-    supporting_context_parts = ["=== SUPPORTING CONTEXT (For cross-references only — do NOT summarize these) ==="]
+    supporting_context_parts = [
+        "=== SUPPORTING CONTEXT (Files that import, call, or are called by the primary files) ===",
+        "Use these to answer questions about dependencies, callers, impact, or cross-file behaviour.",
+    ]
     for fp in sorted(neighbor_files):
         fi = file_contents_map.get(fp)
         if fi:
@@ -165,9 +171,14 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
         SystemMessage(content=CODE_QA_PROMPT),
         *state.get("messages", []),
         SystemMessage(content=(
-            f"FOCUS DIRECTIVE: The user's question is about ONLY these files:\n{target_files_str}\n\n"
-            f"Your answer MUST be exclusively about the PRIMARY FILES section below. "
-            f"Do NOT explain, summarize, or mention files from SUPPORTING CONTEXT unless the user explicitly asks.\n\n"
+            f"PRIMARY FILES (user's question is about these):\n{target_files_str}\n\n"
+            f"FOCUS DIRECTIVE:\n"
+            f"1. Ground your answer primarily in the PRIMARY FILES section below.\n"
+            f"2. For questions about impact, 'what breaks if I change X', callers, or dependents — "
+            f"you MUST reference the SUPPORTING CONTEXT files that import or call the primary files. "
+            f"Naming those files and their usage IS the correct answer.\n"
+            f"3. Do NOT summarise or explain files from SUPPORTING CONTEXT unless the user asked about them specifically.\n"
+            f"4. Cite exact file paths and line numbers for every technical claim.\n\n"
             f"{primary_context}\n\n"
             f"{supporting_context}\n\n"
             f"CRITICAL: You MUST start your response with a <think> block. Inside the <think> block, you MUST write out your analysis as a structured bulleted list of at least 3 sub-points before closing with </think> and providing your final answer. Do NOT output an empty think block or an unstructured paragraph!"

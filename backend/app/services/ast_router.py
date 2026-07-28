@@ -37,9 +37,19 @@ class ASTRouter:
         Uses the LLM to identify the entry point files and symbols from the user query.
         Returns a dictionary of target files and target symbols.
         """
-        # Capping file list for prompt safety
-        sample_files = all_files_list[:400]
-        
+        # Prioritize files whose names/paths keyword-match the query, then append the rest.
+        # This ensures relevant files are always in the sample even in large repos (>400 files).
+        query_lower = query.lower()
+        query_words = {w for w in query_lower.split() if len(w) > 2}
+        scored: List[tuple] = []
+        for f in all_files_list:
+            fname = f.lower()
+            score = sum(1 for w in query_words if w in fname)
+            scored.append((score, f))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        # Cap at 500 — keyword-matched files appear first so they're always included
+        sample_files = [f for _, f in scored][:500]
+
         system_prompt = (
             "You are a code routing assistant. Your job is to identify ONLY the files that directly implement or define what the user's query is asking about.\n\n"
             "STRICT RULES:\n"
@@ -50,7 +60,7 @@ class ASTRouter:
             f"Available Files in Repository:\n" + "\n".join([f"- {f}" for f in sample_files]) + "\n\n"
             "Respond strictly with a JSON object containing 'files' and 'symbols'."
         )
-        
+
         try:
             router_llm = self.llm.with_structured_output(TargetEntities)
             res = await router_llm.ainvoke([
@@ -90,6 +100,11 @@ class ASTRouter:
     ) -> Tuple[Set[str], Set[str]]:
         """
         Traverses the graph starting from target files up to max_depth.
+
+        Builds a file-level adjacency map by normalising compound edge keys
+        (e.g. ``"app/foo.py#bar_fn"``) down to plain file paths so that
+        CALLS and HAS_METHOD edges are visible alongside IMPORTS edges.
+
         Returns:
             depth_1_files: Files at depth 0 and depth 1 (full content).
             depth_2_files: Files at depth 2 (signatures only).
@@ -98,22 +113,27 @@ class ASTRouter:
         depth_2_files: Set[str] = set()
 
         edges = graph_data.get("edges", [])
-        
-        # Build adjacency lists for quick traversal
-        # We traverse both IMPORTS (dependencies) and IMPORTED_BY (dependents)
+
+        # Build file-level adjacency list.
+        # IMPORTS edges already use plain file paths.
+        # CALLS / HAS_METHOD edges use compound keys ("file.py#symbol") — strip the suffix.
         adj: Dict[str, Set[str]] = {}
         for edge in edges:
-            src = edge.get("source")
-            tgt = edge.get("target")
-            if src and tgt:
-                adj.setdefault(src, set()).add(tgt)
-                adj.setdefault(tgt, set()).add(src)  # Bi-directional search for context relevance
+            src = edge.get("source", "")
+            tgt = edge.get("target", "")
+            if not src or not tgt:
+                continue
+            src_file = src.split("#")[0]
+            tgt_file = tgt.split("#")[0]
+            if src_file and tgt_file:
+                # Bi-directional so both importer and importee get context
+                adj.setdefault(src_file, set()).add(tgt_file)
+                adj.setdefault(tgt_file, set()).add(src_file)
 
-        # BFS for depth 1
+        # BFS depth-1
         queue = list(targets)
         next_queue: List[str] = []
-        
-        # Depth 1 traversal
+
         for node in queue:
             neighbors = adj.get(node, set())
             for neighbor in neighbors:
@@ -121,7 +141,7 @@ class ASTRouter:
                     depth_1_files.add(neighbor)
                     next_queue.append(neighbor)
 
-        # Depth 2 traversal
+        # BFS depth-2
         for node in next_queue:
             neighbors = adj.get(node, set())
             for neighbor in neighbors:

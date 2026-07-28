@@ -62,6 +62,48 @@ class ContextCacheManager:
             
         return "\n".join(parts)
 
+    async def invalidate_cache(self, repo_id: str, user_id: str) -> None:
+        """Delete the Gemini cached content and clear metadata from DB.
+
+        Called before rebuilding the cache after an incremental re-sync so the
+        model always answers from fresh file content rather than stale cache.
+
+        Args:
+            repo_id: The repository UUID.
+            user_id: The owner's user UUID.
+        """
+        graph_record = await self.pg_client.get_repo_graph(repo_id, user_id)
+        if not graph_record:
+            logger.debug("invalidate_cache: no graph record for repo %s, nothing to do.", repo_id)
+            return
+
+        stats = graph_record.get("stats", {})
+        cache_name = stats.get("cache_name")
+
+        # Delete the cached content from Gemini API
+        if cache_name and self.client:
+            try:
+                self.client.caches.delete(name=cache_name)
+                logger.info("Deleted Gemini cached content: %s", cache_name)
+            except Exception as exc:
+                # Cache may have already expired — log and continue
+                logger.warning("Failed to delete Gemini cache %s (may be expired): %s", cache_name, exc)
+
+        # Always clear the metadata from DB stats so get_or_create_cache rebuilds
+        if "cache_name" in stats or "cache_expires_at" in stats:
+            stats.pop("cache_name", None)
+            stats.pop("cache_expires_at", None)
+            try:
+                await self.pg_client.save_repo_graph(
+                    repo_id=repo_id,
+                    user_id=user_id,
+                    graph_data=graph_record.get("graph_data", {}),
+                    stats=stats,
+                )
+                logger.info("Cleared stale cache metadata from DB for repo %s", repo_id)
+            except Exception as exc:
+                logger.warning("Failed to clear cache metadata for repo %s: %s", repo_id, exc)
+
     async def get_or_create_cache(
         self,
         repo_id: str,

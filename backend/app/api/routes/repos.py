@@ -605,49 +605,66 @@ async def get_blast_radius(
     graph_data = graph_row.get("graph_data", {})
     nodes = graph_data.get("nodes", [])
     edges = graph_data.get("edges", [])
-    
+
     flat_nodes = flatten_nodes(nodes)
 
-    # Downstream traversal BFS up to depth 3
-    visited = {file_path}
-    affected_files = set()
-    affected_nodes = []
-    
-    # Start queue from target file node
-    queue = [(file_path, 0)]
+    # Normalize input file_path against graph nodes
+    clean_target = file_path.replace("\\", "/").rstrip("/")
+    target_basename = clean_target.split("/")[-1] if clean_target else ""
+
+    canonical_file_path = clean_target
+    for n in nodes:
+        n_id = n.get("id", "").replace("\\", "/")
+        if (
+            n_id == clean_target
+            or n_id.endswith("/" + clean_target)
+            or (target_basename and n_id.split("/")[-1] == target_basename)
+        ):
+            canonical_file_path = n_id
+            break
+
+    # Blast radius = "If I change file X, what else breaks?"
+    # Answer: files/symbols that DEPEND ON X, i.e. incoming edges (reverse traversal).
+    # We BFS on reversed edges: follow edges where X is the TARGET, collecting the SOURCES.
+    visited: set[str] = {canonical_file_path, file_path, clean_target}
+    affected_files: set[str] = set()
+    affected_nodes: list[BlastRadiusNode] = []
+
+    queue: list[tuple[str, int]] = [(canonical_file_path, 0)]
     while queue:
-        curr, d = queue.pop(0)
-        if d >= 3:
+        curr, depth = queue.pop(0)
+        if depth >= 3:
             continue
-            
+
         for edge in edges:
             src = edge.get("source", "")
             tgt = edge.get("target", "")
-            
-            # If target node matches or is triggered by change in source
-            if src == curr or src.split("#")[0] == curr:
-                if tgt not in visited:
-                    visited.add(tgt)
-                    queue.append((tgt, d + 1))
-                    
-                    tgt_file = tgt.split("#")[0]
-                    affected_files.add(tgt_file)
-                    
-                    # Resolve symbol type/name
-                    node_name = tgt.split("#")[1] if "#" in tgt else tgt_file
+
+            # Incoming edge: something (src) depends on curr (tgt)
+            # Strip compound keys to compare at the file level
+            tgt_file = tgt.split("#")[0]
+            if tgt_file == curr or tgt == curr:
+                if src not in visited:
+                    visited.add(src)
+                    src_file = src.split("#")[0]
+                    queue.append((src_file, depth + 1))
+
+                    affected_files.add(src_file)
+
+                    # Resolve symbol type/name from flat graph nodes
+                    node_name = src.split("#")[1] if "#" in src else src_file
                     node_type = "file"
-                    if "#" in tgt:
-                        # Scan flat_nodes for type
+                    if "#" in src:
                         for fn in flat_nodes:
-                            if fn["id"] == tgt:
+                            if fn["id"] == src:
                                 node_type = fn["type"]
                                 break
-                                
+
                     affected_nodes.append(
                         BlastRadiusNode(
                             type=node_type,
                             name=node_name,
-                            file_path=tgt_file
+                            file_path=src_file,
                         )
                     )
 
@@ -655,7 +672,7 @@ async def get_blast_radius(
         target=file_path,
         affected_files=sorted(list(affected_files)),
         affected_nodes=affected_nodes,
-        depth=3
+        depth=3,
     )
 
 

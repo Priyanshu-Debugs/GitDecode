@@ -1661,43 +1661,49 @@ function DashboardContent() {
 
                       {/* Card Body / Description / Commit Message */}
                       {repo.isSynced && repo.status === "completed" && (repo.last_synced_commit_msg || repo.last_synced_commit) ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", margin: "4px 0 10px 0", minHeight: "36px" }}>
-                          <span
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", margin: "8px 0 12px 0", minHeight: "42px" }}>
+                          {/* Top Row: Full Commit Message */}
+                          <div
                             style={{
-                              fontSize: "0.78125rem",
+                              fontSize: "0.8125rem",
+                              fontWeight: 500,
                               color: "var(--color-text-secondary)",
-                              whiteSpace: "nowrap",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
-                              maxWidth: "170px",
+                              whiteSpace: "nowrap",
+                              width: "100%",
                             }}
                             title={repo.last_synced_commit_msg || repo.description}
                           >
                             {repo.last_synced_commit_msg || repo.description}
-                          </span>
-                          {repo.last_synced_commit && (
-                            <span
-                              style={{
-                                fontFamily: "var(--font-mono)",
-                                fontSize: "0.625rem",
-                                padding: "1.5px 6px",
-                                background: "rgba(16, 185, 129, 0.08)",
-                                border: "1px solid rgba(16, 185, 129, 0.2)",
-                                borderRadius: "4px",
-                                color: "#34d399",
-                                letterSpacing: "0.04em",
-                                fontWeight: 500,
-                              }}
-                              title={`Commit ${repo.last_synced_commit}`}
-                            >
-                              {repo.last_synced_commit.slice(0, 7)}
-                            </span>
-                          )}
-                          {repo.last_synced_at && (
-                            <span style={{ fontSize: "0.65rem", color: "var(--color-text-tertiary)" }}>
-                              · {formatTimeAgo(repo.last_synced_at)}
-                            </span>
-                          )}
+                          </div>
+
+                          {/* Bottom Row: Commit SHA Badge + Timestamp */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            {repo.last_synced_commit && (
+                              <span
+                                style={{
+                                  fontFamily: "var(--font-mono)",
+                                  fontSize: "0.6875rem",
+                                  padding: "2px 7px",
+                                  background: "rgba(16, 185, 129, 0.1)",
+                                  border: "1px solid rgba(16, 185, 129, 0.25)",
+                                  borderRadius: "4px",
+                                  color: "#34d399",
+                                  letterSpacing: "0.04em",
+                                  fontWeight: 600,
+                                }}
+                                title={`Commit ${repo.last_synced_commit}`}
+                              >
+                                {repo.last_synced_commit.slice(0, 7)}
+                              </span>
+                            )}
+                            {repo.last_synced_at && (
+                              <span style={{ fontSize: "0.71875rem", color: "var(--color-text-tertiary)" }}>
+                                · {formatTimeAgo(repo.last_synced_at)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <p className={styles.repoCardDescription} title={repo.description}>

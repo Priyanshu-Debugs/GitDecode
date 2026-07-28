@@ -214,14 +214,16 @@ class SupabasePGClient:
         user_id: str,
         commit_sha: str,
         commit_msg: str | None = None,
+        changed_files: list[str] | None = None,
     ) -> dict[str, Any]:
-        """Persist the HEAD commit SHA, commit message, and sync timestamp after a successful sync.
+        """Persist the HEAD commit SHA, commit message, changed files, and sync timestamp after a successful sync.
 
         Args:
             repo_id: The repository UUID.
             user_id: The owner's user UUID.
             commit_sha: The full git commit SHA captured at sync time.
             commit_msg: The commit subject/message.
+            changed_files: List of file paths that changed in this commit (from git diff).
 
         Returns:
             The updated row as a dictionary.
@@ -233,6 +235,8 @@ class SupabasePGClient:
         }
         if commit_msg:
             update_data["last_synced_commit_msg"] = commit_msg
+        if changed_files is not None:
+            update_data["last_commit_changed_files"] = changed_files
 
         response = (
             self._client.table("repos")
@@ -377,7 +381,7 @@ class SupabasePGClient:
         logger.info("Inserted %d repository files", len(response.data))
         return response.data
 
-    async def get_all_repo_files(
+    async def get_all_repo_file_paths(
         self,
         repo_id: str,
         user_id: str,

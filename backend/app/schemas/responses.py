@@ -121,7 +121,9 @@ class RepoListItem(BaseModel):
         error_message: Error log if failed.
         created_at: When the repo was first synced.
         last_synced_commit: Full git commit SHA from the most recent successful sync.
+        last_synced_commit_msg: The commit subject/message from the most recent sync.
         last_synced_at: Timestamp of the most recent successful sync.
+        last_commit_changed_files: List of file paths changed in the most recent sync commit.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -136,6 +138,7 @@ class RepoListItem(BaseModel):
     last_synced_commit: str | None = None
     last_synced_commit_msg: str | None = None
     last_synced_at: datetime | None = None
+    last_commit_changed_files: list[str] | None = None
 
 
 class GraphStatsResponse(BaseModel):

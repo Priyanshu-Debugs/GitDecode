@@ -532,8 +532,8 @@ async def sync_github_repository(
                     if existing_graph_row else {}
                 )
 
-                # Collect all current file paths for import resolution
-                existing_files = await pg_client.get_all_repo_files(repo_id, user_id)
+                # Collect all current file paths for import resolution (lightweight, paths only)
+                existing_files = await pg_client.get_all_repo_file_paths(repo_id, user_id)
                 all_file_paths: list[str] = [f["file_path"] for f in existing_files]
 
                 files_to_upsert: list[dict] = []
@@ -826,10 +826,38 @@ async def sync_github_repository(
                 with open(stats_path, "r", encoding="utf-8") as f:
                     stats = json.load(f)
 
+            # ── Helper: persist HEAD commit info before temp_dir is deleted ──
+            async def _persist_commit_info() -> None:
+                """Read clone_info.json and write commit SHA/msg/changed_files to DB."""
+                clone_info_path = os.path.join(temp_dir, "clone_info.json")
+                if not os.path.exists(clone_info_path):
+                    return
+                try:
+                    with open(clone_info_path, "r", encoding="utf-8") as f:
+                        c_data = json.load(f)
+                    head_sha = c_data.get("head_sha")
+                    head_msg = c_data.get("head_msg")
+                    changed_files_raw = c_data.get("changed_files")  # list of [status, path] or None
+                    # Flatten changed_files to a plain list of paths for storage
+                    changed_paths: list[str] | None = None
+                    if isinstance(changed_files_raw, list):
+                        changed_paths = [p for _, p in changed_files_raw]
+                    if head_sha:
+                        logger.info(
+                            "Persisting last_synced_commit=%s (%s) for repo %s",
+                            head_sha[:7], head_msg or "no msg", repo_id,
+                        )
+                        await pg_client.update_repo_sync_commit(
+                            repo_id, user_id, head_sha, head_msg, changed_paths
+                        )
+                except Exception as exc:
+                    logger.warning("Failed to persist commit info for repo %s: %s", repo_id, exc)
+
             # ── INCREMENTAL SAVE ────────────────────────────────────────
             if mode_info.get("mode") == "incremental":
                 if mode_info.get("empty"):
                     logger.info("Incremental save: no changes, skipping DB writes.")
+                    await _persist_commit_info()
                     shutil.rmtree(temp_dir, ignore_errors=True)
                     return {"saved_files": 0, "mode": "incremental"}
 
@@ -856,15 +884,14 @@ async def sync_github_repository(
                 logger.info("Incremental: saving updated code graph...")
                 await pg_client.save_repo_graph(repo_id, user_id, graph_data, stats)
 
-                # Invalidate and refresh Gemini context cache with new file contents
+                # Invalidate and rebuild Gemini context cache with updated file contents
                 logger.info("Incremental: refreshing Gemini context cache for repo %s", repo_id)
                 cache_mgr = ContextCacheManager(pg_client)
-                try:
-                    await cache_mgr.invalidate_cache(repo_id, user_id)
-                except Exception:
-                    pass  # invalidate_cache may not exist on all versions
+                await cache_mgr.invalidate_cache(repo_id, user_id)
                 await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
 
+                # Persist HEAD commit info BEFORE deleting temp_dir
+                await _persist_commit_info()
                 shutil.rmtree(temp_dir, ignore_errors=True)
                 return {"saved_files": len(upsert_list), "mode": "incremental"}
 
@@ -896,6 +923,8 @@ async def sync_github_repository(
             cache_mgr = ContextCacheManager(pg_client)
             await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
 
+            # Persist HEAD commit info BEFORE deleting temp_dir
+            await _persist_commit_info()
             shutil.rmtree(temp_dir, ignore_errors=True)
             return {"saved_files": len(files_to_save), "mode": "full"}
 
@@ -923,27 +952,9 @@ async def sync_github_repository(
 
         await step.run("generate_diagrams", generate_diagrams_step)
 
-        # Update status to 'completed' and save HEAD commit SHA and message
+        # Update status to 'completed'
+        # NOTE: commit SHA/msg are now saved inside save_to_dbs_step before temp_dir is deleted.
         async def update_to_completed() -> dict[str, Any]:
-            # Read the HEAD SHA & Message captured during clone
-            clone_info_path = os.path.join(
-                tempfile.gettempdir(), f"gitdecode_{repo_id}", "clone_info.json"
-            )
-            head_sha: str | None = None
-            head_msg: str | None = None
-            if os.path.exists(clone_info_path):
-                try:
-                    with open(clone_info_path, "r", encoding="utf-8") as f:
-                        c_data = json.load(f)
-                        head_sha = c_data.get("head_sha")
-                        head_msg = c_data.get("head_msg")
-                except Exception:
-                    pass
-
-            if head_sha:
-                logger.info("Saving last_synced_commit=%s (%s) for repo %s", head_sha[:7], head_msg or "no msg", repo_id)
-                await pg_client.update_repo_sync_commit(repo_id, user_id, head_sha, head_msg)
-
             return await pg_client.update_repo_status(
                 repo_id, user_id, "completed", detailed_status="completed"
             )
