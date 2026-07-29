@@ -7,6 +7,7 @@ import Link from "next/link";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import FeedbackSection from "./components/FeedbackSection";
+import { useAuth } from "@/app/lib/useAuth";
 import styles from "./page.module.css";
 
 
@@ -31,6 +32,7 @@ const languages = [
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState("");
   const router = useRouter();
+  const { user } = useAuth(false);
 
   // State for the developer speech bubble
   const [showBubble, setShowBubble] = useState(false);
@@ -66,8 +68,11 @@ export default function Home() {
 
   const handleRepoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Gate: redirect to sign-in first
-    router.push("/auth/sign-in");
+    if (user) {
+      router.push("/dashboard");
+    } else {
+      router.push("/auth/sign-in");
+    }
   };
 
   return (
@@ -128,9 +133,15 @@ export default function Home() {
 
             {/* CTA buttons */}
             <div className={styles.cta}>
-              <Link href="/auth/sign-in" className={styles.btnFill}>
-                sign in
-              </Link>
+              {user ? (
+                <Link href="/dashboard" className={styles.btnFill}>
+                  dashboard
+                </Link>
+              ) : (
+                <Link href="/auth/sign-in" className={styles.btnFill}>
+                  sign in
+                </Link>
+              )}
               <Link href="/how-it-works" className={styles.btnOutline}>
                 how it works
               </Link>
