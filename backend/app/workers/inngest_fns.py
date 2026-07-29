@@ -255,6 +255,18 @@ def resolve_import_path(
                 ):
                     return file
 
+    # 3. Generic Multi-Language Import Resolution (Go, Java, C/C++, Rust, C#, PHP, Ruby)
+    clean_stmt = import_stmt.strip().strip(";").strip("'").strip('"')
+    cleaned_path = clean_stmt.replace("\\", "/").replace(".", "/")
+    basename = cleaned_path.split("/")[-1].lower()
+
+    if basename and len(basename) > 2:
+        for file in all_files:
+            file_lower = file.lower()
+            fname_no_ext = os.path.splitext(file_lower.split("/")[-1])[0]
+            if fname_no_ext == basename or file_lower.endswith(cleaned_path):
+                return file
+
     return None
 
 
@@ -895,24 +907,34 @@ async def sync_github_repository(
                 shutil.rmtree(temp_dir, ignore_errors=True)
                 return {"saved_files": len(upsert_list), "mode": "incremental"}
 
-            # ── FULL SAVE: original purge + insert logic ─────────────────
+            # ── FULL SAVE: safe upsert + purge stale logic ─────────────────
             files_path = os.path.join(temp_dir, "files_to_save.json")
             files_to_save: list = []
             if os.path.exists(files_path):
                 with open(files_path, "r", encoding="utf-8") as f:
                     files_to_save = json.load(f)
 
-            # Purge stale DB files & graph
-            logger.info("Full sync: purging old records for repo_id: %s", repo_id)
-            await pg_client.delete_repo_files(repo_id, user_id)
-            await pg_client.delete_repo_graph(repo_id, user_id)
-
-            # Insert files in batches
             if files_to_save:
-                logger.info("Full sync: inserting %d repository files to Supabase...", len(files_to_save))
+                # 1. Fetch current file paths in DB before updating
+                existing_file_rows = await pg_client.get_all_repo_file_paths(repo_id, user_id)
+                existing_paths = {f["file_path"] for f in existing_file_rows} if existing_file_rows else set()
+                new_paths = {f["file_path"] for f in files_to_save}
+
+                logger.info("Full sync: saving %d repository files to Supabase...", len(files_to_save))
                 db_batch_size = 50
                 for j in range(0, len(files_to_save), db_batch_size):
-                    await pg_client.insert_repo_files(files_to_save[j: j + db_batch_size])
+                    try:
+                        await pg_client.upsert_repo_files(files_to_save[j: j + db_batch_size])
+                    except Exception as e:
+                        logger.warning("upsert_repo_files failed, falling back to insert_repo_files: %s", e)
+                        await pg_client.insert_repo_files(files_to_save[j: j + db_batch_size])
+
+                # 2. Delete ONLY stale files (files that no longer exist in current clone)
+                stale_paths = existing_paths - new_paths
+                if stale_paths:
+                    logger.info("Full sync: purging %d stale files no longer in repo...", len(stale_paths))
+                    for sp in stale_paths:
+                        await pg_client.delete_repo_file_by_path(repo_id, user_id, sp)
 
             # Insert code graph
             logger.info("Full sync: saving code graph structure...")

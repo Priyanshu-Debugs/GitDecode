@@ -1,19 +1,27 @@
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 from langchain_core.messages import AIMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from ..state import AgentState
 from ..prompts import REPO_SUMMARY_PROMPT
 from app.api.dependencies import get_pg
-
 from app.services.llm_factory import resolve_llm_from_state
 
 logger = logging.getLogger(__name__)
 
+# Key documentation and configuration manifest filenames to look for
+DOC_AND_CONFIG_PATTERNS = [
+    "readme.md", "readme", "readme.txt", "readme.rst",
+    "package.json", "pyproject.toml", "cargo.toml", "go.mod",
+    "docker-compose.yml", "docker-compose.yaml", "makefile", "pom.xml", "build.gradle"
+]
+
+ENTRY_POINT_KEYWORDS = ["main.", "app.", "index.", "server.", "router.", "routes.", "controller.", "service."]
+
 async def repo_summary_node(state: AgentState) -> Dict[str, Any]:
     """
-    Agent that reads JSON graph stats from Supabase and summarizes the codebase structure.
+    Agent that summarizes codebase architecture and implementation.
+    Gathers raw DB stats, README/docs content, directory trees, and entry point code/symbols.
     """
     pg_client = get_pg()
     llm = resolve_llm_from_state(state)
@@ -34,11 +42,15 @@ async def repo_summary_node(state: AgentState) -> Dict[str, Any]:
 
     stats = graph.get("stats", {})
     graph_data = graph.get("graph_data", {})
+    nodes = graph_data.get("nodes", [])
+
+    all_file_nodes = [node for node in nodes if node.get("type") == "file" or node.get("id")]
+    all_file_paths = [node["id"] for node in all_file_nodes if "id" in node]
     
-    # Format stats to match previous Neo4j structure for REPO_SUMMARY_PROMPT compatibility
+    # Format stats
     languages_stats = []
     for lang, count in stats.get("languages", {}).items():
-        sample_files = [node["id"] for node in graph_data.get("nodes", []) if node.get("language") == lang][:25]
+        sample_files = [node["id"] for node in all_file_nodes if node.get("language") == lang][:25]
         languages_stats.append({
             "language": lang,
             "count": count,
@@ -54,12 +66,73 @@ async def repo_summary_node(state: AgentState) -> Dict[str, Any]:
         "languages": languages_stats,
         "total_classes": stats.get("classes_count", 0),
         "total_functions": stats.get("functions_count", 0),
+        "total_files": len(all_file_paths),
     }
+
+    # 3. Identify and fetch Documentation & Config Manifests
+    doc_paths_to_fetch = []
+    for fp in all_file_paths:
+        fp_lower = fp.lower()
+        fname = fp_lower.split("/")[-1]
+        if any(pat == fname or fname.startswith("readme.") for pat in DOC_AND_CONFIG_PATTERNS):
+            doc_paths_to_fetch.append(fp)
+
+    doc_files_data = await pg_client.get_repo_files(repo_id, user_id, doc_paths_to_fetch) if doc_paths_to_fetch else []
     
-    # 3. Build context
-    context = f"Repository Name: {repo_name}\n\nRaw Database Summary:\n\n{json.dumps(summary_data, indent=2)}\n\n"
+    doc_context_parts = []
+    for f_item in doc_files_data:
+        fp = f_item.get("file_path", "")
+        content = f_item.get("content", "")
+        if content:
+            if len(content) > 30000:
+                content = content[:30000] + "\n...[TRUNCATED FOR SIZE]..."
+            doc_context_parts.append(f"--- FILE: {fp} ---\n{content}\n")
+
+    doc_context_str = "\n".join(doc_context_parts) if doc_context_parts else "(No README or manifest configuration files found in repository)"
+
+    # 4. Build File Tree and Key Module Outlines
+    tree_lines = [f"- {fp}" for fp in sorted(all_file_paths)[:150]]
+    if len(all_file_paths) > 150:
+        tree_lines.append(f"... and {len(all_file_paths) - 150} more files.")
+    file_tree_str = "\n".join(tree_lines)
+
+    # Entry point & module outline extraction
+    entry_point_files = []
+    for fp in all_file_paths:
+        fp_lower = fp.lower()
+        if any(kw in fp_lower for kw in ENTRY_POINT_KEYWORDS):
+            entry_point_files.append(fp)
+
+    # Fetch top 5 entry point contents if available
+    entry_contents_data = await pg_client.get_repo_files(repo_id, user_id, entry_point_files[:5]) if entry_point_files else []
+    entry_context_parts = []
+    for f_item in entry_contents_data:
+        fp = f_item.get("file_path", "")
+        content = f_item.get("content", "")
+        if content:
+            if len(content) > 20000:
+                content = content[:20000] + "\n...[TRUNCATED]..."
+            entry_context_parts.append(f"--- ENTRY FILE: {fp} ---\n{content}\n")
     
-    # 4. Call LLM
+    entry_context_str = "\n".join(entry_context_parts) if entry_context_parts else "(No explicit main/entry files detected)"
+
+    # 5. Assemble rich LLM prompt
+    context = (
+        f"Repository Name: {repo_name}\n\n"
+        f"=== RAW DATABASE METADATA ===\n"
+        f"{json.dumps(summary_data, indent=2)}\n\n"
+        f"=== REPOSITORY DOCUMENTATION & MANIFESTS ===\n"
+        f"{doc_context_str}\n\n"
+        f"=== REPOSITORY FILE TREE (Top 150 Files) ===\n"
+        f"{file_tree_str}\n\n"
+        f"=== KEY ENTRY POINTS & CORE FILES ===\n"
+        f"{entry_context_str}\n\n"
+        f"INSTRUCTION FOR REPO SUMMARY:\n"
+        f"Synthesize the documentation, file tree structure, manifests, and entry files above to answer the user's question. "
+        f"Explain what the repository does, how it is implemented, its core architecture, technology stack, and module structure."
+    )
+    
+    # 6. Call LLM
     messages = [
         SystemMessage(content=REPO_SUMMARY_PROMPT),
         *state.get("messages", []),
