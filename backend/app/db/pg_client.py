@@ -1269,6 +1269,80 @@ class SupabasePGClient:
             },
         }
 
+    async def get_user_activity_timestamps(self, user_id: str) -> list[dict[str, Any]]:
+        """Fetch all user message timestamps and repository sync timestamps with rich metadata."""
+        activities: list[dict[str, Any]] = []
+        
+        # 1. Fetch repositories map to resolve repo names
+        repos_map: dict[str, str] = {}
+        default_repo_name = "Repository"
+        try:
+            repo_res = (
+                self._client.table("repositories")
+                .select("id, github_url, branch, status, created_at")
+                .eq("user_id", user_id)
+                .order("created_at", desc=True)
+                .execute()
+            )
+            if repo_res.data:
+                for row in repo_res.data:
+                    r_id = str(row.get("id", "")).lower()
+                    g_url = row.get("github_url", "")
+                    r_name = g_url.split("/")[-1] if "/" in g_url else g_url or "Repository"
+                    if r_id:
+                        repos_map[r_id] = r_name
+                    default_repo_name = r_name
+
+                    if row.get("created_at"):
+                        activities.append({
+                            "id": f"repo-{row.get('id', '')}",
+                            "created_at": row["created_at"],
+                            "type": "repo",
+                            "title": f"Synced codebase {r_name}",
+                            "subtitle": f"Branch: {row.get('branch', 'main')} • Status: {row.get('status', 'completed')}",
+                            "repo_id": str(row.get('id', '')) if row.get('id') else None,
+                            "repo_name": r_name,
+                        })
+        except Exception as e:
+            logger.warning("Failed to fetch user repositories for activity: %s", str(e))
+
+        # 2. Fetch user chat messages
+        try:
+            msg_res = (
+                self._client.table("chat_messages")
+                .select("id, created_at, content, role, session_id, repo_id")
+                .eq("user_id", user_id)
+                .eq("role", "user")
+                .order("created_at", desc=True)
+                .execute()
+            )
+            if msg_res.data:
+                for row in msg_res.data:
+                    if row.get("created_at"):
+                        raw_content = row.get("content", "").strip()
+                        preview = (raw_content[:80] + "...") if len(raw_content) > 80 else raw_content
+                        raw_r_id = str(row.get("repo_id", "") or "")
+                        clean_r_id = raw_r_id.lower()
+                        
+                        r_name = repos_map.get(clean_r_id) or (list(repos_map.values())[0] if len(repos_map) == 1 else default_repo_name)
+
+                        activities.append({
+                            "id": f"msg-{row.get('id', '')}",
+                            "created_at": row["created_at"],
+                            "type": "chat",
+                            "title": preview or "Asked AI Code Assistant",
+                            "subtitle": f"Codebase: {r_name}",
+                            "repo_id": raw_r_id or None,
+                            "repo_name": r_name,
+                            "session_id": str(row.get("session_id", "")) if row.get("session_id") else None,
+                        })
+        except Exception as e:
+            logger.warning("Failed to fetch user chat_messages for activity: %s", str(e))
+
+        # Sort all activity items descending by created_at
+        activities.sort(key=lambda x: x["created_at"], reverse=True)
+        return activities
+
 
 
 

@@ -404,16 +404,20 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       >
         <div className={styles.sidebarHeader}>
           {!collapsed && (
-            <Link href="/" style={{ display: "flex", alignItems: "center" }}>
+            <Link href="/" className={styles.sidebarLogoLink}>
               <Image
-                src="/logo.svg"
+                src="/icon.svg"
                 alt="GitDecode"
-                width={120}
-                height={32}
+                width={28}
+                height={28}
                 className={styles.sidebarLogoImage}
                 style={{ objectFit: "contain" }}
                 priority
               />
+              <span className={styles.sidebarBrandText}>
+                <span className={styles.gitPart}>Git</span>
+                <span className={styles.decodePart}>Decode</span>
+              </span>
             </Link>
           )}
           <button
@@ -450,7 +454,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
           {/* Recent chats section */}
           {!collapsed && (
-            <div className={styles.sidebarQueueSection} style={{ border: "none", padding: 0, background: "transparent", marginTop: 8 }}>
+            <div className={styles.sidebarQueueSection} style={{ border: "none", padding: 0, background: "transparent", marginTop: 8, display: "flex", flexDirection: "column", flex: 1 }}>
               <div className={styles.sidebarQueueHeader} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.6875rem", letterSpacing: "0.05em" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <ChatIcon />
@@ -468,7 +472,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                   <PlusIcon />
                 </button>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, maxHeight: "300px", overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6, flex: 1 }}>
                 {chatsLoading && recentChats.length === 0 ? (
                   <div style={{ display: "flex", justifyContent: "center", padding: 12 }}>
                     <div className={styles.loadingSpinner} style={{ width: 12, height: 12 }} />

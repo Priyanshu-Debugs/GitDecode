@@ -424,3 +424,16 @@ async def delete_session(
         user_id=user.id,
     )
 
+
+@router.get(
+    "/activity",
+    summary="Get user activity logs",
+    description="Retrieve all user activity timestamps (chat messages & repo syncs) for real-time activity heatmap.",
+)
+async def get_user_activity(
+    user: AuthenticatedUser = Depends(require_auth),
+    pg: SupabasePGClient = Depends(get_pg),
+) -> list[dict]:
+    """Get all user activity timestamps."""
+    return await pg.get_user_activity_timestamps(user_id=user.id)
+

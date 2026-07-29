@@ -65,10 +65,10 @@ export default function Navbar() {
           <div className={styles.logoTabWrap}>
             <Link href="/" className={styles.logoLink}>
               <Image
-                src="/logo.svg"
+                src="/icon.svg"
                 alt="GitDecode"
-                width={80}
-                height={20}
+                width={60}
+                height={60}
                 priority
                 className={styles.logoImage}
               />

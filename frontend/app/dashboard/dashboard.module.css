@@ -71,15 +71,36 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.sidebarLogoImage {
-  height: 60px;
-  width: auto;
-  opacity: 0.9;
-  transition: opacity var(--transition-fast);
+.sidebarLogoLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
 }
 
-.sidebarLogoImage:hover {
+.sidebarLogoImage {
+  width: 65px;
+  height: 65px;
+  display: block;
   opacity: 1;
+  object-fit: contain;
+}
+
+.sidebarBrandText {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  user-select: none;
+}
+
+.gitPart {
+  color: var(--color-text);
+}
+
+.decodePart {
+  color: var(--color-green);
 }
 
 .collapseBtn {
@@ -4441,5 +4462,621 @@
   padding: 0 10px;
   font-size: 0.75rem;
   border-radius: var(--radius-sm, 6px);
+}
+
+/* ── Developer Activity Heatmap ── */
+.heatmapHeaderStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+}
+
+.heatmapStatItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heatmapStatValue {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-white);
+}
+
+.heatmapStatLabel {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.heatmapGridWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── LeetCode Month-by-Month Activity Matrix ── */
+.leetcodeHeatmapWrap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.dayLabelsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5px;
+  margin-top: 0px;
+  flex-shrink: 0;
+}
+
+.dayLabel {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--color-text-secondary);
+  height: 11.5px;
+  line-height: 11.5px;
+}
+
+.dayLabelSpacer {
+  height: 11.5px;
+}
+
+.leetcodeMonthsScroll {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  flex: 1;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.leetcodeMonthsScroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.leetcodeMonthBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.leetcodeMonthTitle {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-top: 4px;
+}
+
+.leetcodeMonthWeeks {
+  display: flex;
+  gap: 2.5px;
+}
+
+.weekColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5px;
+}
+
+.heatmapCellEmpty,
+.heatmapCellHidden {
+  width: 11.5px;
+  height: 11.5px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.heatmapGrid {
+  display: grid;
+  grid-template-rows: repeat(7, 11.5px);
+  grid-auto-flow: column;
+  grid-auto-columns: 11.5px;
+  gap: 2.5px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.heatmapCell {
+  width: 11.5px;
+  height: 11.5px;
+  border-radius: 2.5px;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  cursor: pointer;
+}
+
+.heatmapCell:hover {
+  transform: scale(1.25);
+  filter: brightness(1.3);
+}
+
+.heatmapLevel0 {
+  background: #262626;
+  border: none;
+}
+
+.heatmapLevel1 {
+  background: #0e4429;
+}
+
+.heatmapLevel2 {
+  background: #006d32;
+}
+
+.heatmapLevel3 {
+  background: #26a641;
+}
+
+.heatmapLevel4 {
+  background: #39d353;
+  box-shadow: 0 0 6px rgba(57, 211, 83, 0.45);
+}
+
+.heatmapFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.heatmapLegend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Compact Horizontal Stacked Language Bar ── */
+.langStackedWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.langStackedBar {
+  display: flex;
+  height: 10px;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  gap: 2px;
+}
+
+.langSegment {
+  height: 100%;
+  border-radius: 2px;
+  transform-origin: left;
+}
+
+.langLegendWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: center;
+}
+
+.langLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.langColorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.langName {
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.langPercent {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+/* ── Orbital Language Radar (Option C) ── */
+.orbitalRadarWrap {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.orbitalRing1 {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.orbitalRing2 {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  border: 1px dashed rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.orbitalRing3 {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border: 1px dashed rgba(255, 255, 255, 0.04);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.orbitalCore {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(131, 193, 103, 0.12);
+  border: 1.5px solid var(--color-green);
+  box-shadow: 0 0 16px rgba(131, 193, 103, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.orbitalCoreDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-green);
+  box-shadow: 0 0 8px var(--color-green);
+}
+
+.orbitalCoreLabel {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--color-green);
+  margin-top: 1px;
+}
+
+.orbitalPlanet {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.orbitalPlanetText {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--color-white);
+  pointer-events: none;
+}
+
+.orbitalTooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(22, 20, 16, 0.95);
+  border: 1px solid var(--color-border);
+  color: var(--color-white);
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.orbitalPlanet:hover .orbitalTooltip {
+  opacity: 1;
+}
+
+/* ── Formatted Language Distribution Grid ── */
+.langGridFormatted {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.langGridCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.langGridCard:hover {
+  border-color: var(--color-border-hover);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.langCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.langCardDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.langCardName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.langCardBadge {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.langCardTrack {
+  height: 4px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.langCardFill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+/* ── Heatmap Selected Day Cell ── */
+.heatmapCellSelected {
+  outline: 2px solid #39d353 !important;
+  outline-offset: 1px !important;
+  transform: scale(1.25) !important;
+  z-index: 2 !important;
+  box-shadow: 0 0 8px rgba(57, 211, 83, 0.6) !important;
+}
+
+/* ── Activity Inspection Breakdown Panel ── */
+.activityPanel {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 0.5px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.activityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.activityTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activityDateTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.activityCountBadge {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-green);
+  background: rgba(131, 193, 103, 0.1);
+  border: 1px solid rgba(131, 193, 103, 0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.activityFilterTabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.activityFilterPill {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 0.5px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.activityFilterPill:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-white);
+}
+
+.activityFilterPillActive {
+  background: rgba(131, 193, 103, 0.15);
+  border-color: var(--color-green);
+  color: var(--color-green);
+  font-weight: 600;
+}
+
+.activityResetBtn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.activityResetBtn:hover {
+  color: var(--color-white);
+}
+
+.activityTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.activityCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.activityCard:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--color-border-hover);
+}
+
+.activityCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.activityTypeIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+}
+
+.activityTypeIconChat {
+  background: rgba(49, 120, 198, 0.15);
+  border: 0.5px solid rgba(49, 120, 198, 0.3);
+  color: #3178c6;
+}
+
+.activityTypeIconRepo {
+  background: rgba(131, 193, 103, 0.15);
+  border: 0.5px solid rgba(131, 193, 103, 0.3);
+  color: #83c167;
+}
+
+.activityCardTitle {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-white);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityCardSubtitle {
+  font-size: 0.6875rem;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+.activityCardRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.activityTimeTag {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+.activityActionBtn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid var(--color-border);
+  color: var(--color-white);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.activityActionBtn:hover {
+  background: var(--color-green);
+  border-color: var(--color-green);
+  color: #000;
+}
+
+.activityEmptyState {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+  border: 0.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
 }
 

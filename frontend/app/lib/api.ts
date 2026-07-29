@@ -980,6 +980,25 @@ export async function deleteChatSession(sessionId: string): Promise<void> {
   await apiFetch<void>(`/chat/session/${sessionId}`, { method: "DELETE" });
 }
 
+export interface UserActivityItem {
+  id: string;
+  created_at: string;
+  type: "chat" | "repo";
+  title: string;
+  subtitle?: string;
+  repo_id?: string;
+  repo_name?: string;
+  session_id?: string;
+}
+
+/** Get all user activity items for activity heatmap */
+export async function getUserActivity(): Promise<UserActivityItem[]> {
+  if (isDemoMode()) {
+    return [];
+  }
+  return apiFetch<UserActivityItem[]>("/chat/activity");
+}
+
 
 /** Get call graph for visualization */
 export async function getCallGraph(repoId: string): Promise<DependencyGraph> {
