@@ -2,7 +2,7 @@
   <img src="frontend/public/developer-logo-refined.svg" alt="GitDecode Logo" width="280" />
 </p>
 
-<h1 align="center">GitDecode — AI-Powered Codebase Intelligence & Graph-Native AST Engine</h1>
+<h1 align="center">GitDecode -- AI-Powered Codebase Intelligence & Graph-Native AST Engine</h1>
 
 <p align="center">
   <b>Vectorless RAG • Multi-Agent LangGraph Workflows • Interactive Neo4j NVL Graph Visualizer • Inngest Background Pipeline</b>
@@ -15,7 +15,7 @@
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://inngest.com"><img src="https://img.shields.io/badge/Inngest-Event--Driven-FF4A00?style=for-the-badge&logo=inngest" alt="Inngest"></a>
   <a href="https://supabase.com"><img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase" alt="Supabase"></a>
-  <a href="https://deepmind.google/technologies/gemini/"><img src="https://img.shields.io/badge/Gemini-3.1_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini"></a>
+  <a href="https://deepmind.google/technologies/gemini/"><img src="https://img.shields.io/badge/Multi--Provider_LLM-Gemini_•_OpenAI_•_Anthropic_•_Groq-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Multi-Provider LLM"></a>
 </p>
 
 ---
@@ -24,9 +24,9 @@
 
 GitDecode is an enterprise-grade, developer-centric codebase visualization, structural intelligence, and automated architectural auditing platform. Traditional Retrieval-Augmented Generation (RAG) systems attempt to answer code queries by chunking source code files into arbitrary line blocks and indexing them inside flat vector databases. This approach fundamentally fails in software engineering tasks because vector similarity search lacks structural awareness: it discards function call graphs, class inheritance trees, cross-module import paths, type definitions, and downstream dependency chains.
 
-GitDecode replaces vector chunking with **Vectorless RAG via Deterministic Abstract Syntax Tree (AST) Graph Traversal**. During repository ingestion, GitDecode parses source code files into a unified, symbolic knowledge graph containing explicit nodes (`File`, `Class`, `Function`, `Method`) and typed relationships (`IMPORTS`, `CALLS`, `HAS_METHOD`).
+GitDecode replaces vector chunking with **Vectorless RAG via Deterministic Abstract Syntax Tree (AST) Graph Traversal**. During repository ingestion, GitDecode parses source code files into a unified, symbolic knowledge graph containing explicit nodes (`File`, `Class`, `Function`, `Method`) and typed relationships (`IMPORTS`, `CALLS`, `HAS_METHOD`). The resulting knowledge graph is persisted directly inside Supabase PostgreSQL (`REPOSITORY_GRAPHS` JSONB storage), eliminating external graph database infrastructure overhead while guaranteeing high-speed deterministic graph traversals.
 
-When a developer submits a query, GitDecode identifies target entry points, performs Breadth-First Search (BFS) graph traversal across the dependency network, and builds a depth-stratified context payload. This context is supplied to a stateful **LangGraph Multi-Agent Runtime**, driving precise Q&A, instant 3-hop **Blast Radius Analysis**, real-time **Neo4j NVL Graph Visualizations**, and automated **Deep Codebase Architectural Audits** exported as publication-ready A4 PDF reports.
+When a developer submits a query, GitDecode identifies target entry points, performs Breadth-First Search (BFS) graph traversal across the dependency network, and builds a depth-stratified context payload. This context is supplied to a stateful **LangGraph Multi-Agent Runtime**, driving precise Q&A, instant 3-hop **Blast Radius Analysis**, real-time **Neo4j NVL Graph Visualizations**, multi-provider model selection (Gemini, OpenAI, Anthropic, Groq), password-protected **Admin Panel Operations**, and automated **Deep Codebase Architectural Audits** exported as publication-ready A4 PDF reports.
 
 ---
 
@@ -35,7 +35,7 @@ When a developer submits a query, GitDecode identifies target entry points, perf
 ### 1. Vectorless RAG Engine
 - Eliminates lossy embedding spaces and approximate nearest-neighbor vector searches.
 - Uses LLM structured output to identify entry point files and target symbols from user queries.
-- Executes deterministic BFS graph traversal across the codebase dependency network.
+- Executes deterministic BFS graph traversal across the codebase dependency network stored in PostgreSQL.
 - Assembles depth-stratified context payloads:
   - Depth 0 (Target files) and Depth 1 (Direct dependencies & dependents): Full source code contents.
   - Depth 2 (Indirect dependencies): AST signatures, function parameters, class outlines, and docstrings.
@@ -46,7 +46,12 @@ When a developer submits a query, GitDecode identifies target entry points, perf
 - Renders file import networks, function call chains, and class-method relationships with interactive physics force-directed layouts.
 - Provides real-time filtering by entity type (`file`, `class`, `function`), node selection inspection, zoom-to-fit, and dark glassmorphic UI controls.
 
-### 3. Stateful LangGraph Multi-Agent Runtime
+### 3. Multi-Provider LLM Factory & Ephemeral Key Management
+- Supports dynamic model selection across major AI providers: **Google Gemini** (Gemini 3.5 Flash, 3.1 Pro, 3.1 Flash Lite), **OpenAI** (GPT-5.6, GPT-5.5, GPT-4.1, GPT-4o, GPT-4o-mini), **Anthropic** (Claude Fable 5, Claude Opus 4.8, Claude Sonnet 4, Claude Haiku 4), and **Groq** (Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B).
+- Features dynamic live model discovery (`POST /api/v1/providers/models`) that validates user keys against official provider REST APIs.
+- Enforces strict security: user API keys are never stored in databases; they exist purely in-memory during single request lifecycles.
+
+### 4. Stateful LangGraph Multi-Agent Runtime
 - Driven by a Supervisor Router node that classifies developer intent using Pydantic structured output models with fallback JSON parsing.
 - Routes incoming queries to domain-specific agent nodes:
   - **Code QA Node**: Deep code understanding using Vectorless RAG context stuffing and line-accurate source citations.
@@ -55,7 +60,7 @@ When a developer submits a query, GitDecode identifies target entry points, perf
   - **Repo Summary Node**: Computes statistical summaries, file distribution metrics, and language breakdowns.
   - **Guardrail Node**: Intercepts off-topic or malformed queries safely.
 
-### 4. Deep Codebase Architectural Report Engine
+### 5. Deep Codebase Architectural Report Engine
 - Uses a multi-agent Fan-Out / Fan-In LangGraph pipeline:
   - **Planner Node**: Classifies repository domain (Fullstack, Backend, Frontend, CLI, Microservice) and evaluates structural graph metrics.
   - **Orchestrator Node**: Constructs a structured 5 to 8 section analytical blueprint.
@@ -63,13 +68,18 @@ When a developer submits a query, GitDecode identifies target entry points, perf
   - **Reducer Node**: Merges section drafts, embeds auto-generated Mermaid architecture diagrams, enforces generation timestamps, and outputs complete Markdown.
 - **A4 PDF Export**: Integrates ReportLab rendering to compile Markdown reports into styled, publication-grade PDF documents.
 
-### 5. Gemini Context Cache Pre-Warming
+### 6. Gemini Context Cache Pre-Warming
 - Automatically constructs and registers Google Gemini API Context Caches (`gemini-3.1-flash-lite`) during the ingestion pipeline.
 - Reduces token consumption by up to 80% on large codebases while lowering request latency for iterative chat sessions.
 
-### 6. Asynchronous Event-Driven Ingestion (Inngest)
+### 7. Asynchronous Event-Driven Ingestion (Inngest)
 - Non-blocking background worker execution triggered via `repo/sync.requested` events.
 - Orchestrates repository shallow cloning, multi-language AST parsing, symbolic edge stitching, Supabase persistence, and background diagram generation with progress updates (`queued` -> `cloning` -> `parsing` -> `saving` -> `diagrams` -> `completed`).
+
+### 8. Admin Operations Panel & Pro Subscription System
+- Password-protected admin control portal (`/admin`) secured via JWT token authentication (`ADMIN_JWT_SECRET`).
+- Enables administrators to review pending Pro upgrade requests, inspect user details, and trigger automated 1-year Pro subscription grants.
+- Integrated SMTP email dispatch service sending automated approval and rejection notifications to users.
 
 ---
 
@@ -80,7 +90,7 @@ When a developer submits a query, GitDecode identifies target entry points, perf
 ```mermaid
 flowchart TB
     subgraph ClientLayer ["Client Layer (Next.js 15 Frontend)"]
-        UI["App Router Pages & Dashboard"]
+        UI["App Router Pages, Dashboard & Admin"]
         NVL["Neo4j NVL Graph Canvas"]
         Mermaid["Mermaid.js Diagram Viewers"]
         SSEClient["SSE Event Listener"]
@@ -88,8 +98,8 @@ flowchart TB
 
     subgraph APIGateway ["API Gateway & Middleware (FastAPI)"]
         Router["API Router Engine"]
-        AuthGuard["Supabase JWT & Dev Auth Validator"]
-        LLMFactory["LLM Provider Factory"]
+        AuthGuard["Supabase JWT Auth Validator"]
+        LLMFactory["Multi-Provider LLM Factory"]
     end
 
     subgraph AgentPipeline ["Multi-Agent Orchestration (LangGraph)"]
@@ -105,6 +115,7 @@ flowchart TB
         ASTParsers["Language Parsers (Python, TS/JS, Jupyter, Generic)"]
         CacheMgr["Gemini Context Cache Manager"]
         PDFGen["ReportLab PDF Generator"]
+        EmailSvc["SMTP Email Service"]
     end
 
     subgraph Persistence ["Persistence & Background Workers"]
@@ -126,6 +137,7 @@ flowchart TB
     ASTRouter -->|Graph BFS Traversal| SupabaseDB
     AgentPipeline -->|Render PDF| PDFGen
     AgentPipeline -->|Stream Response| SSEClient
+    Router -->|Pro Approval/Rejection| EmailSvc
 ```
 
 ---
@@ -178,7 +190,7 @@ flowchart TD
     UserQuery["User Query"] --> LLMRouter["AST Router (LLM Entity Extractor)"]
     LLMRouter --> TargetEntities["Extracted Target Files & Symbols (Depth 0)"]
     
-    subgraph BFSTraversal ["Graph BFS Traversal Engine"]
+    subgraph BFSTraversal ["Graph BFS Traversal Engine (PostgreSQL)"]
         Depth01["Depth 0 & Depth 1 Files (Direct Dependencies / Dependents)"]
         Depth2["Depth 2 Files (Indirect Dependencies)"]
         EdgeSummary["Graph Edge Connection Summarizer"]
@@ -190,7 +202,7 @@ flowchart TD
         TextEdgeMap["Textual Inter-Module Dependency Map"]
     end
 
-    AgentLLM["Gemini 3.1 Flash (Agent Node Execution)"]
+    AgentLLM["Multi-Provider LLM (Gemini / OpenAI / Anthropic / Groq)"]
 
     UserQuery --> LLMRouter
     TargetEntities --> BFSTraversal
@@ -303,6 +315,15 @@ The Blast Radius endpoint (`GET /api/v1/repos/{repo_id}/blast-radius?file_path=.
 - **Reducer Node**: Combines section outputs, injects pre-generated Mermaid diagrams (Architecture, Data Flow, User Flow), and guarantees accurate generation date formatting using UTC regex replacement.
 - **ReportLab PDF Generator**: Converts Markdown into formatted A4 PDF documents with custom margins, styled headers, code block shading, table formatting, and page numbering.
 
+### 4.6 Multi-Provider LLM Factory (`backend/app/services/llm_factory.py` & `/api/v1/providers`)
+- **Ephemeral Client Instantiation**: `create_llm()` constructs provider-specific LangChain chat models on-the-fly using user-supplied keys or server fallbacks. Keys are never saved to disk or persistent state.
+- **Live Model Discovery**: Queries provider REST APIs (OpenAI `/v1/models`, Anthropic `/v1/models`, Groq `/openai/v1/models`) dynamically to surface all active chat models to the UI.
+
+### 4.7 Admin Operations & Pro Upgrade Pipeline (`backend/app/api/routes/admin.py`, `pro_requests.py` & `email_service.py`)
+- **Admin JWT Verification**: `/admin/login` validates password input against `ADMIN_PASSWORD` and issues a 24-hour signed JWT. All `/admin/*` routes enforce `require_admin` header validation.
+- **Pro Request Handling**: Users submit Pro requests with a valid coupon code (`POST /api/v1/pro-requests`). Requests land in PostgreSQL with `pending` status.
+- **Approval & Email Dispatch**: Upon admin approval (`POST /api/v1/admin/pro-requests/{id}/approve`), an automated HTML email is dispatched via SMTP (`send_pro_approval_email`), the request status changes to `approved`, and the user's PostgreSQL subscription record is upgraded to Pro for 1 year.
+
 ---
 
 ## Section 5: Technology Stack Specification
@@ -316,10 +337,11 @@ The Blast Radius endpoint (`GET /api/v1/repos/{repo_id}/blast-radius?file_path=.
 | **Backend API** | FastAPI (Python 3.11+) | Async HTTP REST endpoints, Server-Sent Events (SSE) streaming |
 | **Background Processing** | Inngest Engine | Event-driven background queue for repository ingestion pipelines |
 | **Agent Framework** | LangGraph / LangChain Core | Stateful multi-agent graph routing, parallel fan-out, state reduction |
-| **LLM Provider** | Google Gemini 3.1 Flash / Lite | Intent routing, vectorless context processing, context caching |
-| **Database Layer** | Supabase (PostgreSQL) | Persistence of repo metadata, source files, unified graphs, reports |
+| **LLM Provider** | Multi-Provider (Gemini, OpenAI, Anthropic, Groq) | Intent routing, vectorless context processing, context caching |
+| **Database Layer** | Supabase (PostgreSQL) | Persistence of repo metadata, source files, unified graphs, reports, subscriptions, admin & feedback |
 | **AST Parsing** | Python AST, Regex Parser Engine | Multi-language parsing of classes, functions, and import statements |
 | **Document Rendering** | ReportLab | Compilation of Markdown codebase reports into downloadable A4 PDFs |
+| **Email Service** | SMTP (`email_service.py`) | Automated HTML email notifications for Pro request approvals, rejections, & feedback |
 
 ---
 
@@ -329,7 +351,6 @@ The Blast Radius endpoint (`GET /api/v1/repos/{repo_id}/blast-radius?file_path=.
 GitDecode/
 ├── README.md                          # Comprehensive Repository Documentation
 ├── .vercelignore                      # Deployment Exclusion Rules
-├── gitdecode-logo-1.png                 # Legacy Branding Asset
 │
 ├── backend/                           # FastAPI Python Backend Application
 │   ├── Dockerfile                     # Container Deployment Blueprint
@@ -342,17 +363,22 @@ GitDecode/
 │       ├── api/
 │       │   ├── dependencies.py        # Database & Auth Dependency Injectors
 │       │   └── routes/
+│       │       ├── admin.py           # Admin Panel Auth & Pro Request Management Routes
+│       │       ├── analytics.py       # Anonymous Visitor Telemetry & Pageview Router
 │       │       ├── chat.py            # Chat & Streaming SSE Endpoint Handlers
-│       │       ├── providers.py       # Custom LLM API Key Routes
+│       │       ├── feedback.py        # Public User Feedback Endpoint
+│       │       ├── pro_requests.py    # User-Facing Pro Upgrade Request Router
+│       │       ├── providers.py       # Multi-Provider LLM Registry & Live Model Routes
 │       │       ├── report.py          # Codebase Report & PDF Export Endpoints
 │       │       ├── repos.py           # Repo Ingestion, Graphs & Blast Radius Routes
+│       │       ├── subscription.py    # User Subscription & Tier Check Routes
 │       │       └── webhooks.py        # External Webhook Event Receivers
 │       ├── core/
 │       │   ├── config.py              # Pydantic Settings & Environment Loader
-│       │   └── security.py            # Supabase Auth Verification & Developer Bypass
+│       │   └── security.py            # Supabase Auth Verification & Bearer Token Validator
 │       ├── db/
 │       │   ├── pg_client.py           # Supabase PostgreSQL Data Access Layer
-│       │   └── neo4j_client.py        # Neo4j Client Helper Connection
+│       │   └── neo4j_client.py        # Deprecated v1 Stub (Replaced by PostgreSQL JSONB)
 │       ├── schemas/
 │       │   ├── llm_config.py          # Custom LLM Configuration Schemas
 │       │   ├── requests.py            # Pydantic API Request Payloads
@@ -361,8 +387,11 @@ GitDecode/
 │       │   ├── ast_router.py          # Vectorless RAG BFS Traversal Engine
 │       │   ├── context_caching.py     # Gemini API Context Cache Pre-Warming
 │       │   ├── diagram_generator.py   # Dynamic Mermaid Diagram Generator
-│       │   ├── llm_factory.py         # LLM Provider Initializer & Resolver
+│       │   ├── email_service.py       # SMTP Email Notification Service
+│       │   ├── github_access.py       # GitHub Repository Access & Cloning Helper
+│       │   ├── llm_factory.py         # Multi-Provider LLM Factory Client Generator
 │       │   ├── pdf_generator.py       # ReportLab PDF Document Exporter
+│       │   ├── subscription.py        # Subscription Tier Limits & Calculation Helper
 │       │   └── parsers/
 │       │       ├── python_parser.py   # Python AST & Symbol Extractor
 │       │       ├── ts_parser.py       # TypeScript / JavaScript Lexical Parser
@@ -395,17 +424,26 @@ GitDecode/
     ├── app/
     │   ├── layout.tsx                 # Root Layout & Theme Container
     │   ├── page.tsx                   # Landing Page & Product Overview
-    │   ├── dashboard/                 # Interactive Workspace & Chat Dashboard
+    │   ├── admin/                     # Password-Protected Admin Management Portal
+    │   ├── auth/                      # Authentication Callbacks, Sign-In & Sign-Up
+    │   ├── dashboard/                 # Interactive Workspace, Repo Graphs & Profile
     │   ├── developers/                # Developer Portal & API Documentation
+    │   ├── feedback/                  # Public Feedback Submission Page
     │   ├── how-it-works/              # Architecture Explanation Page
     │   ├── pricing/                   # Pricing Tiers & Plan Matrix
-    │   └── security/                  # Security & Compliance Overview
+    │   ├── security/                  # Security & Compliance Overview
+    │   └── components/                # Page-Specific Interactive Components
+    │       ├── AdminCharts.tsx        # Admin Analytics & Request Metrics Visualizer
+    │       ├── ModelSelector.tsx      # Multi-Provider LLM & Key Selection Modal
+    │       ├── ReportGenerationView.tsx # Architectural Report Streaming Generator
+    │       └── InteractiveDiagram.tsx # Custom Interactive Architecture Renderer
     └── components/
         ├── ai-elements/               # Streaming Chat Thought & Plan Visualizers
-        └── ui/                        # UI Components
+        └── ui/                        # Shared Design Components
             ├── ChatMarkdown.tsx       # Syntax-Highlighted Markdown Renderer
             ├── MermaidDiagram.tsx     # Client-Side Mermaid Diagram Renderer
-            └── NvlGraphViewer.tsx     # Neo4j NVL Interactive Physics Canvas
+            ├── NvlGraphViewer.tsx     # Neo4j NVL Interactive Physics Canvas
+            └── agent-bento-grid.tsx   # Agent Capabilities Showcase Grid
 ```
 
 ---
@@ -456,6 +494,42 @@ GitDecode/
 | `DELETE` | `/api/v1/repos/{repo_id}/report` | Deletes the saved report for a repository | Yes |
 | `POST` | `/api/v1/repos/{repo_id}/report/export-pdf` | Compiles Markdown into a downloadable A4 PDF stream | No |
 
+### 7.5 Multi-Provider LLM & Dynamic Models Endpoints (`/api/v1/providers/*`)
+
+| Method | HTTP Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/api/v1/providers/` | Returns static provider registry and default fallback models | No |
+| `POST` | `/api/v1/providers/models` | Dynamically fetches live available models using user's API key | No |
+| `POST` | `/api/v1/providers/validate` | Validates an API key against its provider REST API | No |
+| `GET` | `/api/v1/providers/preferences` | Gets authenticated user's model preferences | Yes |
+| `PUT` | `/api/v1/providers/preferences` | Saves user's model selection & provider preference | Yes |
+
+### 7.6 Subscription & Pro Upgrade Endpoints (`/api/v1/subscription` & `/api/v1/pro-requests`)
+
+| Method | HTTP Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/api/v1/subscription` | Retrieves user's current subscription tier, expiration dates, & rate limits | Yes |
+| `POST` | `/api/v1/subscription/upgrade` | Directly upgrades subscription tier (Development testing bypass) | Yes |
+| `POST` | `/api/v1/pro-requests` | Submits a Pro upgrade request using a valid coupon code | Yes |
+| `GET` | `/api/v1/pro-requests/my-request` | Checks current status (`pending`, `approved`, `rejected`) of user's Pro request | Yes |
+
+### 7.7 Password-Protected Admin Endpoints (`/api/v1/admin/*`)
+
+| Method | HTTP Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :---: |
+| `POST` | `/api/v1/admin/login` | Validates admin password and returns a 24-hour admin JWT | No |
+| `GET` | `/api/v1/admin/pro-requests` | Lists all Pro requests (filterable by status: `pending`/`approved`/`rejected`) | Admin JWT |
+| `GET` | `/api/v1/admin/pro-requests/stats` | Returns aggregate statistics of Pro requests | Admin JWT |
+| `POST` | `/api/v1/admin/pro-requests/{id}/approve` | Approves Pro request, updates status, sends email, & grants 1-yr Pro | Admin JWT |
+| `POST` | `/api/v1/admin/pro-requests/{id}/reject` | Rejects Pro request, updates status, and dispatches rejection email | Admin JWT |
+
+### 7.8 Feedback & Pageview Telemetry Endpoints (`/api/v1/feedback` & `/api/v1/analytics/*`)
+
+| Method | HTTP Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :---: |
+| `POST` | `/api/v1/feedback` | Submits public feedback form and sends notification email to support | No |
+| `POST` | `/api/v1/analytics/pageview` | Records non-blocking pageview telemetry with daily salted IP hash | No |
+
 ---
 
 ## Section 8: Database & Knowledge Graph Schema
@@ -468,6 +542,7 @@ erDiagram
     REPOSITORIES ||--o{ REPOSITORY_GRAPHS : compiles
     REPOSITORIES ||--o{ CHAT_MESSAGES : logs
     REPOSITORIES ||--o{ CODEBASE_REPORTS : generates
+    USER_SUBSCRIPTIONS ||--o{ PRO_UPGRADE_REQUESTS : submits
     
     REPOSITORIES {
         uuid id PK
@@ -514,6 +589,26 @@ erDiagram
         jsonb plan
         timestamp updated_at
     }
+
+    USER_SUBSCRIPTIONS {
+        uuid user_id PK
+        string plan
+        timestamp started_at
+        timestamp expires_at
+    }
+
+    PRO_UPGRADE_REQUESTS {
+        uuid id PK
+        uuid user_id FK
+        string first_name
+        string last_name
+        string email
+        string mobile
+        string coupon_code
+        string status
+        text admin_notes
+        timestamp created_at
+    }
 ```
 
 ### 8.2 Unified Symbolic Graph Representation Schema
@@ -527,7 +622,7 @@ The `graph_data` JSON column in `REPOSITORY_GRAPHS` persists nodes and edges str
       "label": "ast_router.py",
       "type": "file",
       "language": "python",
-      "size_bytes": 9789,
+      "size_bytes": 11287,
       "symbols": [
         {
           "type": "class",
@@ -649,12 +744,16 @@ npx inngest-cli@latest dev -u http://127.0.0.1:8000/api/v1/inngest
 | `SUPABASE_ANON_KEY` | **Yes** | Supabase anonymous public API key |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service role key (bypasses RLS for background ingestion) |
 | `SUPABASE_JWT_SECRET` | **Yes** | Supabase JWT secret string used to verify user bearer tokens |
-| `NEO4J_URI` | **Yes** | Bolt connection URI for Neo4j AuraDB instance |
-| `NEO4J_USERNAME` | **Yes** | Authentication username for Neo4j instance |
-| `NEO4J_PASSWORD` | **Yes** | Authentication password for Neo4j instance |
-| `GOOGLE_API_KEY` | **Yes** | Google Gemini API key for agent execution & context caching |
+| `ADMIN_PASSWORD` | **Yes** | Authentication password for Admin Operations Panel |
+| `ADMIN_JWT_SECRET` | No | JWT secret for signing short-lived admin sessions |
+| `GOOGLE_API_KEY` | No | Server fallback Google Gemini API key |
 | `INNGEST_EVENT_KEY` | **Yes** | Inngest key for dispatching asynchronous background events |
 | `INNGEST_SIGNING_KEY` | **Yes** | Inngest signing key for validating webhook payloads |
+| `SMTP_HOST` | No | Hostname for SMTP email service (default: `smtp.gmail.com`) |
+| `SMTP_PORT` | No | Port for SMTP email service (default: `587`) |
+| `ADMIN_EMAIL_ADDRESS` | No | Sender email address for automated Pro approval notifications |
+| `ADMIN_EMAIL_PASSWORD` | No | SMTP password / app password for automated emails |
+| `GITHUB_TOKEN` | No | Personal Access Token to increase GitHub API rate limits |
 
 #### Frontend Configuration (`frontend/.env.local`)
 
@@ -666,16 +765,20 @@ npx inngest-cli@latest dev -u http://127.0.0.1:8000/api/v1/inngest
 
 ---
 
-## Section 10: Rate Limiting & Developer Bypass
+## Section 10: Rate Limiting & Admin Review Workflow
 
-GitDecode enforces multi-tier access controls:
+GitDecode enforces structured access tiers to guarantee fair allocation of resources:
+
 - **Free Account Tier**:
   - Maximum of 2 active synchronized repositories per user.
   - Rate limited to 3 daily chat messages per repository (15 monthly).
-  - Rate limited to 1 codebase architectural report per repository per month.
-- **Developer Bypass Accounts**:
-  - Configured via `DEVELOPERS` list in `backend/app/core/config.py`.
-  - Accounts matching specified GitHub usernames (e.g. `mihirpatel204`, `Priyanshu-Debugs`, `Sameer-0904`) automatically bypass repository limits, chat message quotas, and report generation rate limits.
+  - Rate limited to 2 codebase architectural reports per repository per month.
+
+- **Pro Upgrade & Admin Approval Workflow**:
+  - Users can request a Pro tier upgrade directly from the application interface by submitting a request with a valid coupon code.
+  - **Admin Approval Required**: All submitted Pro upgrade requests land in the password-protected Admin Operations Panel (`/admin`) with a `pending` status.
+  - An administrator reviews the request details and approves or rejects it.
+  - Upon admin approval, the system updates the user's subscription to Pro (granting 1-year access) and automatically dispatches an approval notification email to the user.
 
 ---
 
