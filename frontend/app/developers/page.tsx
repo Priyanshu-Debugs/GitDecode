@@ -11,24 +11,18 @@ import styles from "./page.module.css";
 const developers = [
   {
     name: "Mihir Patel",
-    role: "AI Engineer",
     github: "https://github.com/mihirpatel204",
     githubId: "mihirpatel204",
-    description: "Focused on codebase semantic parsing, graph-based knowledge maps, and high-performance React visualization models.",
   },
   {
     name: "Priyanshu Patel",
-    role: "AI Engineer",
     github: "https://github.com/Priyanshu-Debugs",
     githubId: "Priyanshu-Debugs",
-    description: "Specialized in Retrieval-Augmented Generation (RAG) pipelines, context window optimization, and prompt engineering architecture. Creative Designer Mind and Digital Craftsmen.",
   },
   {
     name: "Sameer Prajapati",
-    role: "AI Engineer",
     github: "https://github.com/Sameer-0904",
     githubId: "Sameer-0904",
-    description: "Expert in language model fine-tuning, autonomous agent planning algorithms, and fast local inference servers.",
   },
 ];
 
@@ -128,9 +122,7 @@ export default function DeveloperPage() {
                 <div className={styles.details}>
                   <div className={styles.headerRow}>
                     <h3 className={styles.devName}>{dev.name}</h3>
-                    <span className={styles.badge}>{dev.role}</span>
                   </div>
-                  <p className={styles.description}>{dev.description}</p>
                   <div className={styles.actionRow}>
                     <span className={styles.githubId}>id: @{dev.githubId}</span>
                     <a
@@ -164,13 +156,13 @@ export default function DeveloperPage() {
                 <span className={styles.codeDim}>class</span> <span className={styles.codeClass}>AIEngineer</span>:
               </span>
               <span className={styles.ln}>
-                {"    "}<span className={styles.codeDim}>def</span> <span className={styles.codeFunc}>__init__</span>(self, name: str, role: str, github: str):
+                {"    "}<span className={styles.codeDim}>def</span> <span className={styles.codeFunc}>__init__</span>(self, name: str, github_id: str, github: str):
               </span>
               <span className={styles.ln}>
                 {"        "}self.name = name
               </span>
               <span className={styles.ln}>
-                {"        "}self.role = role
+                {"        "}self.github_id = github_id
               </span>
               <span className={styles.ln}>
                 {"        "}self.github = github
@@ -185,7 +177,7 @@ export default function DeveloperPage() {
                   <br />
                   {"        "}name=<span className={styles.codeVal}>"{dev.name}"</span>,
                   <br />
-                  {"        "}role=<span className={styles.codeVal}>"{dev.role}"</span>,
+                  {"        "}github_id=<span className={styles.codeVal}>"{dev.githubId}"</span>,
                   <br />
                   {"        "}github=<span className={styles.codeVal}>"{dev.github}"</span>
                   <br />
