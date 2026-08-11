@@ -1399,11 +1399,15 @@ export async function adminGetProRequestStats(): Promise<{
 /** Approve a Pro request (admin only) */
 export async function adminApproveProRequest(
   requestId: string,
-  adminNotes?: string
+  adminNotes?: string,
+  durationDays?: number
 ): Promise<any> {
   return adminApiFetch<any>(`/admin/pro-requests/${requestId}/approve`, {
     method: "POST",
-    body: JSON.stringify({ admin_notes: adminNotes || null }),
+    body: JSON.stringify({
+      admin_notes: adminNotes || null,
+      duration_days: durationDays !== undefined ? durationDays : 365,
+    }),
   });
 }
 
@@ -1415,6 +1419,46 @@ export async function adminRejectProRequest(
   return adminApiFetch<any>(`/admin/pro-requests/${requestId}/reject`, {
     method: "POST",
     body: JSON.stringify({ admin_notes: adminNotes || null }),
+  });
+}
+
+/** Delete a Pro request (admin only) */
+export async function adminDeleteProRequest(requestId: string): Promise<any> {
+  return adminApiFetch<any>(`/admin/pro-requests/${requestId}`, {
+    method: "DELETE",
+  });
+}
+
+/** List all users (admin only) */
+export async function adminListUsers(): Promise<any[]> {
+  return adminApiFetch<any[]>("/admin/users");
+}
+
+/** Get user details (admin only) */
+export async function adminGetUserDetail(userId: string): Promise<any> {
+  return adminApiFetch<any>(`/admin/users/${userId}`);
+}
+
+/** List all subscriptions (admin only) */
+export async function adminListSubscriptions(): Promise<any[]> {
+  return adminApiFetch<any[]>("/admin/subscriptions");
+}
+
+/** Update user subscription (admin only) */
+export async function adminUpdateSubscription(
+  userId: string,
+  data: { plan: string; duration_days?: number | null; expires_at?: string | null }
+): Promise<any> {
+  return adminApiFetch<any>(`/admin/subscriptions/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Revoke user subscription (admin only) */
+export async function adminRevokeSubscription(userId: string): Promise<any> {
+  return adminApiFetch<any>(`/admin/subscriptions/${userId}`, {
+    method: "DELETE",
   });
 }
 

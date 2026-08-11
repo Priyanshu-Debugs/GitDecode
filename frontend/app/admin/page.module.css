@@ -625,3 +625,624 @@
 .loginBtn:hover:not(:disabled) {
   opacity: 0.85;
 }
+
+/* ── Overhauled Admin Interface CSS ──────────────────────────────── */
+
+/* Toast Alerts */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 14px 20px;
+  background: var(--color-surface, #161410);
+  border-left: 4px solid var(--color-green, #83c167);
+  color: var(--color-text, #d8d3c5);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.84rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+  animation: slideIn 0.25s ease-out;
+}
+
+.toast_success {
+  border-left-color: var(--color-green, #83c167);
+}
+
+.toast_warning {
+  border-left-color: var(--color-amber, #d8a657);
+}
+
+.toast_error {
+  border-left-color: #e0705f;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Navigation Tabs */
+.navigationTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-border, #211f19);
+  padding-bottom: 1px;
+  overflow-x: auto;
+}
+
+.tabBtn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--color-dim, #8b8270);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+  color: var(--color-text, #d8d3c5);
+}
+
+.tabBtnActive {
+  background: var(--color-surface, #161410);
+  border-color: var(--color-border, #211f19);
+  color: var(--color-green, #83c167);
+  font-weight: 700;
+  border-top: 2px solid var(--color-green, #83c167);
+}
+
+/* Search Toolbar */
+.searchToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.searchToolbar .searchBox {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface, #161410);
+  border: 1px solid var(--color-border, #211f19);
+  padding: 8px 12px;
+}
+
+.filterPills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filterPill {
+  background: transparent;
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-dim, #8b8270);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filterPill:hover {
+  border-color: var(--color-border-hover, #3a352b);
+  color: var(--color-text, #d8d3c5);
+}
+
+.activeFilterPill {
+  background: rgba(131, 193, 103, 0.08);
+  border-color: var(--color-green, #83c167);
+  color: var(--color-green, #83c167);
+  font-weight: 700;
+}
+
+/* User Directory Info */
+.userInfoCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border, #211f19);
+  object-fit: cover;
+}
+
+.userAvatarPlaceholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #211f19;
+  color: var(--color-dim, #8b8270);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.userInfoText {
+  display: flex;
+  flex-direction: column;
+}
+
+.userEmail {
+  color: var(--color-text, #d8d3c5);
+  font-weight: 600;
+}
+
+.userFullName {
+  font-size: 0.74rem;
+  color: var(--color-dim, #8b8270);
+}
+
+.providerBadge {
+  background: #211f19;
+  color: var(--color-dim, #8b8270);
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.expandRowBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-dim, #8b8270);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.expandRowBtn:hover {
+  color: var(--color-green, #83c167);
+}
+
+/* Expandable User Telemetry Area */
+.expandedRow td {
+  padding: 0 !important;
+  background: #12100d !important;
+}
+
+.expandedUserContainer {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border, #211f19);
+  border-left: 3px solid var(--color-green, #83c167);
+}
+
+.expandedLoader {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  color: var(--color-dim, #8b8270);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expandedDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.detailSec h4 {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.86rem;
+  color: var(--color-green, #83c167);
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detailSec p {
+  margin: 6px 0;
+  font-size: 0.8rem;
+  color: var(--color-text, #d8d3c5);
+}
+
+.detailSec p strong {
+  color: var(--color-dim, #8b8270);
+}
+
+.detailSecFull {
+  grid-column: span 2;
+}
+
+/* Timeline Activity */
+.activityTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.activityItem {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  font-size: 0.78rem;
+  border-left: 1px solid #211f19;
+  padding-left: 12px;
+  margin-left: 6px;
+}
+
+.activityTime {
+  color: var(--color-dim, #8b8270);
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+}
+
+.activityContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.activityContent strong {
+  color: var(--color-text, #d8d3c5);
+}
+
+.activityContent span {
+  color: var(--color-dim, #8b8270);
+  font-size: 0.74rem;
+}
+
+/* Active Subscriptions */
+.emailContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.subEmail {
+  color: var(--color-amber, #d8a657);
+  font-weight: bold;
+}
+
+.subUserId {
+  font-size: 0.72rem;
+  color: var(--color-dim, #8b8270);
+}
+
+.badgeActive {
+  background: rgba(131, 193, 103, 0.12);
+  color: var(--color-green, #83c167);
+  border: 1px solid rgba(131, 193, 103, 0.25);
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.badgeExpired {
+  background: rgba(224, 112, 95, 0.12);
+  color: #e0705f;
+  border: 1px solid rgba(224, 112, 95, 0.25);
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+/* Modal Overlay & Cards */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-surface, #161410);
+  border: 1px solid var(--color-border, #211f19);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-mono, monospace);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border, #211f19);
+  background: #12100d;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #d8d3c5);
+}
+
+.modalCloseBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-dim, #8b8270);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.modalCloseBtn:hover {
+  color: #e0705f;
+}
+
+.modalBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalSubtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-dim, #8b8270);
+}
+
+.modalInputSec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modalInputSec label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  color: var(--color-dim, #8b8270);
+  letter-spacing: 0.04em;
+  font-weight: bold;
+}
+
+.modalTextarea {
+  background: #0e0d0b;
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-text, #d8d3c5);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  height: 80px;
+  outline: none;
+  resize: none;
+}
+
+.modalTextarea:focus {
+  border-color: var(--color-green, #83c167);
+}
+
+.durationSelectorWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.presetOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.presetPill {
+  background: transparent;
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-dim, #8b8270);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.presetPill:hover {
+  border-color: var(--color-border-hover, #3a352b);
+  color: var(--color-text, #d8d3c5);
+}
+
+.presetPillActive {
+  background: var(--color-green, #83c167);
+  border-color: var(--color-green, #83c167);
+  color: #0e0d0b;
+  font-weight: bold;
+}
+
+.customInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.customNumInput {
+  background: #0e0d0b;
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-text, #d8d3c5);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  width: 80px;
+  outline: none;
+}
+
+.customNumInput:focus {
+  border-color: var(--color-green, #83c167);
+}
+
+.customUnitSelect {
+  background: #0e0d0b;
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-text, #d8d3c5);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  padding: 5px 10px;
+  outline: none;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-border, #211f19);
+  background: #12100d;
+}
+
+.modalCancelBtn {
+  background: transparent;
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-dim, #8b8270);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalCancelBtn:hover {
+  color: var(--color-text, #d8d3c5);
+  border-color: var(--color-border-hover, #3a352b);
+}
+
+.modalSaveBtn {
+  background: var(--color-green, #83c167);
+  color: #0e0d0b;
+  border: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  font-weight: bold;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.modalSaveBtn:hover {
+  opacity: 0.9;
+}
+
+/* Action Buttons (Admin & Subscription CRUD) */
+.editBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--color-border, #211f19);
+  color: var(--color-text, #d8d3c5);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.editBtn:hover {
+  border-color: var(--color-green, #83c167);
+  color: var(--color-green, #83c167);
+}
+
+.revokeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid #e0705f;
+  color: #e0705f;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.revokeBtn:hover {
+  background: rgba(224, 112, 95, 0.12);
+}
+
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid #e0705f;
+  color: #e0705f;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deleteBtn:hover {
+  background: rgba(224, 112, 95, 0.15);
+}
+
+/* Responsive Overrides & Mobile Adjustments */
+@media (max-width: 1024px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .searchToolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .navigationTabs {
+    border-bottom: none;
+  }
+  
+  .expandedDetailGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detailSecFull {
+    grid-column: span 1;
+  }
+
+  .tableResponsive {
+    border: none;
+  }
+
+  .adminHeader {
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .headerRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

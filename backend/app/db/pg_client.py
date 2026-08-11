@@ -1343,6 +1343,116 @@ class SupabasePGClient:
         activities.sort(key=lambda x: x["created_at"], reverse=True)
         return activities
 
+    async def list_auth_users(self) -> list[dict]:
+        """Fetch all users from Supabase Auth."""
+        try:
+            res = self._client.auth.admin.list_users()
+            users_list = []
+            
+            raw_users = []
+            if isinstance(res, list):
+                raw_users = res
+            elif res and hasattr(res, "users"):
+                raw_users = res.users
+                
+            for u in raw_users:
+                users_list.append({
+                    "id": u.id,
+                    "email": u.email,
+                    "created_at": u.created_at,
+                    "last_sign_in_at": u.last_sign_in_at,
+                    "user_metadata": u.user_metadata,
+                    "app_metadata": u.app_metadata,
+                })
+            return users_list
+        except Exception as e:
+            logger.error("Failed to list auth users: %s", str(e))
+            return []
+
+    async def get_auth_user(self, user_id: str) -> dict | None:
+        """Fetch a single user from Supabase Auth by ID."""
+        try:
+            res = self._client.auth.admin.get_user_by_id(user_id)
+            if res and hasattr(res, "user") and res.user:
+                u = res.user
+                return {
+                    "id": u.id,
+                    "email": u.email,
+                    "created_at": u.created_at,
+                    "last_sign_in_at": u.last_sign_in_at,
+                    "user_metadata": u.user_metadata,
+                    "app_metadata": u.app_metadata,
+                }
+            return None
+        except Exception as e:
+            logger.error("Failed to get auth user %s: %s", user_id, str(e))
+            return None
+
+    async def get_pro_request_by_id(self, request_id: str) -> dict | None:
+        """Fetch a single Pro request by ID."""
+        try:
+            response = (
+                self._client.table("pro_requests")
+                .select("*")
+                .eq("id", request_id)
+                .maybe_single()
+                .execute()
+            )
+            return response.data if response else None
+        except Exception as e:
+            logger.error("Failed to get pro request %s: %s", request_id, str(e))
+            return None
+
+    async def delete_pro_request(self, request_id: str) -> bool:
+        """Hard delete a Pro request."""
+        try:
+            self._client.table("pro_requests").delete().eq("id", request_id).execute()
+            return True
+        except Exception as e:
+            logger.error("Failed to delete pro request %s: %s", request_id, str(e))
+            return False
+
+    async def list_all_subscriptions(self) -> list[dict]:
+        """Fetch all subscriptions in the system."""
+        try:
+            response = (
+                self._client.table("user_subscriptions")
+                .select("*")
+                .order("updated_at", desc=True)
+                .execute()
+            )
+            return response.data if response and response.data else []
+        except Exception as e:
+            logger.error("Failed to list all subscriptions: %s", str(e))
+            return []
+
+    async def delete_user_subscription(self, user_id: str) -> bool:
+        """Delete/revoke a user's subscription."""
+        try:
+            self._client.table("user_subscriptions").delete().eq("user_id", user_id).execute()
+            return True
+        except Exception as e:
+            logger.error("Failed to delete user subscription for %s: %s", user_id, str(e))
+            return False
+
+    async def get_user_repos_count(self, user_id: str) -> int:
+        """Count the number of repositories owned by a user."""
+        try:
+            res = self._client.table("repos").select("id", count="exact").eq("user_id", user_id).execute()
+            return res.count if res and res.count is not None else 0
+        except Exception as e:
+            logger.warning("Failed to count user repos: %s", str(e))
+            return 0
+
+    async def get_user_chats_count(self, user_id: str) -> int:
+        """Count the number of chat messages sent by a user."""
+        try:
+            res = self._client.table("chat_messages").select("id", count="exact").eq("user_id", user_id).eq("role", "user").execute()
+            return res.count if res and res.count is not None else 0
+        except Exception as e:
+            logger.warning("Failed to count user chat messages: %s", str(e))
+            return 0
+
 
 
 

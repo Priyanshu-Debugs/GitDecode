@@ -177,6 +177,25 @@ def _get_rejection_html(first_name: str, github_username: str) -> str:
     """
 
 
+import asyncio
+
+def _send_email_sync(msg: MIMEMultipart) -> bool:
+    """Synchronous helper to connect, login, and send email with a timeout."""
+    settings = get_settings()
+    if not settings.ADMIN_EMAIL_ADDRESS or not settings.ADMIN_EMAIL_PASSWORD:
+        logger.warning("Email credentials not configured. Skipping email.")
+        return False
+    try:
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+            server.starttls()
+            server.login(settings.ADMIN_EMAIL_ADDRESS, settings.ADMIN_EMAIL_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        logger.error("SMTP send failed: %s", str(e))
+        return False
+
+
 async def send_pro_approval_email(
     to_email: str,
     first_name: str,
@@ -207,13 +226,10 @@ async def send_pro_approval_email(
     msg.attach(MIMEText(plain_text, "plain"))
     msg.attach(MIMEText(html_content, "html"))
     
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-        server.starttls()
-        server.login(settings.ADMIN_EMAIL_ADDRESS, settings.ADMIN_EMAIL_PASSWORD)
-        server.send_message(msg)
-    
-    logger.info("Pro approval email sent to %s", to_email)
-    return True
+    success = await asyncio.to_thread(_send_email_sync, msg)
+    if success:
+        logger.info("Pro approval email sent to %s", to_email)
+    return success
 
 
 async def send_pro_rejection_email(
@@ -246,13 +262,10 @@ async def send_pro_rejection_email(
     msg.attach(MIMEText(plain_text, "plain"))
     msg.attach(MIMEText(html_content, "html"))
     
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-        server.starttls()
-        server.login(settings.ADMIN_EMAIL_ADDRESS, settings.ADMIN_EMAIL_PASSWORD)
-        server.send_message(msg)
-    
-    logger.info("Pro rejection email sent to %s", to_email)
-    return True
+    success = await asyncio.to_thread(_send_email_sync, msg)
+    if success:
+        logger.info("Pro rejection email sent to %s", to_email)
+    return success
 
 
 def _get_feedback_html(sender_name: str, sender_email: str, message_text: str) -> str:
@@ -353,13 +366,10 @@ async def send_feedback_email(
         msg.attach(MIMEText(plain_text, "plain"))
         msg.attach(MIMEText(html_content, "html"))
         
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.ADMIN_EMAIL_ADDRESS, settings.ADMIN_EMAIL_PASSWORD)
-            server.send_message(msg)
-        
-        logger.info("Feedback email from %s (%s) sent to %s", sender_name, sender_email, recipient_email)
-        return True
+        success = await asyncio.to_thread(_send_email_sync, msg)
+        if success:
+            logger.info("Feedback email from %s (%s) sent to %s", sender_name, sender_email, recipient_email)
+        return success
     except Exception as e:
         logger.error("Failed to send feedback email: %s", str(e))
         return False
@@ -494,13 +504,10 @@ async def send_pro_request_notification_email(req_data: dict) -> bool:
         msg.attach(MIMEText(plain_text, "plain"))
         msg.attach(MIMEText(html_content, "html"))
         
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.ADMIN_EMAIL_ADDRESS, settings.ADMIN_EMAIL_PASSWORD)
-            server.send_message(msg)
-        
-        logger.info("Pro request notification email for @%s sent to %s", gh_user, recipient_email)
-        return True
+        success = await asyncio.to_thread(_send_email_sync, msg)
+        if success:
+            logger.info("Pro request notification email for @%s sent to %s", gh_user, recipient_email)
+        return success
     except Exception as e:
         logger.error("Failed to send Pro request admin email: %s", str(e))
         return False
