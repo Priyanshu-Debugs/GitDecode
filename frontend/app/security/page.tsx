@@ -56,15 +56,15 @@ const securityPillars: SecurityPillar[] = [
   },
   {
     id: 3,
-    title: "Zero-Retention Ingestion",
-    badge: "Transient Storage",
-    description: "GitDecode clones repository assets into volatile temporary folders on the worker disk, extracts structural data, and purges the directory completely.",
-    icon: Trash2,
-    techStack: ["git clone --depth 1", "tempfile.gettempdir()", "shutil.rmtree", "Inngest Workers"],
+    title: "Structured Codebase Storage",
+    badge: "Persistent Indexing",
+    description: "GitDecode clones repositories, parses AST structures, and persists both source file contents and dependency graphs in your tenant-isolated Supabase PostgreSQL database for fast context retrieval during chat and analysis.",
+    icon: Database,
+    techStack: ["git clone --depth 1", "Supabase PostgreSQL", "Inngest Workers", "Tenant Isolation"],
     details: [
-      "Shallow Ingest: Clones only depth-1 target commits, avoiding massive historical source blobs checkouts.",
-      "Immediate Deletion: Directories are swept using shutil.rmtree as soon as Tree-sitter finishes graph creation.",
-      "Size Constraints: Caps individual code files ingestion sizes to prevent buffer overflows."
+      "Shallow Clone: Repositories are cloned at depth-1 for fast ingestion without full git history.",
+      "Persistent Storage: Parsed source files and dependency graphs are stored in your tenant-partitioned PostgreSQL database for Vectorless RAG context retrieval.",
+      "Size Constraints: Individual file ingestion sizes are capped to prevent buffer overflows and optimize storage."
     ]
   },
   {
@@ -102,7 +102,7 @@ const securityPillars: SecurityPillar[] = [
     techStack: ["GDPR Policy", "CCPA Guidelines", "Local Encryption", "Atomic Erasure"],
     details: [
       "GDPR Erasure Right: Deleting a repository or profile triggers atomic SQL drops, purging all nodes from disk.",
-      "Zero Source Caching: We do not cache or store full source files, preventing intellectual property collection.",
+      "Tenant-Isolated Storage: Source files are stored exclusively within your tenant-partitioned database space. No cross-tenant access is possible.",
       "No Third-Party Access: Dependency structures and parsed metadata outlines are never shared with third parties."
     ]
   }
@@ -169,7 +169,7 @@ export default function SecurityPage() {
           <h1 className={styles.title}>Security &amp; Data Privacy</h1>
           <p className={styles.subtitle}>
             <span className={styles.comment}># </span>
-            A detailed outline of GitDecode's data protection ciphers, tenant partition policies, and zero-retention infrastructure rules.
+            A detailed outline of GitDecode's data protection architecture, tenant isolation policies, and security infrastructure.
           </p>
         </header>
 
@@ -299,7 +299,7 @@ export default function SecurityPage() {
             <div className={styles.faqCard}>
               <h3 className={styles.faqQuestion}>Is my codebase content cached or stored?</h3>
               <p className={styles.faqAnswer}>
-                Only abstract graph maps (classes, function names, and import connections) and raw outlines are persisted inside your tenant space on Supabase. Full file contents are cloned to volatile disk, processed, and completely deleted instantly. We never keep copy caches of your source files.
+                Yes. Source file contents, dependency graphs, and structural metadata are stored in your tenant-isolated Supabase PostgreSQL database. This enables Vectorless RAG context retrieval, code Q&amp;A with exact citations, and blast radius analysis. All stored data is scoped exclusively to your authenticated account and can be fully deleted by removing the repository.
               </p>
             </div>
 

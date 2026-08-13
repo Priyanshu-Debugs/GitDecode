@@ -230,68 +230,7 @@ function computeSpringLayout(nodes: any[], edges: any[]): LayoutNode[] {
   return layoutNodes;
 }
 
-const MOCK_REPOS = [
-  {
-    id: 101,
-    name: "gitdecode-runtime",
-    description: "Distributed orchestration engine for indexing code ASTs and resolving reference linkages asynchronously using Python and Celery.",
-    html_url: "https://github.com/gitdecode/gitdecode-runtime",
-    stargazers_count: 142,
-    forks_count: 18,
-    language: "Python",
-    default_branch: "main",
-    owner: {
-      login: "gitdecode",
-      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
-    },
-    updated_at: "2026-07-05T12:00:00Z"
-  },
-  {
-    id: 102,
-    name: "ast-lexer-engine",
-    description: "High-performance tree-sitter based lexing backend that tokenizes structures, classes, and scopes for vector indexing.",
-    html_url: "https://github.com/gitdecode/ast-lexer-engine",
-    stargazers_count: 98,
-    forks_count: 12,
-    language: "TypeScript",
-    default_branch: "main",
-    owner: {
-      login: "gitdecode",
-      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
-    },
-    updated_at: "2026-07-04T18:30:00Z"
-  },
-  {
-    id: 103,
-    name: "neo4j-vector-search",
-    description: "Surgical context retrieval service linking code dependency graphs in Neo4j with pgvector-based dense semantic searches.",
-    html_url: "https://github.com/gitdecode/neo4j-vector-search",
-    stargazers_count: 256,
-    forks_count: 34,
-    language: "Go",
-    default_branch: "main",
-    owner: {
-      login: "gitdecode",
-      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
-    },
-    updated_at: "2026-07-03T09:15:00Z"
-  },
-  {
-    id: 104,
-    name: "gitdecode-web-dashboard",
-    description: "Premium Awwwards-tier visual interface for analyzing codebase topologies, user action timelines, and vector queries.",
-    html_url: "https://github.com/gitdecode/gitdecode-web-dashboard",
-    stargazers_count: 64,
-    forks_count: 6,
-    language: "TypeScript",
-    default_branch: "main",
-    owner: {
-      login: "gitdecode",
-      avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4"
-    },
-    updated_at: "2026-07-06T05:00:00Z"
-  }
-];
+
 
 /* ═════════════════════════════════════════════════════════════════════
    Dashboard Content Components (Nested under Suspense)

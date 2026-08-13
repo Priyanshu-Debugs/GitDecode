@@ -24,18 +24,6 @@ export function useAuth(requireAuth = true) {
 
     const initAuth = async () => {
       try {
-        // Check for mock session first
-        const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitdecode_mock_session") : null;
-        if (mockSessionStr) {
-          const mockSession = JSON.parse(mockSessionStr);
-          if (mounted) {
-            setSession(mockSession);
-            setUser(mockSession.user ?? null);
-            setLoading(false);
-          }
-          return;
-        }
-
         const supabase = getSupabase();
         const {
           data: { session: currentSession },
@@ -56,14 +44,11 @@ export function useAuth(requireAuth = true) {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, newSession) => {
           if (mounted) {
-            // Only update if no mock session exists
-            if (!localStorage.getItem("gitdecode_mock_session")) {
-              setSession(newSession);
-              setUser(newSession?.user ?? null);
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
 
-              if (requireAuth && !newSession) {
-                router.replace("/auth/sign-in");
-              }
+            if (requireAuth && !newSession) {
+              router.replace("/auth/sign-in");
             }
           }
         });
@@ -72,16 +57,6 @@ export function useAuth(requireAuth = true) {
           subscription.unsubscribe();
         };
       } catch {
-        // Fallback for completely local offline dev when Supabase config is missing
-        const mockSessionStr = typeof window !== "undefined" ? localStorage.getItem("gitdecode_mock_session") : null;
-        if (mockSessionStr && mounted) {
-          const mockSession = JSON.parse(mockSessionStr);
-          setSession(mockSession);
-          setUser(mockSession.user ?? null);
-          setLoading(false);
-          return;
-        }
-
         if (mounted) {
           setLoading(false);
           if (requireAuth) {
@@ -100,7 +75,6 @@ export function useAuth(requireAuth = true) {
   const signOut = useCallback(async () => {
     try {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("gitdecode_mock_session");
         localStorage.removeItem("gitdecode_cached_subscription");
         localStorage.removeItem("gitdecode_cached_repos");
       }
