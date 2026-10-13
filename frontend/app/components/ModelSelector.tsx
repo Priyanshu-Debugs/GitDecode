@@ -15,6 +15,7 @@ interface ProviderMeta {
   key_prefix: string;
   has_server_key: boolean;
   free_model?: string;
+  free_models?: string[];
   models: ModelItem[];
 }
 
@@ -83,8 +84,8 @@ export default function ModelSelector() {
   const [liveModels, setLiveModels] = useState<Record<string, ModelItem[]>>({});
   const [selected, setSelected] = useState<{ provider: string; model: string; name?: string }>({
     provider: "google",
-    model: "gemini-3.1-flash-lite",
-    name: "Gemini 3.1 Flash Lite",
+    model: "gemini-3.5-flash-lite",
+    name: "Gemini 3.5 Flash Lite",
   });
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -105,7 +106,10 @@ export default function ModelSelector() {
     async function loadData() {
       const pref = getPreference();
       let selectedProvider = pref.provider || "google";
-      let selectedModel = pref.model || "gemini-3.1-flash-lite";
+      let selectedModel = pref.model || "gemini-3.5-flash-lite";
+      if (selectedModel === "gemini-3.5-flash") {
+        selectedModel = "gemini-3.5-flash-lite";
+      }
 
       let providerData: Record<string, ProviderMeta> = {};
       try {
@@ -120,11 +124,12 @@ export default function ModelSelector() {
             display_name: "Google Gemini",
             key_prefix: "AIza",
             has_server_key: true,
-            free_model: "gemini-3.1-flash-lite",
+            free_model: "gemini-3.5-flash-lite",
+            free_models: ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"],
             models: [
-              { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
-              { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
+              { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
               { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash Lite" },
+              { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
             ],
           },
           openai: {
@@ -166,18 +171,19 @@ export default function ModelSelector() {
       const providerInfo = providerData[selectedProvider];
       if (providerInfo) {
         const hasUserKey = !!getKey(selectedProvider);
-        if (!hasUserKey && providerInfo.has_server_key && providerInfo.free_model) {
-          // User has no own key, provider has server key with a specific free model
-          if (selectedModel !== providerInfo.free_model) {
+        const allowedFreeModels = providerInfo.free_models || (providerInfo.free_model ? [providerInfo.free_model] : []);
+        if (!hasUserKey && providerInfo.has_server_key) {
+          // User has no own key, check if selected model is in allowed free models
+          if (!allowedFreeModels.includes(selectedModel)) {
             selectedProvider = "google";
-            selectedModel = providerInfo.free_model;
+            selectedModel = providerInfo.free_model || "gemini-3.5-flash-lite";
             const freeModelInfo = providerInfo.models.find((m) => m.id === selectedModel);
             setPreference(selectedProvider, selectedModel, freeModelInfo?.context_window);
           }
         } else if (!hasUserKey && !providerInfo.has_server_key) {
           // Provider is fully locked, reset to default free model
           selectedProvider = "google";
-          selectedModel = "gemini-3.1-flash-lite";
+          selectedModel = "gemini-3.5-flash-lite";
           setPreference(selectedProvider, selectedModel, 1000000);
         }
       }
@@ -353,9 +359,9 @@ export default function ModelSelector() {
                   // Per-model lock logic:
                   // A model is locked if:
                   // 1. The entire provider is locked (no user key, no server key), OR
-                  // 2. The provider has a server key but this model is NOT the free model,
+                  // 2. The provider has a server key but this model is NOT in free_models,
                   //    AND the user hasn't added their own key
-                  const isFreeModel = info.free_model && m.id === info.free_model;
+                  const isFreeModel = (info.free_models && info.free_models.includes(m.id)) || (info.free_model && m.id === info.free_model);
                   const isModelLocked = isProviderLocked || 
                     (info.has_server_key && !hasUserKey && !isFreeModel);
 

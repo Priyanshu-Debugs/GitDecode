@@ -11,7 +11,7 @@ class DiagramGenerator:
 
     def __init__(self, pg_client: SupabasePGClient) -> None:
         self.pg = pg_client
-        self.llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite")
+        self.llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite")
 
     async def _get_base_context_and_prompts(self, repo_id: str, repo_name: str, user_id: str) -> tuple[str, Dict[str, str]]:
         # Fetch graph and stats from Supabase

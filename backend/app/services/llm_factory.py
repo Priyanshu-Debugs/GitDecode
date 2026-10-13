@@ -19,11 +19,12 @@ PROVIDER_REGISTRY: Dict[str, Dict[str, Any]] = {
         "display_name": "Google Gemini",
         "key_prefix": "AIza",               # Partial prefix hint for validation
         "env_key": "GOOGLE_API_KEY",         # Server fallback env var
-        "free_model": "gemini-3.1-flash-lite",  # Only this model works with the server key
+        "free_model": "gemini-3.5-flash-lite",  # Default model for server key
+        "free_models": ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"],  # Models allowed on server key
         "models": [
-            {"id": "gemini-3.5-flash",      "name": "Gemini 3.5 Flash",      "context_window": 1_000_000},
-            {"id": "gemini-3.1-pro",        "name": "Gemini 3.1 Pro",        "context_window": 2_000_000},
+            {"id": "gemini-3.5-flash-lite", "name": "Gemini 3.5 Flash Lite", "context_window": 1_000_000},
             {"id": "gemini-3.1-flash-lite", "name": "Gemini 3.1 Flash Lite", "context_window": 1_000_000},
+            {"id": "gemini-3.1-pro",        "name": "Gemini 3.1 Pro",        "context_window": 2_000_000},
         ],
     },
     "openai": {
@@ -63,7 +64,7 @@ PROVIDER_REGISTRY: Dict[str, Dict[str, Any]] = {
 
 # Default fallback when no user key is provided
 DEFAULT_PROVIDER = "google"
-DEFAULT_MODEL = "gemini-3.1-flash-lite"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 
 
 def create_llm(
@@ -141,9 +142,9 @@ def resolve_llm_from_state(state: dict) -> BaseChatModel:
     """Helper to extract llm_config from agent state and create LLM.
     Falls back to server default if no user config is present.
     
-    IMPORTANT: When no user API key is provided, only the free model
-    (gemini-3.1-flash-lite) is allowed. Other Google models require
-    the user's own API key.
+    IMPORTANT: When no user API key is provided, only the free server models
+    (gemini-3.5-flash-lite and gemini-3.1-flash-lite) are allowed. Other models
+    require the user's own API key.
     """
     config = state.get("llm_config")
     if config and isinstance(config, dict) and config.get("api_key"):
@@ -158,18 +159,21 @@ def resolve_llm_from_state(state: dict) -> BaseChatModel:
             return get_default_llm()
 
     # No user API key — enforce free model restriction
-    # Even if the user selected a different Google model, force the free model
-    # because the server key only supports gemini-3.1-flash-lite
     if config and isinstance(config, dict):
         provider = config.get("provider", DEFAULT_PROVIDER)
         model = config.get("model", DEFAULT_MODEL)
         if provider == "google":
-            free_model = PROVIDER_REGISTRY.get("google", {}).get("free_model", DEFAULT_MODEL)
-            if model != free_model:
+            allowed_free_models = PROVIDER_REGISTRY.get("google", {}).get(
+                "free_models", [PROVIDER_REGISTRY.get("google", {}).get("free_model", DEFAULT_MODEL)]
+            )
+            if model in allowed_free_models:
+                return create_llm(provider="google", model=model)
+            else:
+                default_free = PROVIDER_REGISTRY.get("google", {}).get("free_model", DEFAULT_MODEL)
                 logger.info(
-                    "User requested Google model '%s' without own API key, "
-                    "forcing free model '%s'", model, free_model
+                    "User requested locked Google model '%s' without own API key, "
+                    "forcing default free model '%s'", model, default_free
                 )
-            return create_llm(provider="google", model=free_model)
+                return create_llm(provider="google", model=default_free)
 
     return get_default_llm()

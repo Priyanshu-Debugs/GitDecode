@@ -47,7 +47,7 @@ When a developer submits a query, GitDecode identifies target entry points, perf
 - Provides real-time filtering by entity type (`file`, `class`, `function`), node selection inspection, zoom-to-fit, and dark glassmorphic UI controls.
 
 ### 3. Multi-Provider LLM Factory & Ephemeral Key Management
-- Supports dynamic model selection across major AI providers: **Google Gemini** (Gemini 3.5 Flash, 3.1 Pro, 3.1 Flash Lite), **OpenAI** (GPT-5.6, GPT-5.5, GPT-4.1, GPT-4o, GPT-4o-mini), **Anthropic** (Claude Fable 5, Claude Opus 4.8, Claude Sonnet 4, Claude Haiku 4), and **Groq** (Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B).
+- Supports dynamic model selection across major AI providers: **Google Gemini** (Gemini 3.5 Flash Lite, 3.1 Flash Lite, 3.1 Pro), **OpenAI** (GPT-5.6, GPT-5.5, GPT-4.1, GPT-4o, GPT-4o-mini), **Anthropic** (Claude Fable 5, Claude Opus 4.8, Claude Sonnet 4, Claude Haiku 4), and **Groq** (Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B).
 - Features dynamic live model discovery (`POST /api/v1/providers/models`) that validates user keys against official provider REST APIs.
 - Enforces strict security: user API keys are never stored in databases; they exist purely in-memory during single request lifecycles.
 
@@ -69,7 +69,7 @@ When a developer submits a query, GitDecode identifies target entry points, perf
 - **A4 PDF Export**: Integrates ReportLab rendering to compile Markdown reports into styled, publication-grade PDF documents.
 
 ### 6. Gemini Context Cache Pre-Warming
-- Automatically constructs and registers Google Gemini API Context Caches (`gemini-3.1-flash-lite`) during the ingestion pipeline.
+- Automatically constructs and registers Google Gemini API Context Caches (`gemini-3.5-flash-lite`) during the ingestion pipeline.
 - Reduces token consumption by up to 80% on large codebases while lowering request latency for iterative chat sessions.
 
 ### 7. Asynchronous Event-Driven Ingestion (Inngest)

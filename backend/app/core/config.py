@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str
 
     # ── Gemini Context Cache settings ──────────────────────────────────────
-    GEMINI_CONTEXT_MODEL: str = "gemini-3.1-flash-lite"
+    GEMINI_CONTEXT_MODEL: str = "gemini-3.5-flash-lite"
 
     # ── Plan Limits ──────────────────────────────────────────────────────
     # Free tier

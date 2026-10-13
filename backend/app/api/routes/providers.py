@@ -37,6 +37,8 @@ async def list_providers():
         # Include which model is available for free (server key only)
         if info.get("free_model"):
             entry["free_model"] = info["free_model"]
+        if info.get("free_models"):
+            entry["free_models"] = info["free_models"]
         result[key] = entry
     return result
 
@@ -164,9 +166,9 @@ async def get_preferences(
 ):
     try:
         prefs = await pg.get_user_preferences(user.id)
-        return prefs or {"preferred_provider": "google", "preferred_model": "gemini-3.1-flash-lite"}
+        return prefs or {"preferred_provider": "google", "preferred_model": "gemini-3.5-flash-lite"}
     except Exception:
-        return {"preferred_provider": "google", "preferred_model": "gemini-3.1-flash-lite"}
+        return {"preferred_provider": "google", "preferred_model": "gemini-3.5-flash-lite"}
 
 
 class PreferencesRequest(BaseModel):

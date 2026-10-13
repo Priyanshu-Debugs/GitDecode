@@ -109,12 +109,15 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
 
     # 6. Check/get Gemini Context Cache (Only for Google provider)
     cache_name = None
+    cache_model = "gemini-3.5-flash-lite"
     if provider == "google":
+        req_model = (state.get("llm_config") or {}).get("model", "gemini-3.5-flash-lite")
+        cache_model = req_model if req_model in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"] else "gemini-3.5-flash-lite"
         cache_mgr = ContextCacheManager(pg_client)
-        cache_name = await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
+        cache_name = await cache_mgr.get_or_create_cache(repo_id, user_id, cache_model)
     
     if cache_name:
-        logger.info("Cache hit! Querying model using cache name: %s", cache_name)
+        logger.info("Cache hit! Querying model using cache name: %s (model: %s)", cache_name, cache_model)
         try:
             # Initialize Client
             api_key = os.environ.get("GOOGLE_API_KEY")
@@ -151,7 +154,7 @@ async def code_qa_node(state: AgentState) -> Dict[str, Any]:
             # Run the synchronous API call in an async thread to prevent blocking
             def call_gemini():
                 return client.models.generate_content(
-                    model="gemini-3.1-flash-lite",
+                    model=cache_model,
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         cached_content=cache_name

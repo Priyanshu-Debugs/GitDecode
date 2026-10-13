@@ -75,12 +75,20 @@ export function useLocalKeys() {
   }, [getKey]);
 
   const getPreference = useCallback((): { provider: string; model: string; context_window?: number } => {
-    if (typeof window === "undefined") return { provider: "google", model: "gemini-3.1-flash-lite", context_window: 1000000 };
+    if (typeof window === "undefined") return { provider: "google", model: "gemini-3.5-flash-lite", context_window: 1000000 };
     try {
       const stored = localStorage.getItem(PREF_KEY);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Migrate legacy model names
+        if (parsed.model === "gemini-3.5-flash") {
+          parsed.model = "gemini-3.5-flash-lite";
+          localStorage.setItem(PREF_KEY, JSON.stringify(parsed));
+        }
+        return parsed;
+      }
     } catch {}
-    return { provider: "google", model: "gemini-3.1-flash-lite", context_window: 1000000 };
+    return { provider: "google", model: "gemini-3.5-flash-lite", context_window: 1000000 };
   }, []);
 
   const setPreference = useCallback((provider: string, model: string, context_window?: number): void => {
@@ -91,7 +99,7 @@ export function useLocalKeys() {
   const getActiveLLMConfig = useCallback((): LLMConfig => {
     const pref = getPreference();
     const provider = pref.provider || "google";
-    const model = pref.model || "gemini-3.1-flash-lite";
+    const model = pref.model || "gemini-3.5-flash-lite";
     const context_window = pref.context_window || 1000000;
     const key = getKey(provider);
     return { provider, model, api_key: key, context_window };

@@ -900,7 +900,7 @@ async def sync_github_repository(
                 logger.info("Incremental: refreshing Gemini context cache for repo %s", repo_id)
                 cache_mgr = ContextCacheManager(pg_client)
                 await cache_mgr.invalidate_cache(repo_id, user_id)
-                await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
+                await cache_mgr.get_or_create_cache(repo_id, user_id, get_settings().GEMINI_CONTEXT_MODEL)
 
                 # Persist HEAD commit info BEFORE deleting temp_dir
                 await _persist_commit_info()
@@ -943,7 +943,7 @@ async def sync_github_repository(
             # Pre-warm Gemini context cache
             logger.info("Full sync: pre-warming Gemini Context Cache for repo_id: %s", repo_id)
             cache_mgr = ContextCacheManager(pg_client)
-            await cache_mgr.get_or_create_cache(repo_id, user_id, "gemini-3.1-flash-lite")
+            await cache_mgr.get_or_create_cache(repo_id, user_id, get_settings().GEMINI_CONTEXT_MODEL)
 
             # Persist HEAD commit info BEFORE deleting temp_dir
             await _persist_commit_info()
