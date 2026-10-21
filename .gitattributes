@@ -1,13 +1,15 @@
-# Explicitly ensure Python code is counted and categorized as Python
 *.py linguist-detectable=true linguist-language=Python
 
-# Exclude the frontend directory from repository language statistics so that
-frontend/** linguist-detectable=false
+# Exclude third-party UI libraries (shadcn/ui & ai-elements) as vendored code
+frontend/components/** linguist-vendored
+frontend/components/** linguist-detectable=false
 
-# Treat UI component libraries and template components as vendored code
-frontend/components/ui/** linguist-vendored
-frontend/components/ai-elements/** linguist-vendored
+# Exclude landing demo widgets and complex dashboard mockups
+# Trims TypeScript to ~206 KB and CSS to ~114 KB so Python (~433 KB) dominates #1
+frontend/app/components/** linguist-detectable=false
+frontend/app/dashboard/** linguist-detectable=false
 
-# Safeguard: ensure TypeScript / TSX files are excluded from language statistics
-*.ts linguist-detectable=false
-*.tsx linguist-detectable=false
+# Ensure CSS, JavaScript, and Dockerfile are detected for a complete breakdown
+*.css linguist-detectable=true
+*.mjs linguist-detectable=true linguist-language=JavaScript
+Dockerfile linguist-detectable=true
