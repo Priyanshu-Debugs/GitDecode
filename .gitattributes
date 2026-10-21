@@ -1,0 +1,13 @@
+# Explicitly ensure Python code is counted and categorized as Python
+*.py linguist-detectable=true linguist-language=Python
+
+# Exclude the frontend directory from repository language statistics so that
+frontend/** linguist-detectable=false
+
+# Treat UI component libraries and template components as vendored code
+frontend/components/ui/** linguist-vendored
+frontend/components/ai-elements/** linguist-vendored
+
+# Safeguard: ensure TypeScript / TSX files are excluded from language statistics
+*.ts linguist-detectable=false
+*.tsx linguist-detectable=false
